@@ -8,8 +8,6 @@ services:
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
     ports:
       - "3001:3001"
-    depends_on:
-      - postgres
     restart: unless-stopped
 
   dashboard:
@@ -30,18 +28,6 @@ services:
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
     ports:
       - "5174:80"
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16
-    environment:
-      - POSTGRES_DB=liveshop
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres123
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     restart: unless-stopped
 
 volumes:
