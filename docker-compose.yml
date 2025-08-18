@@ -8,6 +8,8 @@ services:
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
     ports:
       - "3001:3001"
+    networks:
+      - nginx-proxy
     restart: unless-stopped
 
   dashboard:
@@ -16,8 +18,8 @@ services:
       - VIRTUAL_HOST=space.livelink.store
       - LETSENCRYPT_HOST=space.livelink.store
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
-    ports:
-      - "5173:80"
+    networks:
+      - nginx-proxy
     restart: unless-stopped
 
   mobile:
@@ -26,9 +28,10 @@ services:
       - VIRTUAL_HOST=livelink.store
       - LETSENCRYPT_HOST=livelink.store
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
-    ports:
-      - "5174:80"
+    networks:
+      - nginx-proxy
     restart: unless-stopped
 
-volumes:
-  pgdata:
+networks:
+  nginx-proxy:
+    external: true
