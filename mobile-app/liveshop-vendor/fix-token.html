@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Token - LiveShop Link</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .token {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Token - LiveShop Link</h1>
+        <p>Cette page va corriger automatiquement le token pour Mamadou Ba.</p>
+        
+        <div id="status"></div>
+        
+        <button onclick="fixToken()">🔑 Corriger le Token</button>
+        <button onclick="checkToken()">🔍 Vérifier le Token</button>
+        <button onclick="testConnection()">🧪 Tester la Connexion</button>
+        <button onclick="clearToken()">🗑️ Effacer le Token</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const MAMADOU_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZWxsZXJJZCI6MiwiaWF0IjoxNzUyOTU5MzE0LCJleHAiOjE3NTU1NTEzMTR9.2H3NTFTTNJi86E627G2AaIMCnDy6C1Rtf62JNSXAerw';
+        
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        function showResult(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="token">${message}</div>`;
+        }
+        
+        function fixToken() {
+            try {
+                // Stocker le token pour Mamadou Ba
+                localStorage.setItem('liveshop_token', MAMADOU_TOKEN);
+                
+                showStatus('✅ Token corrigé avec succès !', 'success');
+                showResult(`Token stocké: ${MAMADOU_TOKEN.substring(0, 50)}...`);
+                
+                // Rediriger vers l'app mobile
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+                
+            } catch (error) {
+                showStatus('❌ Erreur lors de la correction du token: ' + error.message, 'error');
+            }
+        }
+        
+        function checkToken() {
+            try {
+                const token = localStorage.getItem('liveshop_token');
+                
+                if (token) {
+                    showStatus('✅ Token trouvé dans le localStorage', 'success');
+                    showResult(`Token actuel: ${token.substring(0, 50)}...`);
+                    
+                    // Décoder le token pour vérifier
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    showResult(`Token décodé: sellerId=${payload.sellerId}, exp=${new Date(payload.exp * 1000).toLocaleString()}`);
+                } else {
+                    showStatus('❌ Aucun token trouvé', 'error');
+                }
+                
+            } catch (error) {
+                showStatus('❌ Erreur lors de la vérification: ' + error.message, 'error');
+            }
+        }
+        
+        function testConnection() {
+            try {
+                const token = localStorage.getItem('liveshop_token');
+                
+                if (!token) {
+                    showStatus('❌ Aucun token trouvé. Corrigez d\'abord le token.', 'error');
+                    return;
+                }
+                
+                showStatus('🧪 Test de connexion en cours...', 'success');
+                
+                // Test de connexion WebSocket
+                const socket = io('http://localhost:3001');
+                
+                socket.on('connect', () => {
+                    showStatus('✅ WebSocket connecté, authentification...', 'success');
+                    socket.emit('authenticate', { token });
+                });
+                
+                socket.on('authenticated', (data) => {
+                    showStatus('✅ Authentification réussie ! Connexion WebSocket OK', 'success');
+                    showResult(`Connecté en tant que: ${data.seller.name} (ID: ${data.seller.id})`);
+                    socket.disconnect();
+                });
+                
+                socket.on('error', (error) => {
+                    showStatus('❌ Erreur d\'authentification: ' + error.message, 'error');
+                    socket.disconnect();
+                });
+                
+                socket.on('connect_error', (error) => {
+                    showStatus('❌ Erreur de connexion WebSocket: ' + error.message, 'error');
+                });
+                
+            } catch (error) {
+                showStatus('❌ Erreur lors du test: ' + error.message, 'error');
+            }
+        }
+        
+        function clearToken() {
+            try {
+                localStorage.removeItem('liveshop_token');
+                showStatus('✅ Token effacé', 'success');
+                showResult('Token supprimé du localStorage');
+            } catch (error) {
+                showStatus('❌ Erreur lors de l\'effacement: ' + error.message, 'error');
+            }
+        }
+        
+        // Vérifier automatiquement au chargement
+        window.onload = function() {
+            checkToken();
+        };
+    </script>
+    
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</body>
+</html> 
