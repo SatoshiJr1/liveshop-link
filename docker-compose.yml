@@ -1,0 +1,48 @@
+version: '3.8'
+services:
+  backend:
+    build: ./liveshop-backend
+    environment:
+      - VIRTUAL_HOST=api.livelink.store
+      - LETSENCRYPT_HOST=api.livelink.store
+      - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  dashboard:
+    build: ./web-client/liveshop-client
+    environment:
+      - VIRTUAL_HOST=space.livelink.store
+      - LETSENCRYPT_HOST=space.livelink.store
+      - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+
+  mobile:
+    build: ./mobile-app/liveshop-vendor
+    environment:
+      - VIRTUAL_HOST=livelink.store
+      - LETSENCRYPT_HOST=livelink.store
+      - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
+    ports:
+      - "5174:80"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=liveshop
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
