@@ -15,8 +15,8 @@ services:
   dashboard:
     build: ./web-client/liveshop-client
     environment:
-      - VIRTUAL_HOST=space.livelink.store
-      - LETSENCRYPT_HOST=space.livelink.store
+      - VIRTUAL_HOST=livelink.store
+      - LETSENCRYPT_HOST=livelink.store
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
     networks:
       - nginx-proxy
@@ -25,8 +25,8 @@ services:
   mobile:
     build: ./mobile-app/liveshop-vendor
     environment:
-      - VIRTUAL_HOST=livelink.store
-      - LETSENCRYPT_HOST=livelink.store
+      - VIRTUAL_HOST=space.livelink.store
+      - LETSENCRYPT_HOST=space.livelink.store
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
     networks:
       - nginx-proxy
