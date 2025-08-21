@@ -108,11 +108,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Récupérer le token depuis localStorage
+  const token = localStorage.getItem('liveshop_token');
+
   const value = {
     seller,
     credits,
     loading,
     isAdmin,
+    token, // Ajouter le token
     login,
     register,
     logout,

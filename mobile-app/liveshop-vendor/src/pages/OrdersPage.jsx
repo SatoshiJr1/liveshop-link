@@ -699,7 +699,7 @@ const OrdersPage = () => {
                     <p>
                       <span className="font-medium ">Preuve:</span>{' '}
                       <a 
-                        href={selectedOrder.payment_proof_url} 
+                        href={`http://localhost:3001/api/upload${selectedOrder.payment_proof_url}`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-purple-600 hover:underline "

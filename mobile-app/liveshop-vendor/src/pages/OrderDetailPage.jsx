@@ -78,6 +78,35 @@ const OrderDetailPage = () => {
               <span className="font-semibold ">Commentaire :</span> {order.comment}
             </div>
           )}
+          
+          {/* Preuve de paiement */}
+          {order.payment_proof_url && (
+            <div className="mb-4 ">
+              <span className="font-semibold ">Preuve de paiement :</span>
+              <div className="mt-2">
+                <img 
+                  src={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  alt="Preuve de paiement"
+                  className="w-full max-w-md rounded-lg border-2 border-gray-200"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+                <div className="hidden text-sm text-gray-500 mt-1">
+                  Image non disponible
+                </div>
+                <a 
+                  href={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-block"
+                >
+                  Voir l'image en plein écran
+                </a>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

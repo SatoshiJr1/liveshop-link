@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ShoppingCart, Upload, Star, Shield, Truck, CreditCard } from 'lucide-react';
+import ImageCapture from '@/components/ImageCapture';
 
 const OrderPage = () => {
   const { linkId, productId } = useParams();
@@ -28,6 +29,8 @@ const OrderPage = () => {
     payment_proof_url: '',
     comment: ''
   });
+
+  const [capturedImageUrl, setCapturedImageUrl] = useState('');
 
   const [paymentMethods, setPaymentMethods] = useState({
     wave: { available: false },
@@ -397,64 +400,60 @@ const OrderPage = () => {
                       </Label>
                       <div className="mt-1 space-y-2">
                         {/* Wave */}
-                        {paymentMethods.wave?.available && (
-                          <button
-                            type="button"
-                            onClick={() => handlePaymentMethodSelect('wave')}
-                            className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
-                              formData.payment_method === 'wave'
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-blue-300'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                                  <span className="text-white font-bold text-sm">W</span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">Wave</div>
-                                  <div className="text-sm text-gray-500">Paiement direct par QR code</div>
-                                </div>
+                        <button
+                          type="button"
+                          onClick={() => handlePaymentMethodSelect('wave')}
+                          className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
+                            formData.payment_method === 'wave'
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-blue-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                                <span className="text-white font-bold text-sm">W</span>
                               </div>
-                              {formData.payment_method === 'wave' && (
-                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                </div>
-                              )}
+                              <div>
+                                <div className="font-medium text-gray-900">Wave</div>
+                                <div className="text-sm text-gray-500">Paiement par preuve</div>
+                              </div>
                             </div>
-                          </button>
-                        )}
+                            {formData.payment_method === 'wave' && (
+                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
+                        </button>
 
                         {/* Orange Money */}
-                        {paymentMethods.orange_money?.available && (
-                          <button
-                            type="button"
-                            onClick={() => handlePaymentMethodSelect('orange_money')}
-                            className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
-                              formData.payment_method === 'orange_money'
-                                ? 'border-orange-500 bg-orange-50'
-                                : 'border-gray-200 hover:border-orange-300'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center mr-3">
-                                  <span className="text-white font-bold text-sm">OM</span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">Orange Money</div>
-                                  <div className="text-sm text-gray-500">Paiement direct par QR code</div>
-                                </div>
+                        <button
+                          type="button"
+                          onClick={() => handlePaymentMethodSelect('orange_money')}
+                          className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
+                            formData.payment_method === 'orange_money'
+                              ? 'border-orange-500 bg-orange-50'
+                              : 'border-gray-200 hover:border-orange-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center mr-3">
+                                <span className="text-white font-bold text-sm">OM</span>
                               </div>
-                              {formData.payment_method === 'orange_money' && (
-                                <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                </div>
-                              )}
+                              <div>
+                                <div className="font-medium text-gray-900">Orange Money</div>
+                                <div className="text-sm text-gray-500">Paiement par preuve</div>
+                              </div>
                             </div>
-                          </button>
-                        )}
+                            {formData.payment_method === 'orange_money' && (
+                              <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
+                        </button>
 
                         {/* Méthodes traditionnelles */}
                         <div className="space-y-2">
@@ -511,51 +510,28 @@ const OrderPage = () => {
                               )}
                             </div>
                           </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handlePaymentMethodSelect('bank_transfer')}
-                            className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
-                              formData.payment_method === 'bank_transfer'
-                                ? 'border-gray-500 bg-gray-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center mr-3">
-                                  <span className="text-white font-bold text-sm">B</span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">Virement bancaire</div>
-                                  <div className="text-sm text-gray-500">Paiement par preuve</div>
-                                </div>
-                              </div>
-                              {formData.payment_method === 'bank_transfer' && (
-                                <div className="w-5 h-5 bg-gray-500 rounded-full flex items-center justify-center">
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                </div>
-                              )}
-                            </div>
-                          </button>
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="payment_proof_url" className="text-sm font-medium text-gray-700">
+                      <Label className="text-sm font-medium text-gray-700">
                         Preuve de paiement (optionnel)
                       </Label>
-                      <Input
-                        id="payment_proof_url"
-                        type="url"
-                        value={formData.payment_proof_url}
-                        onChange={(e) => handleInputChange('payment_proof_url', e.target.value)}
-                        placeholder="Lien vers la capture d'écran du paiement"
-                        className="mt-1"
-                      />
+                      <div className="mt-1">
+                        <ImageCapture 
+                          onImageCaptured={(imageUrl) => {
+                            setCapturedImageUrl(imageUrl);
+                            handleInputChange('payment_proof_url', imageUrl);
+                          }}
+                          onImageRemoved={() => {
+                            setCapturedImageUrl('');
+                            handleInputChange('payment_proof_url', '');
+                          }}
+                        />
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Vous pouvez ajouter un lien vers une capture d'écran de votre paiement
+                        Capturez une photo de votre écran de paiement ou choisissez une image depuis votre galerie
                       </p>
                     </div>
 

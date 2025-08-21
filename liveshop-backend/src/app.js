@@ -18,6 +18,7 @@ const notificationRoutes = require('./routes/notifications');
 const creditRoutes = require('./routes/credits');
 const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/sellers');
+const uploadRoutes = require('./routes/upload');
 
 const notificationService = require('./services/notificationService');
 
@@ -171,6 +172,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/credits', creditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sellers', sellerRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Route de santé
 app.get('/api/health', (req, res) => {

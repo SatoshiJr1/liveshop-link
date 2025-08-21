@@ -1,131 +1,124 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X, ShoppingCart, CheckCircle, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Bell, X, Check, AlertCircle, ShoppingCart } from 'lucide-react';
+import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
 
 const NotificationToast = ({ notification, onClose, onViewOrder }) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    // Auto-fermer après 10 secondes
+    // Animation d'entrée
+    setIsAnimating(true);
+    
+    // Auto-fermeture après 8 secondes
     const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300); // Attendre l'animation
-    }, 10000);
+      handleClose();
+    }, 8000);
 
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, []);
 
   const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(onClose, 300);
+    setIsAnimating(false);
+    setTimeout(() => {
+      setIsVisible(false);
+      onClose();
+    }, 300);
   };
 
   const handleViewOrder = () => {
-    onViewOrder(notification.order.id);
+    if (onViewOrder && notification.data?.order?.id) {
+      onViewOrder(notification.data.order.id);
+    }
     handleClose();
   };
 
-  if (!notification) return null;
-
-  const getIcon = () => {
-    switch (notification.type) {
+  const getNotificationIcon = (type) => {
+    switch (type) {
       case 'new_order':
-        return <ShoppingCart className="w-5 h-5 text-green-600 " />;
+        return <ShoppingCart className="w-5 h-5 text-green-600" />;
       case 'order_status_update':
-        return <CheckCircle className="w-5 h-5 text-blue-600 " />;
+        return <Check className="w-5 h-5 text-blue-600" />;
       default:
-        return <Bell className="w-5 h-5 text-purple-600 " />;
+        return <Bell className="w-5 h-5 text-purple-600" />;
     }
   };
 
-  const getTitle = () => {
-    switch (notification.type) {
+  const getNotificationColor = (type) => {
+    switch (type) {
       case 'new_order':
-        return 'Nouvelle commande !';
+        return 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800';
       case 'order_status_update':
-        return 'Statut mis à jour';
+        return 'border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800';
       default:
-        return 'Notification';
+        return 'border-purple-200 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-800';
     }
   };
 
-  const getBgColor = () => {
-    switch (notification.type) {
-      case 'new_order':
-        return 'bg-green-50 border-green-200';
-      case 'order_status_update':
-        return 'bg-blue-50 border-blue-200';
-      default:
-        return 'bg-purple-50 border-purple-200';
-    }
-  };
+  if (!isVisible) return null;
 
   return (
-    <div
-      className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-      }`}
-    >
-      <div className={`${getBgColor()} border rounded-lg  p-4`}>
-        <div className="flex items-start space-x-3 ">
-          <div className="flex-shrink-0 ">
-            {getIcon()}
-          </div>
-          
-          <div className="flex-1 min-w-0 ">
-            <div className="flex items-center justify-between ">
-              <h4 className="text-sm font-semibold text-gray-900 ">
-                {getTitle()}
-              </h4>
-              <button
-                onClick={handleClose}
-                className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600 "
-              >
-                <X className="w-4 h-4 " />
-              </button>
+    <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transition-all duration-300 ${
+      isAnimating ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+    }`}>
+      <Card className={`shadow-lg border-2 ${getNotificationColor(notification.type)}`}>
+        <CardContent className="p-4">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0 mt-0.5">
+              {getNotificationIcon(notification.type)}
             </div>
             
-            <p className="mt-1 text-sm text-gray-600 ">
-              {notification.message}
-            </p>
-            
-            {notification.order && (
-              <div className="mt-2 text-xs text-gray-500 ">
-                <div className="flex items-center space-x-2 ">
-                  <span>Client: {notification.order.customer_name}</span>
-                  <span>•</span>
-                  <span>{notification.order.total_price != null ? notification.order.total_price.toLocaleString() + ' FCFA' : 'Montant inconnu'}</span>
-                </div>
-                {notification.order.product && (
-                  <div className="mt-1 ">
-                    Produit: {notification.order.product.name}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                  {notification.title}
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClose}
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                {notification.message}
+              </p>
+              
+              {notification.type === 'new_order' && notification.data?.order && (
+                <div className="mt-2 p-2 bg-white dark:bg-gray-800 rounded border">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Commande #{notification.data.order.id}
                   </div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {notification.data.order.customer_name} - {notification.data.order.total_price?.toLocaleString()} FCFA
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-xs text-gray-400">
+                  {new Date(notification.created_at).toLocaleTimeString()}
+                </span>
+                
+                {notification.type === 'new_order' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleViewOrder}
+                    className="text-xs h-7 px-2"
+                  >
+                    Voir la commande
+                  </Button>
                 )}
               </div>
-            )}
-            
-            {notification.type === 'new_order' && (
-              <div className="mt-3 flex space-x-2 ">
-                <Button
-                  onClick={handleViewOrder}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 "
-                >
-                  Voir la commande
-                </Button>
-                <Button
-                  onClick={handleClose}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs px-3 py-1 "
-                >
-                  Fermer
-                </Button>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

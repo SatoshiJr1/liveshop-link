@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import notificationStore from './stores/notificationStore';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -27,7 +28,19 @@ import PaymentSettingsPage from './pages/PaymentSettingsPage';
 import { AdminRoute, SellerRoute, AuthRoute } from './components/ProtectedRoute';
 
 const AppContent = () => {
-  const { isAuthenticated, loading, isAdmin } = useAuth();
+  const { isAuthenticated, loading, isAdmin, token } = useAuth();
+
+  // Initialiser le store de notifications
+  useEffect(() => {
+    console.log('🔔 App.jsx - Token disponible:', token ? 'OUI' : 'NON');
+    if (token) {
+      console.log('🔔 App.jsx - Initialisation NotificationStore avec token');
+      notificationStore.setToken(token);
+    } else {
+      console.log('🔔 App.jsx - Déconnexion NotificationStore');
+      notificationStore.setToken(null);
+    }
+  }, [token]);
 
   // Demander la permission pour les notifications push
   useEffect(() => {

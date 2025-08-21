@@ -254,7 +254,6 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
     }
 
     // Envoyer une notification en temps réel au vendeur
-    console.log('🔍 Debug - global.notifySeller disponible:', !!global.notifySeller);
     let notificationSent = false;
     
     try {
@@ -280,14 +279,28 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
         message: `Nouvelle commande de ${customer_name.trim()} - ${product.name}`
       };
 
-      const { sent } = await notificationService.sendRealtimeNotification(
+      // Créer la notification directement
+      const notification = await notificationService.createNotification(
         seller.id,
         'new_order',
+        `Nouvelle commande #${order.id}`,
+        `Nouvelle commande de ${customer_name.trim()} - ${product.name}`,
         notificationData
       );
-      
-      notificationSent = sent;
-      console.log('✅ Notification traitée par le service');
+
+      // Tenter l'envoi en temps réel si global.notifySeller est disponible
+      if (global.notifySeller) {
+        try {
+          global.notifySeller(seller.id, 'new_order', notificationData);
+          await notification.update({ sent: true, sent_at: new Date() });
+          notificationSent = true;
+          console.log('✅ Notification envoyée en temps réel');
+        } catch (wsError) {
+          console.log('⚠️ Erreur WebSocket, notification sauvegardée seulement:', wsError.message);
+        }
+      } else {
+        console.log('⚠️ WebSocket non disponible, notification sauvegardée seulement');
+      }
     } catch (error) {
       console.error('❌ Erreur lors de l\'envoi de la notification:', error);
       notificationSent = false;
@@ -355,6 +368,115 @@ router.post('/:linkId/comments', validatePublicLink, async (req, res) => {
 
   } catch (error) {
     console.error('Erreur lors de l\'ajout du commentaire:', error);
+    res.status(500).json({
+      error: 'Erreur interne du serveur'
+    });
+  }
+});
+
+// Récupérer les produits d'un live (public)
+router.get('/:linkId/live/:liveSlug', validatePublicLink, async (req, res) => {
+  try {
+    const { linkId, liveSlug } = req.params;
+
+    // Récupérer le vendeur
+    const seller = await Seller.findOne({
+      where: { public_link_id: linkId }
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        error: 'Vendeur non trouvé'
+      });
+    }
+
+    // Récupérer le live par son slug
+    const { Live, LiveProduct } = require('../models');
+    const live = await Live.findOne({
+      where: { 
+        slug: liveSlug,
+        sellerId: seller.id
+      }
+    });
+
+    if (!live) {
+      return res.status(404).json({
+        error: 'Live non trouvé'
+      });
+    }
+
+    // Récupérer les produits associés à ce live
+    const liveWithProducts = await Live.findOne({
+      where: { 
+        id: live.id,
+        sellerId: seller.id
+      },
+      include: [{
+        model: Product,
+        through: { attributes: [] }, // Ne pas inclure les attributs de la table de liaison
+        where: { seller_id: seller.id },
+        attributes: ['id', 'name', 'price', 'description', 'image_url', 'stock_quantity', 'is_pinned', 'created_at']
+      }]
+    });
+
+    const products = liveWithProducts ? liveWithProducts.Products || [] : [];
+
+    res.json({
+      live: {
+        id: live.id,
+        title: live.title,
+        slug: live.slug,
+        date: live.date
+      },
+      seller: {
+        name: seller.name,
+        link_id: seller.public_link_id
+      },
+      products: products
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des produits du live:', error);
+    res.status(500).json({
+      error: 'Erreur interne du serveur'
+    });
+  }
+});
+
+// Récupérer les lives d'un vendeur (public)
+router.get('/:linkId/lives', validatePublicLink, async (req, res) => {
+  try {
+    const { linkId } = req.params;
+
+    // Récupérer le vendeur
+    const seller = await Seller.findOne({
+      where: { public_link_id: linkId }
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        error: 'Vendeur non trouvé'
+      });
+    }
+
+    // Récupérer les lives du vendeur
+    const { Live } = require('../models');
+    const lives = await Live.findAll({
+      where: { sellerId: seller.id },
+      order: [['date', 'DESC']],
+      attributes: ['id', 'title', 'slug', 'date', 'created_at']
+    });
+
+    res.json({
+      seller: {
+        name: seller.name,
+        link_id: seller.public_link_id
+      },
+      lives: lives
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des lives:', error);
     res.status(500).json({
       error: 'Erreur interne du serveur'
     });

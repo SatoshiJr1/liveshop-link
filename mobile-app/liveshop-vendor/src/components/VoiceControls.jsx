@@ -19,6 +19,9 @@ const VoiceControls = () => {
         await voiceNotification.init();
         setIsInitialized(true);
         
+        // Rendre voiceNotification disponible globalement
+        window.voiceNotification = voiceNotification;
+        
         // Vérifier que voiceNotification est bien initialisé avant d'appeler isEnabled
         if (voiceNotification && typeof voiceNotification.isEnabled === 'function') {
           setIsEnabled(voiceNotification.isEnabled());
@@ -48,6 +51,11 @@ const VoiceControls = () => {
     } else {
       voiceNotification.disable();
     }
+    
+    // Émettre un événement pour informer le NotificationStore
+    window.dispatchEvent(new CustomEvent('voiceNotificationToggle', {
+      detail: { enabled }
+    }));
   };
 
   const handleVolumeChange = (newVolume) => {
