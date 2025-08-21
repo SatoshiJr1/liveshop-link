@@ -11,7 +11,7 @@ const config = {
 };
 
 // Détecter l'environnement
-const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.36';
 const environment = isDevelopment ? 'development' : 'production';
 
 // Exporter la configuration actuelle

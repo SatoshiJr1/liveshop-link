@@ -5,7 +5,7 @@ import LiveDetail from './LiveDetail';
 import { Badge } from '@/components/ui/badge';
 import { Copy, ExternalLink, Plus, Edit2, Trash2, Repeat } from 'lucide-react';
 import LiveIcon from '/images/diffusion-en-direct.png';
-import { getClientDomain } from '../config/domains';
+import { getPublicLink } from '../config/domains';
 
 // Composant SVG LiveIconGlitch
 function LiveIconGlitch({ size = 36 }) {
@@ -177,20 +177,16 @@ export default function LivesPage() {
   };
 
   // Génère dynamiquement le lien public (web-client) selon l'environnement
-  const getWebClientBaseUrl = () => {
-    return getClientDomain();
-  };
-
   // Lien public de la boutique
   const getPublicShopLink = () => {
     if (!seller?.public_link_id) return '#';
-    return `${getWebClientBaseUrl()}/${seller.public_link_id}`;
+    return getPublicLink(seller.public_link_id);
   };
 
   // Lien public d'un live
   const getLivePublicLink = (live) => {
     if (!seller?.public_link_id) return '#';
-    return `${getWebClientBaseUrl()}/${seller.public_link_id}/live/${live.slug}`;
+    return `${getPublicLink(seller.public_link_id)}/live/${live.slug}`;
   };
 
   const handleCopyLink = async (url, liveId = null) => {
