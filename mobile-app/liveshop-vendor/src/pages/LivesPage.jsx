@@ -5,6 +5,7 @@ import LiveDetail from './LiveDetail';
 import { Badge } from '@/components/ui/badge';
 import { Copy, ExternalLink, Plus, Edit2, Trash2, Repeat } from 'lucide-react';
 import LiveIcon from '/images/diffusion-en-direct.png';
+import { getClientDomain } from '../config/domains';
 
 // Composant SVG LiveIconGlitch
 function LiveIconGlitch({ size = 36 }) {
@@ -177,20 +178,7 @@ export default function LivesPage() {
 
   // Génère dynamiquement le lien public (web-client) selon l'environnement
   const getWebClientBaseUrl = () => {
-    // En développement, le web-client tourne sur localhost:5174
-    // En production, on utilise le même hostname que l'app vendeur
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const port = window.location.port;
-    
-    // Si on est en développement (localhost ou 192.168.1.36)
-    if (hostname === 'localhost' || hostname === '192.168.1.36') {
-      // Le web-client tourne sur localhost:5174
-      return 'http://localhost:5174';
-    }
-    
-    // En production, utiliser le même hostname sans port spécifique
-    return `${protocol}//${hostname}`;
+    return getClientDomain();
   };
 
   // Lien public de la boutique
@@ -202,7 +190,7 @@ export default function LivesPage() {
   // Lien public d'un live
   const getLivePublicLink = (live) => {
     if (!seller?.public_link_id) return '#';
-    return `${getWebClientBaseUrl()}/${seller.public_link_id}/live/${live.id}`;
+    return `${getWebClientBaseUrl()}/${seller.public_link_id}/live/${live.slug}`;
   };
 
   const handleCopyLink = async (url, liveId = null) => {

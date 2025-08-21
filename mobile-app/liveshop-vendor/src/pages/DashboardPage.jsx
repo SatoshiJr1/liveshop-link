@@ -29,6 +29,7 @@ import {
   Coins
 } from 'lucide-react';
 import VoiceControls from '../components/VoiceControls';
+import { getPublicLink } from '../config/domains';
 
 
 export default function DashboardPage() {
@@ -149,13 +150,30 @@ export default function DashboardPage() {
   };
 
   const copyPublicLink = () => {
-    const link = `${window.location.origin.replace(':5173', ':3000')}/${seller.public_link_id}`;
-    navigator.clipboard.writeText(link);
-    // TODO: Ajouter une notification toast
+    const link = getPublicLink(seller.public_link_id);
+    navigator.clipboard.writeText(link).then(() => {
+      // Notification de succès
+      const event = new CustomEvent('showToast', {
+        detail: {
+          type: 'success',
+          message: 'Lien copié dans le presse-papiers !'
+        }
+      });
+      window.dispatchEvent(event);
+    }).catch(() => {
+      // Notification d'erreur
+      const event = new CustomEvent('showToast', {
+        detail: {
+          type: 'error',
+          message: 'Erreur lors de la copie du lien'
+        }
+      });
+      window.dispatchEvent(event);
+    });
   };
 
   const openPublicLink = () => {
-    const link = `${window.location.origin.replace(':5173', ':3000')}/${seller.public_link_id}`;
+    const link = getPublicLink(seller.public_link_id);
     window.open(link, '_blank');
   };
 
@@ -212,21 +230,34 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Lien public */}
+          {/* Lien public - Design amélioré */}
           <div className="bg-white/10 rounded-xl p-3 lg:p-4">
             <h3 className="font-semibold mb-3 flex items-center text-sm lg:text-base">
               <ExternalLink className="w-4 h-4 mr-2" />
               Votre lien de boutique
             </h3>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-              <code className="bg-white/20 px-3 py-2 rounded-lg text-xs lg:text-sm flex-1 truncate font-mono text-center sm:text-left">
-                liveshop.link/{seller.public_link_id}
-              </code>
+              <div className="bg-white/20 px-3 py-2 rounded-lg text-xs lg:text-sm flex-1 truncate font-mono text-center sm:text-left flex items-center justify-center sm:justify-start">
+                <span className="text-purple-200">liveshop.link/</span>
+                <span className="text-white font-bold">{seller.public_link_id}</span>
+              </div>
               <div className="flex justify-center sm:justify-start space-x-2">
-                <Button onClick={copyPublicLink} size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30">
+                <Button 
+                  onClick={copyPublicLink} 
+                  size="sm" 
+                  variant="secondary" 
+                  className="bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-105"
+                  title="Copier le lien"
+                >
                   <Copy className="w-4 h-4" />
                 </Button>
-                <Button onClick={openPublicLink} size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30">
+                <Button 
+                  onClick={openPublicLink} 
+                  size="sm" 
+                  variant="secondary" 
+                  className="bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-105"
+                  title="Ouvrir la boutique"
+                >
                   <ExternalLink className="w-4 h-4" />
                 </Button>
               </div>

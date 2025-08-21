@@ -96,6 +96,8 @@ class WebSocketService {
           if (this.currentToken) {
             console.log('🔐 Authentification WebSocket...');
             this.socket.emit('authenticate', { token: this.currentToken });
+          } else {
+            console.log('❌ Pas de token pour l\'authentification WebSocket');
           }
 
           // Démarrer le heartbeat

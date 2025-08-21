@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Star, MessageCircle, Share2, ArrowLeft } from 'lucide-react';
+import { getApiUrl } from '../config/domains';
 
 export default function LiveProductsPage() {
-  const { linkId, liveId } = useParams();
+  const { linkId, liveSlug } = useParams();
   const [products, setProducts] = useState([]);
   const [seller, setSeller] = useState(null);
   const [live, setLive] = useState(null);
@@ -16,26 +17,26 @@ export default function LiveProductsPage() {
     async function fetchData() {
       setLoading(true);
       try {
-        // Récupère les infos du live et du vendeur
-        const liveRes = await fetch(`http://localhost:3001/api/lives/${liveId}`);
-        const liveData = await liveRes.json();
-        setLive(liveData.live || liveData);
-        // Récupère les produits associés au live
-        const prodRes = await fetch(`http://localhost:3001/api/lives/${liveId}/products`);
-        const prodData = await prodRes.json();
-        setProducts(Array.isArray(prodData) ? prodData : (prodData.products || []));
-        // Récupère le vendeur par public_link_id
-        const sellerRes = await fetch(`http://localhost:3001/api/public/sellers/${linkId}`);
-        const sellerData = await sellerRes.json();
-        setSeller(sellerData.seller || sellerData);
-      } catch {
+        // Récupère les infos du live, du vendeur et des produits en une seule requête
+        const response = await fetch(getApiUrl(`/public/${linkId}/live/${liveSlug}`));
+        const data = await response.json();
+        
+        if (response.ok) {
+          setLive(data.live);
+          setSeller(data.seller);
+          setProducts(data.products || []);
+        } else {
+          setError(data.error || 'Erreur lors du chargement des produits du live.');
+        }
+      } catch (error) {
+        console.error('Erreur fetch:', error);
         setError('Erreur lors du chargement des produits du live.');
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, [linkId, liveId]);
+  }, [linkId, liveSlug]);
 
   const shareLive = () => {
     const url = window.location.href;

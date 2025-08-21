@@ -6,6 +6,7 @@ class NotificationService {
     this.retryQueue = new Map();
     this.maxRetries = 3;
     this.retryDelay = 5000; // 5 secondes
+    this.isProcessing = false;
   }
 
   // Créer une notification persistante
@@ -23,7 +24,7 @@ class NotificationService {
         max_retries: 3
       });
 
-      console.log(`📝 Notification créée: ${type} pour vendeur ${sellerId}`);
+      console.log(`📝 Notification créée: ${type} pour vendeur ${sellerId} (ID: ${notification.id})`);
       return notification;
     } catch (error) {
       console.error('❌ Erreur création notification:', error);
@@ -34,6 +35,8 @@ class NotificationService {
   // Envoyer une notification en temps réel
   async sendRealtimeNotification(sellerId, type, data) {
     try {
+      console.log(`🔔 Tentative d'envoi notification: ${type} pour vendeur ${sellerId}`);
+      
       // Créer la notification persistante
       const notification = await this.createNotification(
         sellerId,
@@ -52,12 +55,15 @@ class NotificationService {
           sent: true,
           sent_at: new Date()
         });
-        console.log(`✅ Notification envoyée en temps réel: ${type}`);
+        console.log(`✅ Notification envoyée en temps réel: ${type} (ID: ${notification.id})`);
       } else {
         // Ajouter à la queue de retry
         this.addToRetryQueue(notification);
-        console.log(`⏳ Notification ajoutée à la queue de retry: ${type}`);
+        console.log(`⏳ Notification ajoutée à la queue de retry: ${type} (ID: ${notification.id})`);
       }
+
+      // Envoyer des événements de mise à jour spécifiques
+      await this.sendUpdateEvents(sellerId, type, data);
 
       return { notification, sent };
     } catch (error) {
@@ -66,16 +72,71 @@ class NotificationService {
     }
   }
 
+  // Envoyer des événements de mise à jour spécifiques
+  async sendUpdateEvents(sellerId, type, data) {
+    try {
+      if (global.notifySeller) {
+        // Événements spécifiques selon le type
+        switch (type) {
+          case 'new_order':
+            global.notifySeller(sellerId, 'order_updated', {
+              orderId: data.order?.id,
+              action: 'created',
+              timestamp: new Date()
+            });
+            break;
+          case 'order_status_update':
+            global.notifySeller(sellerId, 'order_updated', {
+              orderId: data.order?.id,
+              action: 'status_changed',
+              newStatus: data.order?.status,
+              timestamp: new Date()
+            });
+            break;
+          case 'product_updated':
+            global.notifySeller(sellerId, 'product_updated', {
+              productId: data.product?.id,
+              action: 'updated',
+              timestamp: new Date()
+            });
+            break;
+          case 'credits_updated':
+            global.notifySeller(sellerId, 'credits_updated', {
+              newCredits: data.newCredits,
+              change: data.change,
+              timestamp: new Date()
+            });
+            break;
+        }
+
+        // Événement de mise à jour des statistiques
+        global.notifySeller(sellerId, 'stats_updated', {
+          timestamp: new Date()
+        });
+
+        console.log(`📡 Événements de mise à jour envoyés pour vendeur ${sellerId}`);
+      }
+    } catch (error) {
+      console.error('❌ Erreur envoi événements de mise à jour:', error);
+    }
+  }
+
   // Tenter l'envoi en temps réel
   async attemptRealtimeSend(sellerId, type, data) {
     try {
+      console.log(`🔍 Vérification global.notifySeller pour vendeur ${sellerId}...`);
+      
       if (global.notifySeller) {
+        console.log(`📡 Envoi via WebSocket pour vendeur ${sellerId}...`);
         global.notifySeller(sellerId, type, data);
+        console.log(`✅ Notification WebSocket envoyée pour vendeur ${sellerId}`);
         return true;
+      } else {
+        console.log(`❌ global.notifySeller non disponible pour vendeur ${sellerId}`);
+        return false;
       }
-      return false;
     } catch (error) {
-      console.error('❌ Erreur envoi temps réel:', error);
+      console.error(`❌ Erreur envoi temps réel pour vendeur ${sellerId}:`, error);
       return false;
     }
   }
@@ -88,106 +149,81 @@ class NotificationService {
       retryCount: 0,
       nextRetry: Date.now() + this.retryDelay
     });
+    console.log(`📋 Notification ${notification.id} ajoutée à la queue de retry`);
   }
 
   // Traiter la queue de retry
   async processRetryQueue() {
+    if (this.isProcessing) {
+      console.log('⏳ Traitement de queue déjà en cours...');
+      return;
+    }
+
+    this.isProcessing = true;
     const now = Date.now();
     
-    for (const [key, item] of this.retryQueue.entries()) {
-      if (now >= item.nextRetry) {
-        try {
-          const sent = await this.attemptRealtimeSend(
-            item.notification.seller_id,
-            item.notification.type,
-            item.notification.data
-          );
-
-          if (sent) {
-            // Succès
-            await item.notification.update({
-              sent: true,
-              sent_at: new Date()
-            });
-            this.retryQueue.delete(key);
-            console.log(`✅ Notification retry réussie: ${item.notification.id}`);
-          } else {
-            // Échec, incrémenter le compteur
-            item.retryCount++;
-            if (item.retryCount >= this.maxRetries) {
-              // Maximum de tentatives atteint
+    try {
+      for (const [key, item] of this.retryQueue.entries()) {
+        if (now >= item.nextRetry) {
+          try {
+            console.log(`🔄 Tentative de retry pour notification ${item.notification.id} (${item.retryCount + 1}/${this.maxRetries})`);
+            
+            const sent = await this.attemptRealtimeSend(
+              item.notification.seller_id,
+              item.notification.type,
+              item.notification.data
+            );
+            
+            if (sent) {
+              // Succès - marquer comme envoyée et retirer de la queue
               await item.notification.update({
-                retry_count: item.retryCount
+                sent: true,
+                sent_at: new Date()
               });
               this.retryQueue.delete(key);
-              console.log(`❌ Notification abandonnée après ${this.maxRetries} tentatives: ${item.notification.id}`);
+              console.log(`✅ Retry réussi pour notification ${item.notification.id}`);
             } else {
-              // Programmer la prochaine tentative
-              item.nextRetry = now + (this.retryDelay * Math.pow(2, item.retryCount));
-              await item.notification.update({
-                retry_count: item.retryCount
-              });
+              // Échec - incrémenter le compteur de retry
+              item.retryCount++;
+              if (item.retryCount >= this.maxRetries) {
+                // Nombre maximum de tentatives atteint
+                await item.notification.update({
+                  sent: false,
+                  retry_count: item.retryCount
+                });
+                this.retryQueue.delete(key);
+                console.log(`❌ Nombre maximum de retry atteint pour notification ${item.notification.id}`);
+              } else {
+                // Programmer le prochain retry
+                item.nextRetry = now + (this.retryDelay * Math.pow(2, item.retryCount));
+                console.log(`⏳ Prochain retry pour notification ${item.notification.id} dans ${this.retryDelay * Math.pow(2, item.retryCount)}ms`);
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Erreur lors du retry pour notification ${item.notification.id}:`, error);
+            item.retryCount++;
+            if (item.retryCount >= this.maxRetries) {
+              this.retryQueue.delete(key);
             }
           }
-        } catch (error) {
-          console.error('❌ Erreur retry notification:', error);
         }
       }
+    } finally {
+      this.isProcessing = false;
     }
   }
 
-  // Récupérer les notifications non lues d'un vendeur
-  async getUnreadNotifications(sellerId, limit = 50) {
+  // Marquer les notifications comme lues
+  async markNotificationsAsRead(sellerId, notificationIds = null) {
     try {
-      const notifications = await Notification.findAll({
-        where: {
-          seller_id: sellerId,
-          read: false
-        },
-        order: [['created_at', 'DESC']],
-        limit
-      });
-
-      return notifications;
-    } catch (error) {
-      console.error('❌ Erreur récupération notifications:', error);
-      throw error;
-    }
-  }
-
-  // Marquer une notification comme lue
-  async markAsRead(notificationId, sellerId) {
-    try {
-      const notification = await Notification.findOne({
-        where: {
-          id: notificationId,
-          seller_id: sellerId
-        }
-      });
-
-      if (notification) {
-        await notification.update({ read: true });
-        console.log(`✅ Notification marquée comme lue: ${notificationId}`);
+      const whereClause = { seller_id: sellerId };
+      if (notificationIds) {
+        whereClause.id = { [sequelize.Op.in]: notificationIds };
       }
 
-      return notification;
-    } catch (error) {
-      console.error('❌ Erreur marquage notification:', error);
-      throw error;
-    }
-  }
-
-  // Marquer toutes les notifications comme lues
-  async markAllAsRead(sellerId) {
-    try {
       await Notification.update(
-        { read: true },
-        {
-          where: {
-            seller_id: sellerId,
-            read: false
-          }
-        }
+        { read: true, read_at: new Date() },
+        { where: whereClause }
       );
 
       console.log(`✅ Toutes les notifications marquées comme lues pour vendeur ${sellerId}`);
@@ -274,7 +310,7 @@ class NotificationService {
       this.processRetryQueue();
     }, 10000); // Toutes les 10 secondes
 
-    console.log('🔄 Processeur de retry démarré');
+    console.log('🔄 Processeur de retry démarré (intervalle: 10s)');
   }
 
   // Arrêter le traitement de la queue
@@ -283,6 +319,16 @@ class NotificationService {
       clearInterval(this.retryInterval);
       this.retryInterval = null;
     }
+    console.log('🛑 Processeur de retry arrêté');
+  }
+
+  // Obtenir le statut du service
+  getStatus() {
+    return {
+      isProcessing: this.isProcessing,
+      queueSize: this.retryQueue.size,
+      retryInterval: !!this.retryInterval
+    };
   }
 }
 

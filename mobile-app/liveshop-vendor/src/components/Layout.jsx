@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import webSocketService from '../services/websocket';
-import voiceNotification from '../utils/voiceNotification';
-import apiService from '../services/api';
-import { toast } from 'sonner';
+
 import { Bell, X, LogOut, Menu, Sun, Moon } from 'lucide-react';
 import { Button } from './ui/button';
-import { useTheme } from '../contexts/ThemeContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   Home, 
@@ -23,12 +19,11 @@ import {
 } from 'lucide-react';
 import NotificationToast from './NotificationToast';
 import ThemeToggle from './ThemeToggle';
+import NotificationIndicator from './NotificationIndicator';
 
 const Layout = ({ children }) => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,139 +57,7 @@ const Layout = ({ children }) => {
     return () => clearInterval(interval);
   }, [seller, refreshCredits, isAdmin]);
 
-  // Initialiser les notifications WebSocket
-  useEffect(() => {
-    if (!seller) return;
-
-    const initializeNotifications = async () => {
-      try {
-        // Se connecter au WebSocket
-        await webSocketService.connect(localStorage.getItem('liveshop_token'));
-        
-        // Écouter les nouvelles commandes
-        webSocketService.onNewOrder((data) => {
-          console.log('🛒 Nouvelle commande reçue dans Layout:', data);
-          
-          const notification = {
-            id: Date.now(),
-            type: 'new_order',
-            title: `Nouvelle commande #${data.order?.id}`,
-            message: `Nouvelle commande de ${data.order?.customer_name} - ${data.order?.total_price?.toLocaleString()} FCFA`,
-            order: data.order,
-            timestamp: new Date()
-          };
-          
-          // Ajouter la notification à la liste
-          setNotifications(prev => [notification, ...prev.slice(0, 4)]);
-          
-          // Afficher un toast
-          toast.success(`Nouvelle commande #${data.order?.id}`, {
-            description: `${data.order?.customer_name} - ${data.order?.total_price?.toLocaleString()} FCFA`,
-            duration: 8000,
-            action: {
-              label: 'Voir',
-              onClick: () => navigate('/orders')
-            }
-          });
-          
-          // Jouer un son de notification
-          playNotificationSound();
-          
-          // Notification vocale
-          try {
-            console.log('🔊 Tentative d\'annonce vocale dans Layout...');
-            voiceNotification.announceNewOrder(data.order || data).then(() => {
-              console.log('✅ Annonce vocale terminée dans Layout');
-            }).catch((error) => {
-              console.error('❌ Erreur dans l\'annonce vocale Layout:', error);
-            });
-          } catch (error) {
-            console.error('❌ Erreur notification vocale Layout:', error);
-          }
-        });
-
-        // Écouter les mises à jour de statut
-        webSocketService.onOrderStatusUpdate((data) => {
-          console.log('📊 Mise à jour de statut reçue dans Layout:', data);
-          
-          const notification = {
-            id: Date.now(),
-            type: 'order_status_update',
-            title: `Commande #${data.id} mise à jour`,
-            message: `Statut: ${data.status}`,
-            order: data,
-            timestamp: new Date()
-          };
-          
-          setNotifications(prev => [notification, ...prev.slice(0, 4)]);
-          
-          toast.info(`Commande #${data.id} mise à jour`, {
-            description: `Nouveau statut: ${data.status}`,
-            duration: 5000
-          });
-        });
-
-        // Écouter les notifications générales
-        webSocketService.onNotification((data) => {
-          console.log('🔔 Notification générale reçue dans Layout:', data);
-          
-          const notification = {
-            id: Date.now(),
-            type: 'notification',
-            title: data.title || 'Notification',
-            message: data.message || 'Nouvelle notification',
-            data: data,
-            timestamp: new Date()
-          };
-          
-          setNotifications(prev => [notification, ...prev.slice(0, 4)]);
-          
-          toast(data.title || 'Notification', {
-            description: data.message,
-            duration: 5000
-          });
-        });
-
-        console.log('✅ Notifications WebSocket initialisées');
-      } catch (error) {
-        console.error('❌ Erreur initialisation notifications:', error);
-      }
-    };
-
-    initializeNotifications();
-
-    // Cleanup à la déconnexion
-    return () => {
-      webSocketService.off('new_order');
-      webSocketService.off('order_status_update');
-      webSocketService.off('notification');
-    };
-  }, [seller, navigate]);
-
-  // Jouer un son de notification
-  const playNotificationSound = () => {
-    try {
-      // Créer un audio context pour jouer un son simple
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-    } catch {
-      console.log('Son de notification non supporté');
-    }
-  };
+  // Le système de notifications est maintenant géré par le NotificationContext
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -203,15 +66,10 @@ const Layout = ({ children }) => {
 
   const handleViewOrder = (orderId) => {
     navigate(`/orders/${orderId}`);
-    setShowNotifications(false);
   };
 
   const handleCreditsClick = () => {
     navigate('/credits');
-  };
-
-  const handleCloseNotification = (notificationId) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
   };
 
   // Fonction pour obtenir le nom d'affichage selon la taille d'écran
@@ -279,20 +137,8 @@ const Layout = ({ children }) => {
               <span className="text-xs font-medium sm:hidden">{credits.balance}</span>
             </Button>
           )}
-          {/* Bouton notifications */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative"
-          >
-            <Bell className="w-5 h-5" />
-            {notifications.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {notifications.length > 9 ? '9+' : notifications.length}
-              </span>
-            )}
-          </Button>
+          {/* Indicateur de notifications */}
+          <NotificationIndicator />
           {/* Bouton thème */}
           <ThemeToggle />
           
@@ -389,6 +235,8 @@ const Layout = ({ children }) => {
               </div>
             </CardContent>
           </Card>
+          
+
         </div>
 
         {/* Navigation */}
@@ -452,9 +300,43 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
+      {/* Desktop Header - Caché sur mobile */}
+      <div className="hidden lg:block lg:fixed lg:top-0 lg:left-72 lg:right-0 lg:z-40 lg:bg-white lg:dark:bg-gray-800 lg:shadow-sm lg:border-b lg:border-gray-200 lg:dark:border-gray-700">
+        <div className="flex items-center justify-between p-[32px]">
+          <div className="flex items-center space-x-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {activePage === 'dashboard' && 'Tableau de bord'}
+              {activePage === 'products' && 'Produits'}
+              {activePage === 'orders' && 'Commandes'}
+              {activePage === 'stats' && 'Statistiques'}
+              {activePage === 'lives' && 'Lives'}
+              {activePage === 'credits' && 'Gérer les crédits'}
+            </h2>
+          </div>
+          <div className="flex items-center space-x-4">
+            {/* Indicateur de crédits pour desktop */}
+            {credits && !isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCreditsClick}
+                className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white border-0 shadow-lg font-bold px-4 py-2"
+              >
+                <Coins className="w-4 h-4 mr-2" />
+                <span className="font-medium">{credits.balance} crédits</span>
+              </Button>
+            )}
+            {/* Indicateur de notifications pour desktop */}
+            <NotificationIndicator />
+            {/* Bouton thème pour desktop */}
+            <ThemeToggle />
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="flex-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="pt-16 lg:pt-0 lg:ml-72">
+        <div className="pt-16 lg:pt-16 lg:ml-72">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 lg:pb-6">
             {children}
           </div>
@@ -485,57 +367,7 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
-      {/* Notifications Panel - Mobile */}
-      {showNotifications && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowNotifications(false)} />
-          <div className="absolute top-0 right-0 w-80 h-full bg-white dark:bg-gray-800 shadow-xl">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold dark:text-white">Notifications</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowNotifications(false)}
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
-            <div className="overflow-y-auto h-full">
-              {notifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                  <p>Aucune notification</p>
-                </div>
-              ) : (
-                <div className="p-4 space-y-4">
-                  {notifications.map((notification) => (
-                    <NotificationToast
-                      key={notification.id}
-                      notification={notification}
-                      onClose={() => handleCloseNotification(notification.id)}
-                      onViewOrder={handleViewOrder}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Notifications Panel - Desktop */}
-      <div className="hidden lg:block">
-        {notifications.map((notification) => (
-          <NotificationToast
-            key={notification.id}
-            notification={notification}
-            onClose={() => handleCloseNotification(notification.id)}
-            onViewOrder={handleViewOrder}
-          />
-        ))}
-      </div>
+      {/* Les notifications sont maintenant gérées par NotificationIndicator */}
     </div>
   );
 };
