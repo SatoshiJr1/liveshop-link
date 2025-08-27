@@ -5,14 +5,19 @@ const config = {
     backendDomain: 'http://localhost:3001'
   },
   production: {
-    clientDomain: import.meta.env.VITE_CLIENT_DOMAIN || 'https://livelink.store',
-    backendDomain: import.meta.env.VITE_BACKEND_DOMAIN || 'https://api.livelink.store'
+    clientDomain: 'https://livelink.store',
+    backendDomain: 'https://api.livelink.store'
   }
 };
 
 // Détecter l'environnement
 const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const environment = isDevelopment ? 'development' : 'production';
+
+console.log('🔍 Configuration des domaines détectée :');
+console.log('- Hostname:', window.location.hostname);
+console.log('- Environnement:', environment);
+console.log('- Backend Domain:', config[environment].backendDomain);
 
 // Exporter la configuration actuelle
 export const currentConfig = config[environment];
@@ -29,7 +34,9 @@ export const getBackendDomain = () => {
 
 // Fonction pour construire l'URL de l'API
 export const getApiUrl = (endpoint) => {
-  return `${getBackendDomain()}/api${endpoint}`;
+  const apiUrl = `${getBackendDomain()}/api${endpoint}`;
+  console.log('🔗 URL API construite:', apiUrl);
+  return apiUrl;
 };
 
 export default config; 
