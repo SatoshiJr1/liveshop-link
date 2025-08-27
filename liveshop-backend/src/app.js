@@ -25,6 +25,16 @@ const uploadRoutes = require('./routes/upload');
 
 const notificationService = require('./services/notificationService');
 
+console.log('🚀 Démarrage de LiveShop Link API...');
+console.log('=====================================');
+console.log('📋 Informations système :');
+console.log('- Node.js version:', process.version);
+console.log('- Plateforme:', process.platform);
+console.log('- Architecture:', process.arch);
+console.log('- Répertoire de travail:', process.cwd());
+console.log('- Variables d\'environnement chargées:', Object.keys(process.env).filter(key => key.includes('DB') || key.includes('SUPABASE') || key.includes('NODE_ENV')).length);
+console.log('');
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
