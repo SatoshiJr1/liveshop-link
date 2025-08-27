@@ -3,11 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
-
-// Charger les variables d'environnement selon l'environnement
-const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.development';
-console.log('📁 Chargement du fichier d\'environnement:', envFile);
-require('dotenv').config({ path: envFile });
+require('dotenv').config();
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
