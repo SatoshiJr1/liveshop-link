@@ -3,8 +3,8 @@ const { Sequelize } = require('sequelize');
 console.log('🔍 Test de connexion Supabase');
 console.log('=============================');
 
-// Remplacez YOUR_PASSWORD par votre vrai mot de passe
-const DATABASE_URL = 'postgresql://postgres:YOUR_PASSWORD@db.yxdapixcnkytpspbqiga.supabase.co:5432/postgres';
+// URL avec votre vrai mot de passe
+const DATABASE_URL = 'postgresql://postgres:manou24680@db.yxdapixcnkytpspbqiga.supabase.co:5432/postgres';
 
 async function testConnection() {
   const sequelize = new Sequelize(DATABASE_URL, {
@@ -41,6 +41,10 @@ async function testConnection() {
       ORDER BY table_name
     `);
     console.log('📋 Tables disponibles:', tableList.map(t => t.table_name).join(', '));
+    
+    // Compter les produits
+    const [productCount] = await sequelize.query('SELECT COUNT(*) as count FROM products');
+    console.log('📦 Nombre de produits dans Supabase:', productCount[0].count);
     
   } catch (error) {
     console.error('❌ Erreur de connexion:', error.message);
