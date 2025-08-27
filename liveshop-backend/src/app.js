@@ -5,11 +5,15 @@ const http = require('http');
 const socketIo = require('socket.io');
 
 // Charger les variables d'environnement selon l'environnement
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.development';
+console.log('📁 Chargement du fichier d\'environnement:', envFile);
 require('dotenv').config({ path: envFile });
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
+
+// Import du middleware de debug
+const debugMiddleware = require('./middleware/debugMiddleware');
 
 // Import des routes
 const authRoutes = require('./routes/auth');
@@ -47,10 +51,37 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
+const corsOptions = {
+  origin: function (origin, callback) {
+    // En développement, accepter localhost
+    if (process.env.NODE_ENV === 'development') {
+      callback(null, true);
+      return;
+    }
+    
+    // En production, accepter seulement les domaines autorisés
+    const allowedOrigins = [
+      'https://livelink.store',
+      'https://space.livelink.store',
+      'https://api.livelink.store'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS bloqué pour:', origin);
+      callback(new Error('CORS non autorisé'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
+
+// Middleware de debug pour logger les requêtes
+app.use(debugMiddleware.requestLogger());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -187,6 +218,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/upload', uploadRoutes);
 
+// Initialiser le middleware de debug après l'enregistrement des routes
+debugMiddleware.init(app, sequelize);
+
 // Route de santé
 app.get('/api/health', (req, res) => {
   res.json({
@@ -214,6 +248,7 @@ app.use('*', (req, res) => {
 });
 
 // Gestion globale des erreurs
+app.use(debugMiddleware.errorLogger());
 app.use((error, req, res, next) => {
   console.error('Erreur globale:', error);
   res.status(500).json({
