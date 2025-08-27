@@ -6,8 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Upload, X, Plus } from 'lucide-react';
-import PhotoCapture from './PhotoCapture';
+import { Camera, Upload, X, Plus, Search } from 'lucide-react';
+import ImageCapture from './ImageCapture';
+import ImageGallery from './ImageGallery';
+import SimpleImageLibrary from './test/SimpleImageLibrary';
 
 const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -24,9 +26,10 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
     has_variants: false
   });
 
-  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showImageLibrary, setShowImageLibrary] = useState(false);
 
   // Configuration des catégories (à déplacer dans un fichier de config)
   const categories = {
@@ -168,10 +171,44 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
     }));
   };
 
-  const handlePhotoCaptured = (photos) => {
+  const handlePhotoCaptured = (images) => {
+    // Si c'est une seule image (pas un tableau)
+    if (!Array.isArray(images)) {
+      images = [images];
+    }
+    
+    // Formater les images pour s'assurer qu'elles ont les bonnes propriétés
+    const formattedImages = images.map(image => {
+      // Si c'est un objet d'Unsplash, extraire l'URL
+      if (typeof image === 'object' && image.url) {
+        return {
+          id: image.id,
+          url: image.url,
+          thumbnail: image.thumbnail || image.url,
+          alt: image.alt || 'Image de produit',
+          source: image.source || 'unsplash',
+          photographer: image.photographer
+        };
+      }
+      // Si c'est déjà une URL string
+      else if (typeof image === 'string') {
+        return {
+          id: Date.now() + Math.random(),
+          url: image,
+          thumbnail: image,
+          alt: 'Image de produit',
+          source: 'upload'
+        };
+      }
+      // Sinon, retourner tel quel
+      return image;
+    });
+    
+    console.log('📸 Images formatées pour sauvegarde:', formattedImages);
+    
     setFormData(prev => ({
       ...prev,
-      images: [...(Array.isArray(prev.images) ? prev.images : []), ...photos]
+      images: [...(Array.isArray(prev.images) ? prev.images : []), ...formattedImages]
     }));
   };
 
@@ -219,17 +256,40 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
 
     setIsLoading(true);
     try {
+      // Version de test avec données minimales
       const submitData = {
-        ...formData,
+        name: formData.name,
+        description: formData.description || '',
         price: parseFloat(formData.price),
         stock_quantity: parseInt(formData.stock_quantity),
+        category: formData.category || 'general',
+        // Images simplifiées - seulement les URLs
+        images: Array.isArray(formData.images) ? formData.images.map(img => {
+          if (typeof img === 'object' && img.url) {
+            return img.url; // Seulement l'URL
+          }
+          return img;
+        }) : [],
+        // Attributs simplifiés
+        attributes: formData.attributes || {},
+        // Tags
+        tags: Array.isArray(formData.tags) ? formData.tags : [],
+        // Dimensions seulement si définies
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        dimensions: formData.dimensions.length || formData.dimensions.width || formData.dimensions.height ? formData.dimensions : null
+        dimensions: formData.dimensions.length || formData.dimensions.width || formData.dimensions.height ? {
+          length: formData.dimensions.length ? parseFloat(formData.dimensions.length) : null,
+          width: formData.dimensions.width ? parseFloat(formData.dimensions.width) : null,
+          height: formData.dimensions.height ? parseFloat(formData.dimensions.height) : null
+        } : null
       };
+
+      console.log('📤 Données envoyées au serveur (version test):', submitData);
+      console.log('📤 Images simplifiées:', submitData.images);
 
       await onSubmit(submitData);
     } catch (error) {
-      console.error('Erreur lors de la soumission:', error);
+      console.error('❌ Erreur lors de la soumission:', error);
+      console.error('❌ Détails de l\'erreur:', error.message);
     } finally {
       setIsLoading(false);
     }
@@ -414,33 +474,37 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
         <CardHeader>
           <CardTitle>Photos du produit</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 ">
-          <div className="grid grid-cols-3 gap-4 ">
-            {(Array.isArray(formData.images) ? formData.images : []).map((image, index) => (
-              <div key={index} className="relative ">
-                <img
-                  src={image}
-                  alt={`Produit ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-lg "
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center "
-                >
-                  <X className="w-3 h-3 " />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setShowPhotoCapture(true)}
-              className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:border-gray-400 "
-            >
-              <Camera className="w-6 h-6 mb-1 " />
-              <span className="text-xs ">Ajouter photo</span>
-            </button>
+        <CardContent className="space-y-4">
+          <ImageGallery
+            images={Array.isArray(formData.images) ? formData.images : []}
+            onImageRemove={removeImage}
+            showThumbnails={true}
+            maxThumbnails={6}
+            className="mb-4"
+          />
+          
+          {/* Bouton Unsplash - TRÈS VISIBLE */}
+          <Button
+            type="button"
+            onClick={() => setShowImageLibrary(true)}
+            variant="outline"
+            className="w-full py-4 border-2 border-dashed border-blue-500 hover:border-blue-600 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium"
+          >
+            <Search className="w-6 h-6 mr-3" />
+            📸 Rechercher dans la librairie d'images Unsplash
+          </Button>
+          
+          <div className="text-center text-sm text-gray-500 font-medium">
+            ─── ou ───
           </div>
+          
+          <ImageCapture
+            onImageUpload={handlePhotoCaptured}
+            multiple={true}
+            maxImages={10}
+            uploadType="product"
+            className="w-full"
+          />
         </CardContent>
       </Card>
 
@@ -567,13 +631,13 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
         </Button>
       </div>
 
-      {/* Modal de capture photo */}
-      <PhotoCapture
-        isOpen={showPhotoCapture}
-        onClose={() => setShowPhotoCapture(false)}
-        onPhotoCaptured={handlePhotoCaptured}
-        multiple={true}
-      />
+      {/* Modal Librairie d'images */}
+      {showImageLibrary && (
+        <SimpleImageLibrary
+          onImageSelect={handlePhotoCaptured}
+          onClose={() => setShowImageLibrary(false)}
+        />
+      )}
     </form>
   );
 };
