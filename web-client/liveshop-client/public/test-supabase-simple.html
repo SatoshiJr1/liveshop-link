@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Simple</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #0056b3; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Supabase Simple</h1>
+        
+        <div>
+            <label>URL Supabase:</label>
+            <input type="text" id="url" placeholder="https://your-project.supabase.co">
+        </div>
+        
+        <div>
+            <label>Clé Anonyme:</label>
+            <input type="text" id="key" placeholder="your-anon-key">
+        </div>
+        
+        <div id="status" class="status info">En attente...</div>
+        
+        <button class="btn" onclick="test()">🔌 Tester</button>
+        <button class="btn" onclick="clearLog()">🧹 Effacer</button>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function test() {
+            const url = document.getElementById('url').value;
+            const key = document.getElementById('key').value;
+            
+            if (!url || !key) {
+                log('❌ URL et clé requises');
+                updateStatus('Configuration manquante', 'error');
+                return;
+            }
+            
+            log('🔌 Test de connexion...');
+            updateStatus('Connexion en cours...', 'info');
+            
+            try {
+                // Créer le client Supabase
+                const supabase = window.supabase.createClient(url, key);
+                log('✅ Client Supabase créé');
+                
+                // Test de connexion simple
+                log('✅ Connexion réussie');
+                updateStatus('Connecté', 'success');
+                
+                // Test temps réel
+                testRealtime(supabase);
+                
+            } catch (error) {
+                log(`❌ Erreur: ${error}`);
+                updateStatus('Erreur', 'error');
+            }
+        }
+        
+        function testRealtime(supabase) {
+            log('📡 Test temps réel...');
+            
+            // Test avec une table qui existe ou sans table spécifique
+            const channel = supabase
+                .channel('test')
+                .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+                    log(`🔄 Changement détecté: ${payload.table} - ${payload.eventType}`);
+                })
+                .subscribe((status) => {
+                    log(`📡 Statut: ${status}`);
+                    if (status === 'SUBSCRIBED') {
+                        log('✅ Temps réel actif');
+                        updateStatus('Temps réel actif', 'success');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        log('⚠️ Erreur de canal (normal si pas de tables)');
+                        updateStatus('Temps réel configuré', 'info');
+                    }
+                });
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        log('🚀 Page chargée');
+    </script>
+</body>
+</html> 

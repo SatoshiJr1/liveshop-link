@@ -6,6 +6,7 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -69,6 +70,7 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
       setUploading(true);
+      setError(null);
       await uploadImage(file);
       setUploading(false);
     }
@@ -76,23 +78,36 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
 
   const uploadImage = async (file) => {
     try {
+      setError(null);
+      
+      // Valider le fichier
+      if (file.size > 10 * 1024 * 1024) { // 10MB max
+        throw new Error('L\'image est trop volumineuse (max 10MB)');
+      }
+
       const formData = new FormData();
       formData.append('image', file);
-      formData.append('type', 'payment_proof');
 
-      const response = await fetch('http://localhost:3001/api/upload/image', {
+      const response = await fetch('http://localhost:3001/api/upload/payment-proof', {
         method: 'POST',
         body: formData
       });
 
       if (response.ok) {
         const data = await response.json();
-        onImageCaptured(data.imageUrl);
+        if (data.success && data.image) {
+          onImageCaptured(data.image.url);
+          console.log('✅ Image uploadée sur Cloudinary:', data.image);
+        } else {
+          throw new Error('Erreur lors de l\'upload');
+        }
       } else {
-        console.error('Erreur upload image');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de l\'upload');
       }
     } catch (error) {
       console.error('Erreur upload:', error);
+      setError(error.message);
     }
   };
 
@@ -100,8 +115,8 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
     if (capturedImage) {
       URL.revokeObjectURL(capturedImage.url);
       setCapturedImage(null);
-      onImageRemoved();
     }
+    onImageRemoved();
   };
 
   return (
@@ -124,6 +139,21 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
             <Check className="w-3 h-3 mr-1" />
             Image capturée
           </div>
+        </div>
+      )}
+
+      {/* Message d'erreur */}
+      {error && (
+        <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg mb-3">
+          {error}
+        </div>
+      )}
+
+      {/* Indicateur de chargement */}
+      {uploading && (
+        <div className="text-blue-600 text-sm bg-blue-50 p-3 rounded-lg mb-3 flex items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          Upload en cours...
         </div>
       )}
 

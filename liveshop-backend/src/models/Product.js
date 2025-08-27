@@ -48,16 +48,22 @@ const Product = sequelize.define('Product', {
     allowNull: true,
     comment: 'Stockage des attributs spécifiques à la catégorie (tailles, couleurs, poids, etc.)'
   },
-  // Images multiples
+  // Images multiples avec métadonnées Cloudinary
   images: {
     type: DataTypes.JSON,
     allowNull: true,
-    comment: 'Array d\'URLs d\'images du produit'
+    comment: 'Array d\'objets images avec métadonnées Cloudinary: {url, publicId, thumbnailUrl, optimizedUrl, width, height, format, size}'
   },
   // Image principale (pour compatibilité)
   image_url: {
     type: DataTypes.STRING(500),
     allowNull: true
+  },
+  // Métadonnées Cloudinary de l'image principale
+  image_metadata: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: 'Métadonnées Cloudinary de l\'image principale: {publicId, width, height, format, size, thumbnailUrl, optimizedUrl}'
   },
   stock_quantity: {
     type: DataTypes.INTEGER,
@@ -108,14 +114,18 @@ const Product = sequelize.define('Product', {
   hooks: {
     beforeCreate: (product) => {
       // Définir l'image principale si des images sont fournies
-      if (product.images && product.images.length > 0 && !product.image_url) {
-        product.image_url = product.images[0];
+      if (product.images && product.images.length > 0) {
+        const firstImage = product.images[0];
+        product.image_url = firstImage.url || firstImage;
+        product.image_metadata = typeof firstImage === 'object' ? firstImage : null;
       }
     },
     beforeUpdate: (product) => {
       // Mettre à jour l'image principale si des images sont fournies
-      if (product.images && product.images.length > 0 && !product.image_url) {
-        product.image_url = product.images[0];
+      if (product.images && product.images.length > 0) {
+        const firstImage = product.images[0];
+        product.image_url = firstImage.url || firstImage;
+        product.image_metadata = typeof firstImage === 'object' ? firstImage : null;
       }
     }
   }

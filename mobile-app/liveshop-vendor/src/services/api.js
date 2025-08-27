@@ -141,9 +141,39 @@ class ApiService {
   }
 
   async updateProduct(productId, productData) {
+    console.log('📤 API - updateProduct appelé avec:', {
+      productId,
+      productData
+    });
+    
+    // Nettoyer les données avant envoi
+    const cleanedData = {
+      ...productData,
+      // S'assurer que les nombres sont bien des nombres
+      price: productData.price ? parseFloat(productData.price) : 0,
+      stock_quantity: productData.stock_quantity ? parseInt(productData.stock_quantity) : 0,
+      weight: productData.weight ? parseFloat(productData.weight) : null,
+      // Nettoyer les dimensions
+      dimensions: productData.dimensions && (
+        productData.dimensions.length || 
+        productData.dimensions.width || 
+        productData.dimensions.height
+      ) ? {
+        length: productData.dimensions.length ? parseFloat(productData.dimensions.length) : null,
+        width: productData.dimensions.width ? parseFloat(productData.dimensions.width) : null,
+        height: productData.dimensions.height ? parseFloat(productData.dimensions.height) : null
+      } : null,
+      // S'assurer que les images sont bien formatées
+      images: Array.isArray(productData.images) ? productData.images : [],
+      // Nettoyer les attributs
+      attributes: productData.attributes || {}
+    };
+    
+    console.log('📤 API - Données nettoyées:', cleanedData);
+    
     return this.request(`/products/${productId}`, {
       method: 'PUT',
-      body: JSON.stringify(productData)
+      body: JSON.stringify(cleanedData)
     });
   }
 

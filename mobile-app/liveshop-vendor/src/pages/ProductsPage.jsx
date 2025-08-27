@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ApiService from '../services/api';
+import realtimeService from '../services/realtimeService';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Camera,
-  Tag
+  Tag,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import ProductForm from '../components/ProductForm';
 
@@ -25,6 +28,7 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [realtimeStatus, setRealtimeStatus] = useState('disconnected');
   
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,7 +38,73 @@ const ProductsPage = () => {
 
   useEffect(() => {
     fetchProducts();
+    setupRealtime();
+    
+    return () => {
+      // Nettoyer les listeners à la fermeture
+      realtimeService.off('product_created', handleProductCreated);
+      realtimeService.off('product_updated', handleProductUpdated);
+      realtimeService.off('product_deleted', handleProductDeleted);
+      realtimeService.off('connection', handleConnectionChange);
+    };
   }, []);
+
+  // Configuration du temps réel
+  const setupRealtime = () => {
+    // Connexion WebSocket
+    realtimeService.connect();
+    
+    // Écouter les événements de produits
+    realtimeService.on('product_created', handleProductCreated);
+    realtimeService.on('product_updated', handleProductUpdated);
+    realtimeService.on('product_deleted', handleProductDeleted);
+    realtimeService.on('connection', handleConnectionChange);
+  };
+
+  // Gestion des événements temps réel
+  const handleProductCreated = (newProduct) => {
+    console.log('🆕 Nouveau produit créé:', newProduct);
+    setProducts(prev => [newProduct, ...prev.slice(0, -1)]); // Ajouter au début, retirer le dernier
+    setTotalProducts(prev => prev + 1);
+    
+    // Notification toast
+    showNotification('Nouveau produit ajouté', 'success');
+  };
+
+  const handleProductUpdated = (updatedProduct) => {
+    console.log('✏️ Produit mis à jour:', updatedProduct);
+    setProducts(prev => prev.map(product => 
+      product.id === updatedProduct.id ? updatedProduct : product
+    ));
+    
+    // Notification toast
+    showNotification('Produit mis à jour', 'info');
+  };
+
+  const handleProductDeleted = (deletedProduct) => {
+    console.log('🗑️ Produit supprimé:', deletedProduct);
+    setProducts(prev => prev.filter(product => product.id !== deletedProduct.id));
+    setTotalProducts(prev => prev - 1);
+    
+    // Notification toast
+    showNotification('Produit supprimé', 'warning');
+  };
+
+  const handleConnectionChange = (status) => {
+    console.log('🔌 Statut connexion temps réel:', status);
+    setRealtimeStatus(status.status);
+  };
+
+  // Fonction pour afficher les notifications
+  const showNotification = (message, type = 'info') => {
+    // Vous pouvez utiliser une librairie de toast comme react-hot-toast
+    console.log(`📢 ${type.toUpperCase()}: ${message}`);
+    
+    // Exemple simple avec alert (à remplacer par un toast)
+    if (type === 'success') {
+      // alert(`✅ ${message}`);
+    }
+  };
 
   const fetchProducts = async (page = 1) => {
     try {
@@ -87,10 +157,18 @@ const ProductsPage = () => {
 
   const handleSubmit = async (productData) => {
     try {
+      console.log('🔄 Début handleSubmit - Mode:', editingProduct ? 'Modification' : 'Création');
+      console.log('🔄 ID produit à modifier:', editingProduct?.id);
+      console.log('🔄 Données reçues:', productData);
+      
       if (editingProduct) {
+        console.log('📝 Modification du produit:', editingProduct.id);
         await ApiService.updateProduct(editingProduct.id, productData);
+        console.log('✅ Produit modifié avec succès');
       } else {
+        console.log('➕ Création d\'un nouveau produit');
         await ApiService.createProduct(productData);
+        console.log('✅ Produit créé avec succès');
         // Rafraîchir les crédits après création d'un produit
         await refreshCredits();
       }
@@ -99,7 +177,9 @@ const ProductsPage = () => {
       setShowDialog(false);
       setEditingProduct(null);
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('❌ Erreur lors de la sauvegarde:', error);
+      console.error('❌ Message d\'erreur:', error.message);
+      console.error('❌ Stack trace:', error.stack);
       throw error; // Laisser ProductForm gérer l'erreur
     }
   };
@@ -160,6 +240,7 @@ const ProductsPage = () => {
       try {
         images = JSON.parse(images);
       } catch (e) {
+        console.error('Erreur parsing images:', e);
         images = [];
       }
     }
@@ -167,25 +248,53 @@ const ProductsPage = () => {
       images = [];
     }
 
-    const mainImage = images.length > 0 
-      ? images[0] 
-      : product.image_url;
+    // Extraire l'URL de l'image principale
+    let mainImageUrl = null;
+    if (images.length > 0) {
+      const mainImage = images[0];
+      // Si c'est un objet d'Unsplash, extraire l'URL
+      if (typeof mainImage === 'object' && mainImage.url) {
+        mainImageUrl = mainImage.url;
+      } else if (typeof mainImage === 'string') {
+        mainImageUrl = mainImage;
+      }
+    } else if (product.image_url) {
+      mainImageUrl = product.image_url;
+    }
+
+    console.log('🖼️ Affichage image produit:', {
+      productName: product.name,
+      images: images,
+      mainImageUrl: mainImageUrl
+    });
 
     return (
       <Card key={product.id} className="relative group hover: transition-shadow ">
         <div className="relative ">
-          {mainImage ? (
+          {mainImageUrl ? (
             <img
-              src={mainImage}
+              src={mainImageUrl}
               alt={product.name}
               className="w-full h-48 object-cover rounded-t-lg "
+              onError={(e) => {
+                console.error('❌ Erreur chargement image produit:', {
+                  productName: product.name,
+                  imageUrl: mainImageUrl
+                });
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
             />
-          ) : (
-            <div className="w-full h-48 bg-gray-200 rounded-t-lg flex items-center justify-center ">
-              <ImageIcon className="w-12 h-12 text-gray-400 " />
-            </div>
-          )}
+          ) : null}
           
+          {/* Placeholder si pas d'image ou erreur */}
+          <div className={`w-full h-48 bg-gray-200 rounded-t-lg flex items-center justify-center ${mainImageUrl ? 'hidden' : ''}`}>
+            <div className="text-center">
+              <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">{product.name}</p>
+            </div>
+          </div>
+
           {/* Badge de catégorie */}
           {product.category && product.category !== 'general' && (
             <Badge className="absolute top-2 left-2 bg-purple-600 text-white ">
@@ -348,16 +457,37 @@ const ProductsPage = () => {
 
   return (
     <div className="space-y-6 ">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 ">
+      {/* Header avec titre et bouton d'ajout */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 ">Mes Produits</h1>
-          <p className="text-gray-600 mt-1 ">Gérez votre catalogue de produits</p>
+          <h1 className="text-2xl font-bold text-gray-900">Mes Produits</h1>
+          <p className="text-gray-600">Gérez votre catalogue de produits</p>
         </div>
-        <Button onClick={openCreateDialog} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700  w-full md:w-auto ">
-          <Plus className="w-4 h-4 mr-2 " />
-          Ajouter un produit
-        </Button>
+        
+        <div className="flex items-center gap-3">
+          {/* Indicateur temps réel */}
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium">
+            {realtimeStatus === 'connected' ? (
+              <>
+                <Wifi className="w-3 h-3 text-green-500" />
+                <span className="text-green-600">Temps réel</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3 h-3 text-gray-400" />
+                <span className="text-gray-500">Hors ligne</span>
+              </>
+            )}
+          </div>
+          
+          <Button
+            onClick={openCreateDialog}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Ajouter un produit
+          </Button>
+        </div>
       </div>
 
       {/* Statistiques rapides */}

@@ -226,12 +226,12 @@ const Layout = ({ children }) => {
                 <div className="mt-3 px-3 py-2 bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 text-xs rounded-full shadow-sm border border-purple-200 dark:border-purple-600">
                   ID: {seller?.public_link_id}
                 </div>
-                {credits && !isAdmin && (
+                {/* {credits && !isAdmin && (
                   <div className="mt-3 px-4 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white text-sm rounded-xl shadow-lg border-0 flex items-center justify-center font-bold">
                     <Coins className="w-4 h-4 mr-2" />
                     {credits.balance} crédits
                   </div>
-                )}
+                )} */}
               </div>
             </CardContent>
           </Card>
@@ -302,8 +302,8 @@ const Layout = ({ children }) => {
 
       {/* Desktop Header - Caché sur mobile */}
       <div className="hidden lg:block lg:fixed lg:top-0 lg:left-72 lg:right-0 lg:z-40 lg:bg-white lg:dark:bg-gray-800 lg:shadow-sm lg:border-b lg:border-gray-200 lg:dark:border-gray-700">
-        <div className="flex items-center justify-between p-[32px]">
-          <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6  lg:pb-6 pt-[40px]">
+          <div className="flex items-center space-x-4 pl-0">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {activePage === 'dashboard' && 'Tableau de bord'}
               {activePage === 'products' && 'Produits'}
@@ -337,7 +337,7 @@ const Layout = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="pt-16 lg:pt-16 lg:ml-72">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 lg:pb-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 lg:pb-6 pt-[59px]">
             {children}
           </div>
         </div>

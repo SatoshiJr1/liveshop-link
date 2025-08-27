@@ -19,6 +19,52 @@ const LoginPage = () => {
   const [activeTab, setActiveTab] = useState('login'); // 'login' ou 'register'
   const navigate = useNavigate();
 
+  // Fonction pour formater le numéro de téléphone
+  const formatPhoneNumber = (value) => {
+    // Supprimer tous les caractères non numériques sauf le +
+    let cleaned = value.replace(/[^\d+]/g, '');
+    
+    // Si ça ne commence pas par +221, l'ajouter automatiquement
+    if (!cleaned.startsWith('+221')) {
+      // Si ça commence par 221, ajouter le +
+      if (cleaned.startsWith('221')) {
+        cleaned = '+' + cleaned;
+      } else {
+        // Sinon, ajouter +221
+        cleaned = '+221' + cleaned.replace(/^\+/, '');
+      }
+    }
+    
+    // Limiter à 13 caractères (+221 + 9 chiffres)
+    if (cleaned.length > 13) {
+      cleaned = cleaned.substring(0, 13);
+    }
+    
+    return cleaned;
+  };
+
+  // Fonction pour gérer le changement du numéro de téléphone
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+  };
+
+  // Fonction pour obtenir l'affichage du numéro (sans le préfixe pour l'input)
+  const getDisplayPhone = () => {
+    if (phone.startsWith('+221')) {
+      return phone.substring(4); // Retourne seulement les chiffres après +221
+    }
+    return phone;
+  };
+
+  // Fonction pour obtenir le numéro complet
+  const getFullPhone = () => {
+    if (phone.startsWith('+221')) {
+      return phone;
+    }
+    return '+221' + phone;
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
@@ -42,7 +88,10 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!phone.trim() || !/^\+\d{8,15}$/.test(phone.trim())) {
+    
+    const fullPhone = getFullPhone();
+    
+    if (!fullPhone.trim() || !/^\+\d{8,15}$/.test(fullPhone.trim())) {
       setError('Veuillez saisir votre numéro au format international (ex: +221771234567)');
       return;
     }
@@ -55,14 +104,14 @@ const LoginPage = () => {
     
     // Sauvegarder les données si "Se souvenir" est activé
     if (rememberMe) {
-      localStorage.setItem('remembered_phone', phone.trim());
+      localStorage.setItem('remembered_phone', fullPhone.trim());
       localStorage.setItem('remember_me', 'true');
     } else {
       localStorage.removeItem('remembered_phone');
       localStorage.removeItem('remember_me');
     }
     
-    const result = await login(phone.trim(), pin);
+    const result = await login(fullPhone.trim(), pin);
     if (!result.success) {
       setError(result.error || 'Numéro ou code PIN incorrect');
     } else {
@@ -149,22 +198,26 @@ const LoginPage = () => {
                       Numéro de téléphone
                     </Label>
                     <div className="relative ">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 " />
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center">
+                        <Phone className="w-4 h-4 text-gray-400 mr-2" />
+                        <span className="text-gray-500 text-sm font-medium">+221</span>
+                      </div>
                       <input
                         id="phone"
                         type="tel"
-                        placeholder="+221 XX XXX XX XX"
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white "
+                        placeholder="XX XXX XX XX"
+                        value={getDisplayPhone()}
+                        onChange={handlePhoneChange}
+                        className="w-full pl-20 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white "
                         autoComplete="off"
                         required
                       />
                     </div>
+                    
                   </div>
 
                   <div className="space-y-2 ">
-                    <Label htmlFor="pin" className="text-sm font-medium text-gray-700 ">
+                    <Label htmlFor="pin" className="text-sm font-medium text-gray-700">
                       Code PIN
                     </Label>
                     <div className="flex justify-center ">
@@ -212,7 +265,7 @@ const LoginPage = () => {
                   </Button>
                 </form>
 
-                <div className="mt-4 text-center space-y-2 ">
+                <div className="mt-4   flex  justify-between items-center ">
                   <button
                     type="button"
                     onClick={handleForgot}

@@ -350,7 +350,7 @@ export default function LivesPage() {
       {!showCreate && (
         <button
           onClick={() => setShowCreate(true)}
-          className="fixed bottom-6 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
+          className="fixed bottom-12 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
           style={{ boxShadow: '0 4px 24px rgba(80,0,120,0.18)' }}
           title="Créer un live"
         >

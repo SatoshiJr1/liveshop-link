@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Realtime</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #0056b3; }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Supabase Realtime</h1>
+        
+        <div class="input-group">
+            <label>URL Supabase:</label>
+            <input type="text" id="supabaseUrl" placeholder="https://your-project.supabase.co">
+        </div>
+        
+        <div class="input-group">
+            <label>Clé Anonyme:</label>
+            <input type="text" id="supabaseKey" placeholder="your-anon-key">
+        </div>
+        
+        <div id="status" class="status info">En attente de configuration...</div>
+        
+        <div>
+            <button class="btn" onclick="connectSupabase()">🔌 Connecter</button>
+            <button class="btn" onclick="disconnectSupabase()">🔌 Déconnecter</button>
+            <button class="btn" onclick="clearLog()">🧹 Effacer</button>
+        </div>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let supabase = null;
+        let channel = null;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function connectSupabase() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            if (!url || !key) {
+                log('❌ URL et clé Supabase requises', 'error');
+                updateStatus('Configuration manquante', 'error');
+                return;
+            }
+            
+            log('🔌 Tentative de connexion Supabase...', 'info');
+            
+            try {
+                // Utiliser la bonne méthode pour créer le client
+                supabase = window.supabase.createClient(url, key);
+                
+                // Test de connexion simple
+                log('✅ Client Supabase créé', 'success');
+                updateStatus('Client créé, test de connexion...', 'info');
+                
+                // S'abonner aux changements
+                subscribeToRealtime();
+                
+            } catch (error) {
+                log(`❌ Erreur lors de la connexion: ${error}`, 'error');
+                updateStatus('Erreur de connexion', 'error');
+            }
+        }
+        
+        function subscribeToRealtime() {
+            if (!supabase) {
+                log('❌ Supabase non connecté', 'error');
+                return;
+            }
+            
+            log('📡 Abonnement aux changements de produits...', 'info');
+            
+            try {
+                channel = supabase
+                    .channel('products-changes')
+                    .on(
+                        'postgres_changes',
+                        { 
+                            event: '*', 
+                            schema: 'public', 
+                            table: 'products' 
+                        },
+                        (payload) => {
+                            log('🔄 Changement détecté:', 'success');
+                            log(`📦 Type: ${payload.eventType}`, 'info');
+                            log(`📦 Données: ${JSON.stringify(payload, null, 2)}`, 'info');
+                        }
+                    )
+                    .subscribe((status) => {
+                        log(`📡 Statut abonnement: ${status}`, 'info');
+                        if (status === 'SUBSCRIBED') {
+                            log('✅ Abonnement temps réel actif', 'success');
+                            updateStatus('Temps réel actif', 'success');
+                        } else if (status === 'CHANNEL_ERROR') {
+                            log('❌ Erreur de canal', 'error');
+                            updateStatus('Erreur de canal', 'error');
+                        }
+                    });
+                    
+            } catch (error) {
+                log(`❌ Erreur abonnement: ${error}`, 'error');
+                updateStatus('Erreur abonnement', 'error');
+            }
+        }
+        
+        function disconnectSupabase() {
+            if (channel && supabase) {
+                supabase.removeChannel(channel);
+                log('🔌 Déconnexion manuelle', 'info');
+                updateStatus('Déconnecté', 'info');
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Log au chargement
+        window.onload = function() {
+            log('🚀 Page de test Supabase chargée', 'info');
+            log('📦 Version Supabase disponible:', window.supabase ? 'Oui' : 'Non', 'info');
+        };
+    </script>
+</body>
+</html> 
