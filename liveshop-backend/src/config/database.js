@@ -53,7 +53,7 @@ if (isProduction) {
     ...commonOptions
   });
 }
-
+console.log(sequelize);
 // Test de la connexion
 const testConnection = async () => {
   try {
