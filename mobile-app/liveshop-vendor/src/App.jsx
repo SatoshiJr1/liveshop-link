@@ -25,6 +25,7 @@ import AdminCreditsPage from './pages/AdminCreditsPage';
 import AdminSellerDetailPage from './pages/AdminSellerDetailPage';
 import AdminSecurityPage from './pages/AdminSecurityPage';
 import PaymentSettingsPage from './pages/PaymentSettingsPage';
+import TestImageUpload from './components/TestImageUpload';
 import { AdminRoute, SellerRoute, AuthRoute } from './components/ProtectedRoute';
 
 const AppContent = () => {
@@ -160,6 +161,11 @@ const AppContent = () => {
                   <Route path="payment-settings" element={
                     <SellerRoute>
                       <PaymentSettingsPage />
+                    </SellerRoute>
+                  } />
+                  <Route path="test-image-upload" element={
+                    <SellerRoute>
+                      <TestImageUpload />
                     </SellerRoute>
                   } />
 

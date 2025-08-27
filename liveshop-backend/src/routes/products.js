@@ -1,6 +1,7 @@
 const express = require('express');
 const { Product, ProductVariant } = require('../models');
 const { validateProductAttributes } = require('../config/productCategories');
+const supabaseRealtimeService = require('../services/supabaseRealtimeService');
 const router = express.Router();
 
 // Middleware d'authentification

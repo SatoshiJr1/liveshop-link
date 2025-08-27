@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock } from 'lucide-react';
+import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock, Wifi, WifiOff } from 'lucide-react';
+import { realtimeService } from '@/config/supabase';
 
 const ProductsPage = () => {
   const { linkId } = useParams();
@@ -13,10 +14,78 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [realtimeStatus, setRealtimeStatus] = useState('disconnected');
+  const [realtimeChannel, setRealtimeChannel] = useState(null);
 
   useEffect(() => {
+    console.log('🚀 ProductsPage monté - linkId:', linkId);
+    
     fetchProducts();
+    setupRealtime();
+    
+    return () => {
+      console.log('🧹 Nettoyage ProductsPage...');
+      if (realtimeChannel) {
+        realtimeService.unsubscribe(realtimeChannel);
+      }
+    };
   }, [linkId]);
+
+  // Configuration du temps réel avec Supabase
+  const setupRealtime = () => {
+    console.log('🔧 Configuration du temps réel Supabase...');
+    
+    try {
+      // S'abonner aux changements de produits
+      const channel = realtimeService.subscribeToProducts((payload) => {
+        console.log('🔄 Événement temps réel reçu:', payload);
+        
+        switch (payload.eventType) {
+          case 'INSERT':
+            handleProductCreated(payload.new);
+            break;
+          case 'UPDATE':
+            handleProductUpdated(payload.new);
+            break;
+          case 'DELETE':
+            handleProductDeleted(payload.old);
+            break;
+          default:
+            console.log('📡 Événement non géré:', payload.eventType);
+        }
+      });
+      
+      setRealtimeChannel(channel);
+      setRealtimeStatus('connected');
+      console.log('✅ Temps réel Supabase configuré');
+      alert('🔌 Temps réel Supabase connecté ! Les mises à jour seront instantanées.');
+      
+    } catch (error) {
+      console.error('❌ Erreur configuration temps réel:', error);
+      setRealtimeStatus('error');
+    }
+  };
+
+  // Gestion des événements temps réel
+  const handleProductCreated = (newProduct) => {
+    console.log('🆕 Nouveau produit créé:', newProduct);
+    setProducts(prev => [newProduct, ...prev]);
+    alert(`🆕 Nouveau produit: ${newProduct.name}`);
+  };
+
+  const handleProductUpdated = (updatedProduct) => {
+    console.log('✏️ Produit mis à jour:', updatedProduct);
+    setProducts(prev => prev.map(product => 
+      product.id === updatedProduct.id ? updatedProduct : product
+    ));
+    alert(`✏️ Produit mis à jour: ${updatedProduct.name}`);
+  };
+
+  const handleProductDeleted = (deletedProduct) => {
+    console.log('🗑️ Produit supprimé:', deletedProduct);
+    setProducts(prev => prev.filter(product => product.id !== deletedProduct.id));
+    alert(`🗑️ Produit supprimé: ${deletedProduct.name}`);
+  };
 
   const fetchProducts = async () => {
     try {
@@ -118,15 +187,32 @@ const ProductsPage = () => {
                 Découvrez nos produits et commandez en toute simplicité
               </p>
             </div>
-            <Button 
-              onClick={shareShop}
-              variant="outline" 
-              size="sm"
-              className="header-share"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Partager
-            </Button>
+            <div className="flex items-center space-x-3">
+              {/* Indicateur temps réel */}
+              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-200">
+                {realtimeStatus === 'connected' ? (
+                  <>
+                    <Wifi className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-green-600 font-medium">Temps réel</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs text-gray-500 font-medium">Hors ligne</span>
+                  </>
+                )}
+              </div>
+              
+              <Button 
+                onClick={shareShop}
+                variant="outline" 
+                size="sm"
+                className="header-share"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Partager
+              </Button>
+            </div>
           </div>
         </div>
       </header>

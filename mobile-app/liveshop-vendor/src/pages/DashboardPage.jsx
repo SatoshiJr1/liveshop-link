@@ -321,7 +321,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Carte des crédits séparée */}
-        {credits && (
+        {/* {credits && (
           <div className="mb-6 lg:mb-8">
             <Card className="border-0 shadow-lg bg-gradient-to-r from-green-500 to-blue-600 text-white">
               <CardContent className="p-6">
@@ -343,7 +343,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-        )}
+        )} */}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Colonne principale */}
