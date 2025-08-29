@@ -4,11 +4,28 @@ const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
 
-// Chargement explicite du fichier .env
-require('dotenv').config({ path: '.env' });
+// Configuration par défaut pour le déploiement #8
+const defaultConfig = {
+  NODE_ENV: 'production',
+  PORT: 3001,
+  POSTGRES_URL: 'postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop',
+  JWT_SECRET: 'production_secret_key_very_secure',
+  CORS_ORIGIN: 'https://livelink.store,https://space.livelink.store',
+  CLOUDINARY_CLOUD_NAME: 'dp2838ewe',
+  CLOUDINARY_API_KEY: '837659378846734',
+  CLOUDINARY_API_SECRET: 'udbbN6TXXOkdwXJ271cSRPVIaq8'
+};
 
-console.log('🔧 Variables d\'environnement chargées depuis: .env');
+// Appliquer les valeurs par défaut si pas définies
+Object.keys(defaultConfig).forEach(key => {
+  if (!process.env[key]) {
+    process.env[key] = defaultConfig[key];
+  }
+});
+
+console.log('🔧 Configuration appliquée:');
 console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 POSTGRES_URL:', process.env.POSTGRES_URL ? '✅ Configurée' : '❌ Manquante');
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
