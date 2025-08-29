@@ -10,6 +10,7 @@ console.log('===============================================');
 console.log('📋 Variables d\'environnement détectées :');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');
+
 console.log('');
 
 // Configuration commune
@@ -31,10 +32,8 @@ if (isProduction) {
   
   const connectionUrl = process.env.DATABASE_URL;
   if (!connectionUrl) {
-    throw new Error('❌ DATABASE_URL manquante pour la production');
-  }
 
-  console.log('📡 Tentative de connexion à PostgreSQL (fitsen-postgresql)...');
+  
   console.log('🔗 URL de connexion:', connectionUrl.replace(/\/\/.*@/, '//***:***@')); // Masquer le mot de passe
 
   sequelize = new Sequelize(connectionUrl, {
@@ -75,8 +74,8 @@ const testConnection = async () => {
       console.log(`✅ Connexion SQLite établie avec succès.`);
       console.log(`📁 Fichier SQLite: ${sequelize.options.storage}`);
     } else {
-      console.log('✅ Connexion PostgreSQL local (fitsen-postgresql) établie avec succès.');
-      console.log('🌐 PostgreSQL local connecté');
+
+     
       
       // Vérifier les informations de la base
       const [results] = await sequelize.query('SELECT current_database() as db_name, current_user as user, version() as version');
@@ -86,7 +85,7 @@ const testConnection = async () => {
       
       // Compter les produits
       const [productCount] = await sequelize.query('SELECT COUNT(*) as count FROM products');
-      console.log('📦 Nombre de produits dans fitsen-postgresql:', productCount[0].count);
+
     }
   } catch (error) {
     console.error('❌ Impossible de se connecter à la base de données:', error.message);

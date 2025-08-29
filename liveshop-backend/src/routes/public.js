@@ -696,5 +696,46 @@ router.get('/orders/:orderId/delivery-ticket', async (req, res) => {
   }
 });
 
+// Endpoint pour vérifier la configuration de la base de données
+router.get('/database-info', async (req, res) => {
+  try {
+    const { sequelize } = require('../config/database');
+    
+    // Vérifier la connexion
+    await sequelize.authenticate();
+    
+    // Obtenir les informations de la base
+    const [results] = await sequelize.query('SELECT current_database() as db_name, current_user as user, version() as version');
+    
+    // Compter les produits
+    const [productCount] = await sequelize.query('SELECT COUNT(*) as count FROM products');
+    
+    // Compter les vendeurs
+    const [sellerCount] = await sequelize.query('SELECT COUNT(*) as count FROM sellers');
+    
+    res.json({
+      status: 'OK',
+      database: {
+        name: results[0].db_name,
+        user: results[0].user,
+        version: results[0].version.split(' ')[0],
+        isProduction: process.env.NODE_ENV === 'production',
+        isSupabase: results[0].db_name === 'postgres' && process.env.NODE_ENV === 'production'
+      },
+      data: {
+        products: productCount[0].count,
+        sellers: sellerCount[0].count
+      },
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: error.message,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  }
+});
+
 module.exports = router;
 
