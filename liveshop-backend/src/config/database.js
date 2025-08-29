@@ -9,7 +9,7 @@ console.log('🔍 DEBUG - Configuration de la base de données :');
 console.log('===============================================');
 console.log('📋 Variables d\'environnement détectées :');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
-console.log('- POSTGRES_URL:', process.env.POSTGRES_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('- DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');
 console.log('');
 
 // Configuration commune
@@ -26,15 +26,15 @@ const commonOptions = {
 let sequelize;
 
 if (isProduction) {
-  // PRODUCTION : PostgreSQL local (fitsen-postgresql)
-  console.log('🚀 Configuration Production : PostgreSQL local (fitsen-postgresql)');
+  // PRODUCTION : PostgreSQL (fitsen-postgresql)
+  console.log('🚀 Configuration Production : PostgreSQL (fitsen-postgresql)');
   
-  const connectionUrl = process.env.POSTGRES_URL;
+  const connectionUrl = process.env.DATABASE_URL;
   if (!connectionUrl) {
-    throw new Error('❌ POSTGRES_URL manquante pour la production');
+    throw new Error('❌ DATABASE_URL manquante pour la production');
   }
 
-  console.log('📡 Tentative de connexion à PostgreSQL local (fitsen-postgresql)...');
+  console.log('📡 Tentative de connexion à PostgreSQL (fitsen-postgresql)...');
   console.log('🔗 URL de connexion:', connectionUrl.replace(/\/\/.*@/, '//***:***@')); // Masquer le mot de passe
 
   sequelize = new Sequelize(connectionUrl, {

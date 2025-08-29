@@ -6,9 +6,9 @@ const socketIo = require('socket.io');
 
 // Configuration par défaut pour le déploiement #8
 const defaultConfig = {
-  NODE_ENV: 'production',
+  NODE_ENV: 'development', // Par défaut en développement
   PORT: 3001,
-  POSTGRES_URL: 'postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop',
+  DATABASE_URL: 'postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop', // Pour production
   JWT_SECRET: 'production_secret_key_very_secure',
   CORS_ORIGIN: 'https://livelink.store,https://space.livelink.store',
   CLOUDINARY_CLOUD_NAME: 'dp2838ewe',
@@ -25,7 +25,7 @@ Object.keys(defaultConfig).forEach(key => {
 
 console.log('🔧 Configuration appliquée:');
 console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
-console.log('🔧 POSTGRES_URL:', process.env.POSTGRES_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('🔧 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
