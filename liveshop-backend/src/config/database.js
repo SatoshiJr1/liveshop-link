@@ -32,13 +32,12 @@ const commonOptions = {
 let sequelize;
 
 if (isProduction) {
-  // PRODUCTION : Supabase PostgreSQL
-  console.log('🚀 Configuration Production : Supabase PostgreSQL');
+  // PRODUCTION : PostgreSQL local (déploiement #8)
+  console.log('🚀 Configuration Production : PostgreSQL local');
   
-  const connectionUrl = process.env.DATABASE_URL;
+  const connectionUrl = process.env.POSTGRES_URL;
   if (!connectionUrl) {
-    console.error('❌ ERREUR : DATABASE_URL manquante pour la production');
-    throw new Error('❌ DATABASE_URL manquante pour la production');
+
   }
 
   console.log('📡 Tentative de connexion à Supabase PostgreSQL...');
@@ -47,7 +46,7 @@ if (isProduction) {
   sequelize = new Sequelize(connectionUrl, {
     dialect: 'postgres',
     dialectOptions: {
-      ssl: { require: true, rejectUnauthorized: false }
+      ssl: false // Pas de SSL pour PostgreSQL local
     },
     ...commonOptions,
     pool: {
