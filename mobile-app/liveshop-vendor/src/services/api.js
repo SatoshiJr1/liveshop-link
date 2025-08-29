@@ -1,5 +1,11 @@
 // URL dynamique basée sur l'environnement
 const getApiBaseUrl = () => {
+  // FORCER LA PRODUCTION si on est sur livelink.store
+  if (typeof window !== 'undefined' && window.location.hostname.includes('livelink.store')) {
+    console.log('🌐 API Service - Forçage production pour livelink.store');
+    return 'https://api.livelink.store/api';
+  }
+
   // Support d'override via Vite
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) ? import.meta.env.VITE_BACKEND_URL : null;
   const envPort = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_PORT) ? import.meta.env.VITE_BACKEND_PORT : null;
@@ -30,6 +36,9 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+console.log('🔗 API Service - URL de base:', API_BASE_URL);
+console.log('🔗 API Service - Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'unknown');
 
 class ApiService {
   constructor() {
