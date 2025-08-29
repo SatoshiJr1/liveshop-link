@@ -1,10 +1,13 @@
+import { getBackendDomain } from '../config/domains';
+
 class NotificationService {
   constructor() {
-    this.baseUrl = 'http://localhost:3001/api';
+    this.baseUrl = `${getBackendDomain()}/api`;
     this.token = null;
     this.pollingInterval = null;
     this.listeners = new Map();
     this.isPolling = false;
+    console.log('🔔 NotificationService initialisé avec:', this.baseUrl);
   }
 
   // Initialiser le service

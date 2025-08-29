@@ -1,18 +1,19 @@
+import { getBackendDomain } from '../config/domains';
+
 // Store de notifications professionnel (architecture Redux-like)
 class NotificationStore {
   constructor() {
-    this.state = {
-      notifications: [],
-      unreadCount: 0,
-      isLoading: false,
-      lastNotificationId: 0,
-      isConnected: false
-    };
+    this.baseUrl = `${getBackendDomain()}/api`;
+    console.log('🔔 NotificationStore initialisé avec:', this.baseUrl);
+    this.notifications = [];
+    this.token = null;
+    this.isConnected = false;
+    this.retryCount = 0;
+    this.maxRetries = 3;
+    this.retryDelay = 5000; // 5 secondes
     
     this.listeners = new Set();
     this.pollingInterval = null;
-    this.token = null;
-    this.baseUrl = 'http://localhost:3001/api';
     this.voiceEnabled = true; // État local des notifications vocales
     
     // Écouter les changements d'état des notifications vocales
@@ -45,7 +46,7 @@ class NotificationStore {
   }
 
   async connect() {
-    if (this.state.isConnected) return;
+    if (this.isConnected) return;
     
     this.setState({ isLoading: true });
     
