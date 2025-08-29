@@ -3,7 +3,18 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
-require('dotenv').config();
+
+// Chargement explicite des variables d'environnement
+if (process.env.NODE_ENV === 'production') {
+  // En production, utiliser les variables système ou un fichier spécifique
+  require('dotenv').config({ path: '.env.production' });
+} else {
+  // En développement, utiliser .env
+  require('dotenv').config();
+}
+
+console.log('🔧 Environnement détecté:', process.env.NODE_ENV);
+console.log('🔧 Variables d\'environnement chargées depuis:', process.env.NODE_ENV === 'production' ? '.env.production' : '.env');
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
