@@ -10,12 +10,7 @@ console.log('===============================================');
 console.log('📋 Variables d\'environnement détectées :');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');
-console.log('- DB_DIALECT:', process.env.DB_DIALECT);
-console.log('- DB_HOST:', process.env.DB_HOST);
-console.log('- DB_NAME:', process.env.DB_NAME);
-console.log('- SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Configurée' : '❌ Manquante');
-console.log('- SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅ Configurée' : '❌ Manquante');
-console.log('- SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? '✅ Configurée' : '❌ Manquante');
+
 console.log('');
 
 // Configuration commune
@@ -32,15 +27,13 @@ const commonOptions = {
 let sequelize;
 
 if (isProduction) {
-  // PRODUCTION : PostgreSQL local (déploiement #8)
-  console.log('🚀 Configuration Production : PostgreSQL local');
+  // PRODUCTION : PostgreSQL (fitsen-postgresql)
+  console.log('🚀 Configuration Production : PostgreSQL (fitsen-postgresql)');
   
-  const connectionUrl = process.env.POSTGRES_URL;
+  const connectionUrl = process.env.DATABASE_URL;
   if (!connectionUrl) {
 
-  }
-
-  console.log('📡 Tentative de connexion à Supabase PostgreSQL...');
+  
   console.log('🔗 URL de connexion:', connectionUrl.replace(/\/\/.*@/, '//***:***@')); // Masquer le mot de passe
 
   sequelize = new Sequelize(connectionUrl, {
@@ -81,8 +74,8 @@ const testConnection = async () => {
       console.log(`✅ Connexion SQLite établie avec succès.`);
       console.log(`📁 Fichier SQLite: ${sequelize.options.storage}`);
     } else {
-      console.log('✅ Connexion Supabase PostgreSQL établie avec succès.');
-      console.log('🌐 Supabase PostgreSQL connecté');
+
+     
       
       // Vérifier les informations de la base
       const [results] = await sequelize.query('SELECT current_database() as db_name, current_user as user, version() as version');
@@ -92,7 +85,7 @@ const testConnection = async () => {
       
       // Compter les produits
       const [productCount] = await sequelize.query('SELECT COUNT(*) as count FROM products');
-      console.log('📦 Nombre de produits dans Supabase:', productCount[0].count);
+
     }
   } catch (error) {
     console.error('❌ Impossible de se connecter à la base de données:', error.message);
