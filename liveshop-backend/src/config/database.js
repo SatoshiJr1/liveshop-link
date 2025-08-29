@@ -26,15 +26,15 @@ const commonOptions = {
 let sequelize;
 
 if (isProduction) {
-  // PRODUCTION : PostgreSQL local (déploiement #8)
-  console.log('🚀 Configuration Production : PostgreSQL local');
+  // PRODUCTION : PostgreSQL local (fitsen-postgresql)
+  console.log('🚀 Configuration Production : PostgreSQL local (fitsen-postgresql)');
   
   const connectionUrl = process.env.POSTGRES_URL;
   if (!connectionUrl) {
     throw new Error('❌ POSTGRES_URL manquante pour la production');
   }
 
-  console.log('📡 Tentative de connexion à PostgreSQL local...');
+  console.log('📡 Tentative de connexion à PostgreSQL local (fitsen-postgresql)...');
   console.log('🔗 URL de connexion:', connectionUrl.replace(/\/\/.*@/, '//***:***@')); // Masquer le mot de passe
 
   sequelize = new Sequelize(connectionUrl, {
@@ -75,7 +75,7 @@ const testConnection = async () => {
       console.log(`✅ Connexion SQLite établie avec succès.`);
       console.log(`📁 Fichier SQLite: ${sequelize.options.storage}`);
     } else {
-      console.log('✅ Connexion PostgreSQL local établie avec succès.');
+      console.log('✅ Connexion PostgreSQL local (fitsen-postgresql) établie avec succès.');
       console.log('🌐 PostgreSQL local connecté');
       
       // Vérifier les informations de la base
@@ -86,7 +86,7 @@ const testConnection = async () => {
       
       // Compter les produits
       const [productCount] = await sequelize.query('SELECT COUNT(*) as count FROM products');
-      console.log('📦 Nombre de produits dans PostgreSQL:', productCount[0].count);
+      console.log('📦 Nombre de produits dans fitsen-postgresql:', productCount[0].count);
     }
   } catch (error) {
     console.error('❌ Impossible de se connecter à la base de données:', error.message);
