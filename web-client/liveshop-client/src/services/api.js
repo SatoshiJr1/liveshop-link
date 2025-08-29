@@ -1,12 +1,18 @@
 const API_BASE_URL = 'https://api.livelink.store/api';
 
+console.log('🔍 Configuration API Service :');
+console.log('- API_BASE_URL:', API_BASE_URL);
+
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    console.log('✅ ApiService initialisé avec:', this.baseURL);
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('🌐 Requête API:', url);
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -16,15 +22,21 @@ class ApiService {
     };
 
     try {
+      console.log('📤 Envoi de la requête...');
       const response = await fetch(url, config);
+      console.log('📥 Réponse reçue:', response.status, response.statusText);
+      
       const data = await response.json();
 
       if (!response.ok) {
+        console.error('❌ Erreur API:', data.error || 'Erreur inconnue');
         throw new Error(data.error || 'Erreur API');
       }
 
+      console.log('✅ Requête réussie');
       return data;
     } catch (error) {
+      console.error('❌ Erreur lors de la requête:', error);
       throw error;
     }
   }
