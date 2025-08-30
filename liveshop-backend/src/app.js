@@ -26,6 +26,8 @@ Object.keys(defaultConfig).forEach(key => {
 console.log('🔧 Configuration appliquée:');
 console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
 console.log('🔧 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('🔧 FRONTEND_URL:', process.env.FRONTEND_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('🔧 VENDOR_URL:', process.env.VENDOR_URL ? '✅ Configurée' : '❌ Manquante');
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
