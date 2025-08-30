@@ -48,7 +48,11 @@ const OrderPage = () => {
 
   const fetchPaymentMethods = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/public/${linkId}/payment-methods`);
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/payment-methods`
+        : `http://localhost:3001/api/public/${linkId}/payment-methods`;
+      
+      const response = await fetch(apiUrl);
       if (response.ok) {
         const data = await response.json();
         setPaymentMethods(data.data);
@@ -61,7 +65,11 @@ const OrderPage = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/public/${linkId}/products/${productId}`);
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/products/${productId}`
+        : `http://localhost:3001/api/public/${linkId}/products/${productId}`;
+      
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error('Produit non trouvé');

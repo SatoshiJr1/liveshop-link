@@ -3,10 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock, Wifi, WifiOff } from 'lucide-react';
-// import { realtimeService } from '@/config/supabase'; // SUPPRIMÉ - Supabase retiré
+import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock } from 'lucide-react';
 import { getPublicLink } from '../config/domains';
-// import { useRealtimeService } from '../services/realtimeService'; // SUPPRIMÉ - Non utilisé
 
 const ProductsPage = () => {
   const { linkId } = useParams();
@@ -17,7 +15,6 @@ const ProductsPage = () => {
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-
   useEffect(() => {
     console.log('🚀 ProductsPage monté - linkId:', linkId);
     fetchProducts();
@@ -26,7 +23,11 @@ const ProductsPage = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/public/${linkId}/products`);
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/products`
+        : `http://localhost:3001/api/public/${linkId}/products`;
+      
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error('Vendeur non trouvé');
@@ -125,26 +126,11 @@ const ProductsPage = () => {
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              {/* Indicateur temps réel */}
-              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-200">
-               
-                  <>
-                    <Wifi className="w-4 h-4 text-green-500" />
-                    <span className="text-xs text-green-600 font-medium">Temps réel</span>
-                  </>
-              
-                  <>
-                    <WifiOff className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500 font-medium">Hors ligne</span>
-                  </>
-              
-              </div>
-              
               <Button 
                 onClick={shareShop}
                 variant="outline" 
                 size="sm"
-                className="header-share"
+                className="bg-white/80 hover:bg-white backdrop-blur-sm border border-gray-200 text-gray-700 hover:text-gray-900 transition-all duration-200"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Partager
@@ -154,162 +140,99 @@ const ProductsPage = () => {
         </div>
       </header>
 
-      {/* Filtres avec design moderne */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex justify-center space-x-3">
-                      <Button
-              onClick={() => setSelectedCategory('all')}
-              variant={selectedCategory === 'all' ? 'default' : 'outline'}
-              size="lg"
-              className={selectedCategory === 'all' 
-                ? 'bg-gray-800 hover:bg-gray-900 text-white rounded-xl px-8 py-3 font-medium' 
-                : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700 hover:text-gray-900 rounded-xl px-8 py-3 font-medium'
-              }
+      {/* Filtres de catégories */}
+      <div className="max-w-7xl mx-auto px-6 pb-8">
+        <div className="flex justify-center space-x-2">
+          {['all', 'live', 'regular'].map(category => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedCategory(category)}
+              className="rounded-full px-6"
             >
-              Tous les produits ({products.length})
+              {category === 'all' && 'Tous les produits'}
+              {category === 'live' && 'En live'}
+              {category === 'regular' && 'Produits normaux'}
             </Button>
-                      <Button
-              onClick={() => setSelectedCategory('live')}
-              variant={selectedCategory === 'live' ? 'default' : 'outline'}
-              size="lg"
-              className={selectedCategory === 'live' 
-                ? 'bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-8 py-3 font-medium' 
-                : 'bg-white hover:bg-gray-50 border-orange-200 text-gray-700 hover:text-gray-900 rounded-xl px-8 py-3 font-medium'
-              }
-            >
-              <Star className="w-4 h-4 mr-2" />
-              En Live ({products.filter(p => p.is_pinned).length})
-            </Button>
+          ))}
         </div>
       </div>
 
-      {/* Grille de produits */}
-      <div className="max-w-7xl mx-auto px-6 pb-24">
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-24 h-24 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Package className="w-12 h-12 text-slate-400" />
-            </div>
-            <h2 className="text-2xl font-semibold text-slate-800 mb-3">
-              {selectedCategory === 'live' ? 'Aucun produit en live' : 'Aucun produit disponible'}
-            </h2>
-            <p className="text-slate-600 max-w-md mx-auto leading-relaxed">
-              {selectedCategory === 'live' 
-                ? 'Aucun produit n\'est actuellement mis en avant en live.'
-                : 'Le vendeur n\'a pas encore ajouté de produits.'
-              }
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredProducts.map((product, index) => (
-              <Card 
-                key={product.id} 
-                className="card group overflow-hidden"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {/* Badge Live */}
-                {product.is_pinned && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge className="badge-live">
-                      <Star className="w-3 h-3 mr-1" />
-                      En Live
+      {/* Grille des produits */}
+      <div className="max-w-7xl mx-auto px-6 pb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredProducts.map((product, index) => (
+            <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+              <CardHeader className="p-0">
+                <div className="aspect-square bg-gray-100 relative overflow-hidden rounded-t-lg">
+                  <img 
+                    src={product.image_url} 
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                  {product.is_pinned && (
+                    <Badge className="absolute top-3 right-3 bg-red-500 text-white">
+                      🔴 EN LIVE
                     </Badge>
-                  </div>
-                )}
-                
-                <CardHeader className="pb-4">
-                  {/* Image du produit */}
-                  {product.image_url ? (
-                    <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-blue-100 mb-4 relative">
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
-                  ) : (
-                    <div className="aspect-square rounded-2xl bg-gradient-to-br from-slate-100 to-blue-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300">
-                      <Package className="w-16 h-16 text-slate-400" />
-                    </div>
                   )}
-                  
-                  {/* Titre et prix */}
-                  <CardTitle className="card-title line-clamp-2 group-hover:text-blue-600 transition-colors duration-200 leading-tight">
-                    {product.name}
-                  </CardTitle>
-                  
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="card-price">
-                      {product.price.toLocaleString()} FCFA
-                    </span>
-                    {product.stock_quantity > 0 ? (
-                      <Badge className="card-stock">
-                        <span role="img" aria-label="stock">✅</span> Stock: {product.stock_quantity}
-                      </Badge>
-                    ) : (
-                      <Badge className="card-rupture">
-                        <span role="img" aria-label="rupture">❌</span> Rupture
-                      </Badge>
-                    )}
+                </div>
+              </CardHeader>
+              
+              <CardContent className="p-4">
+                <CardTitle className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                  {product.name}
+                </CardTitle>
+                <CardDescription className="text-gray-600 mb-3 line-clamp-2">
+                  {product.description}
+                </CardDescription>
+                
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {product.price?.toLocaleString()} FCFA
                   </div>
-                </CardHeader>
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span className="text-sm text-gray-600">4.5</span>
+                  </div>
+                </div>
 
-                {/* Description */}
-                {product.description && (
-                  <CardContent className="pt-0">
-                                      <CardDescription className="line-clamp-3 text-gray-600 leading-relaxed">
-                    {product.description}
-                  </CardDescription>
-                  </CardContent>
-                )}
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <span>Stock: {product.stock_quantity}</span>
+                  <span>•</span>
+                  <span>{new Date(product.created_at).toLocaleDateString()}</span>
+                </div>
+              </CardContent>
 
-                {/* Actions */}
-                <CardFooter className="pt-4 space-x-3">
+              <CardFooter className="p-4 pt-0">
+                <div className="flex space-x-2 w-full">
                   <Button 
                     onClick={() => handleOrderProduct(product.id)}
-                    className={`btn-primary flex-1 ${product.stock_quantity === 0 ? 'bg-gray-400 cursor-not-allowed' : ''}`}
-                    disabled={product.stock_quantity === 0}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    <ShoppingCart className="w-4 h-4 mr-2 animate-bounce" />
-                    {product.stock_quantity === 0 ? 'Rupture' : 'Commander'}
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Commander
                   </Button>
                   
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="bg-white hover:bg-gray-50 border-gray-200 text-gray-600 hover:text-gray-700 rounded-xl p-3 transition-all duration-300"
-                  >
-                    <Heart className="w-4 h-4" />
+                  <Button variant="outline" size="sm">
+                    <Eye className="w-4 h-4" />
                   </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-6">📦</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">Aucun produit trouvé</h2>
+            <p className="text-gray-600">Aucun produit ne correspond à cette catégorie.</p>
           </div>
         )}
       </div>
-
-      {/* Widget de commentaires flottant */}
-      <div className="fixed bottom-8 right-8 z-20">
-        <Button 
-          onClick={() => navigate(`/${linkId}/comments`)}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl p-4 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
-        >
-          <MessageCircle className="w-6 h-6" />
-        </Button>
-      </div>
-
-      {/* Effet de particules subtiles */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-blue-300 rounded-full animate-pulse opacity-20"></div>
-        <div className="absolute top-1/3 right-1/4 w-0.5 h-0.5 bg-indigo-300 rounded-full animate-ping opacity-30"></div>
-        <div className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-slate-300 rounded-full animate-bounce opacity-20 "></div>
-      </div>
     </div>
-    //*jhkuikhgyhtghhtyytu
   );
 };
 
-export default ProductsPage;
-
+export default ProductsPage; 
