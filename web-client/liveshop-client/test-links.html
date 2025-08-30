@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test des Liens - Web Client</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test des Liens - Web Client</h1>
+    
+    <div class="test-section">
+        <h2>🔍 Test de la fonction getPublicLink</h2>
+        <button onclick="testGetPublicLink()">Tester getPublicLink</button>
+        <div id="getPublicLinkResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🌐 Test des domaines</h2>
+        <button onclick="testDomains()">Tester les domaines</button>
+        <div id="domainsResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Test des liens live</h2>
+        <button onclick="testLiveLinks()">Tester les liens live</button>
+        <div id="liveLinksResult" class="result"></div>
+    </div>
+
+    <script type="module">
+        // Importer la configuration des domaines
+        import { getPublicLink, getClientDomain, getBackendDomain } from './src/config/domains.js';
+
+        // Rendre les fonctions globales pour les tests
+        window.getPublicLink = getPublicLink;
+        window.getClientDomain = getClientDomain;
+        window.getBackendDomain = getBackendDomain;
+
+        // Test de getPublicLink
+        window.testGetPublicLink = function() {
+            const resultDiv = document.getElementById('getPublicLinkResult');
+            
+            try {
+                const testSellerId = 'test123';
+                const publicLink = getPublicLink(testSellerId);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ getPublicLink('${testSellerId}') = ${publicLink}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Erreur: ${error.message}
+                    </div>
+                `;
+            }
+        };
+
+        // Test des domaines
+        window.testDomains = function() {
+            const resultDiv = document.getElementById('domainsResult');
+            
+            try {
+                const clientDomain = getClientDomain();
+                const backendDomain = getBackendDomain();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Client Domain: ${clientDomain}<br>
+                        ✅ Backend Domain: ${backendDomain}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Erreur: ${error.message}
+                    </div>
+                `;
+            }
+        };
+
+        // Test des liens live
+        window.testLiveLinks = function() {
+            const resultDiv = document.getElementById('liveLinksResult');
+            
+            try {
+                const testSellerId = 'test123';
+                const testLiveSlug = 'robe-rouge';
+                const publicLink = getPublicLink(testSellerId);
+                const liveLink = publicLink + `/live/${testLiveSlug}`;
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Lien boutique: ${publicLink}<br>
+                        ✅ Lien live: ${liveLink}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Erreur: ${error.message}
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html> 
