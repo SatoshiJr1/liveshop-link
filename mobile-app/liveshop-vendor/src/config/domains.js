@@ -51,7 +51,14 @@ export const getApiUrl = (endpoint) => {
 
 // Fonction pour construire le lien public d'un vendeur
 export const getPublicLink = (sellerId) => {
-  return `${getClientDomain()}/${sellerId}`;
+  // Les liens publics doivent pointer vers le web client public, pas vers le dashboard vendeur
+  if (window.location.hostname.includes('livelink.store')) {
+    // En production : utiliser livelink.store (web client public)
+    return `https://livelink.store/${sellerId}`;
+  } else {
+    // En développement : utiliser localhost:5174 (web client public)
+    return `http://localhost:5174/${sellerId}`;
+  }
 };
 
 export default config; 
