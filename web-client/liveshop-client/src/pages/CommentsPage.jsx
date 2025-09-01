@@ -26,7 +26,11 @@ const CommentsPage = () => {
       setSubmitting(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:3001/api/public/${linkId}/comments`, {
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/comments`
+        : `http://localhost:3001/api/public/${linkId}/comments`;
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -129,11 +129,7 @@ const OrderPage = () => {
         quantity: parseInt(formData.quantity)
       };
 
-      const apiUrl = window.location.hostname.includes('livelink.store') 
-        ? `https://api.livelink.store/api/public/${linkId}/orders`
-        : `http://localhost:3001/api/public/${linkId}/orders`;
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`http://localhost:3001/api/public/${linkId}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
