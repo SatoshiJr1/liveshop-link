@@ -1,7 +1,20 @@
 FROM node:18 as build
 WORKDIR /app
+
+# Installer pnpm
+RUN npm install -g pnpm
+
+# Copier les fichiers de dépendances
+COPY package.json pnpm-lock.yaml ./
+
+# Installer les dépendances avec pnpm
+RUN pnpm install --frozen-lockfile
+
+# Copier le reste du code
 COPY . .
-RUN npm install --legacy-peer-deps && npm run build
+
+# Build avec pnpm
+RUN pnpm run build
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
