@@ -24,7 +24,10 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('liveshop_token');
-      if (token) {
+      const rememberMe = localStorage.getItem('remember_me') === 'true';
+      
+      if (token && rememberMe) {
+        console.log('🔍 checkAuth - Token trouvé et "Se souvenir" activé');
         const response = await apiService.getProfile();
         console.log('🔍 checkAuth - Données reçues:', response.data);
         console.log('🔍 checkAuth - Rôle:', response.data.role);
@@ -43,10 +46,21 @@ export const AuthProvider = ({ children }) => {
             console.error('Erreur lors du chargement des crédits:', error);
           }
         }
+      } else if (token && !rememberMe) {
+        console.log('🔍 checkAuth - Token trouvé mais "Se souvenir" désactivé, déconnexion');
+        localStorage.removeItem('liveshop_token');
+        setSeller(null);
+        setCredits(null);
+        setIsAdmin(false);
+      } else {
+        console.log('🔍 checkAuth - Aucun token ou "Se souvenir" désactivé');
       }
     } catch (error) {
       console.error('Erreur lors de la vérification de l\'authentification:', error);
       localStorage.removeItem('liveshop_token');
+      setSeller(null);
+      setCredits(null);
+      setIsAdmin(false);
     } finally {
       setLoading(false);
     }
@@ -87,8 +101,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = (keepRememberMe = false) => {
     localStorage.removeItem('liveshop_token');
+    
+    // Si on ne garde pas "Se souvenir", supprimer aussi les données de connexion
+    if (!keepRememberMe) {
+      localStorage.removeItem('remembered_phone');
+      localStorage.removeItem('remember_me');
+    }
+    
     setSeller(null);
     setCredits(null);
     setIsAdmin(false);

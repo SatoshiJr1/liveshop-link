@@ -1,30 +1,40 @@
-"use client"
+import React from 'react';
+import { Check } from 'lucide-react';
 
-import * as React from "react"
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { CheckIcon } from "lucide-react"
-
-import { cn } from "@/lib/utils"
-
-function Checkbox({
-  className,
-  ...props
-}) {
+const Checkbox = ({ 
+  checked, 
+  onChange, 
+  label, 
+  id, 
+  className = "",
+  disabled = false 
+}) => {
   return (
-    <CheckboxPrimitive.Root
-      data-slot="checkbox"
-      className={cn(
-        "peer border-input dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className
+    <div className={`flex items-center space-x-2 ${className}`}>
+      <button
+        type="button"
+        id={id}
+        onClick={() => !disabled && onChange(!checked)}
+        disabled={disabled}
+        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+          checked 
+            ? 'bg-purple-600 border-purple-600' 
+            : 'border-gray-300 hover:border-purple-400'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      >
+        {checked && <Check className="w-3 h-3 text-white" />}
+      </button>
+      {label && (
+        <label 
+          htmlFor={id}
+          className={`text-sm text-gray-600 ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
+          onClick={() => !disabled && onChange(!checked)}
+        >
+          {label}
+        </label>
       )}
-      {...props}>
-      <CheckboxPrimitive.Indicator
-        data-slot="checkbox-indicator"
-        className="flex items-center justify-center text-current transition-none ">
-        <CheckIcon className="size-3.5 " />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
+    </div>
   );
-}
+};
 
-export { Checkbox }
+export default Checkbox;

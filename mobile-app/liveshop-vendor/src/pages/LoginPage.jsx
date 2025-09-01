@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import RegisterSteps from '@/components/RegisterSteps';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Store, Lock, ArrowRight, Check, Phone, Lightbulb, User } from 'lucide-react';
+import { Store, Lock, ArrowRight, Phone, Lightbulb, User } from 'lucide-react';
 import PinInput from '@/components/ui/PinInput';
+import Checkbox from '@/components/ui/Checkbox';
 
 const LoginPage = () => {
   const { login, register, isAuthenticated } = useAuth();
@@ -135,6 +136,11 @@ const LoginPage = () => {
     setError('');
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setError(''); // Effacer l'erreur lors du changement d'onglet
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-500 to-blue-600 flex items-center justify-center p-4 ">
       <div className="w-full max-w-md ">
@@ -160,7 +166,7 @@ const LoginPage = () => {
           <div className="px-6 pb-4 ">
             <div className="flex bg-gray-100 rounded-lg p-1 ">
               <button
-                onClick={() => setActiveTab('login')}
+                onClick={() => handleTabChange('login')}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                   activeTab === 'login'
                     ? 'bg-white text-purple-600 shadow-sm'
@@ -170,7 +176,7 @@ const LoginPage = () => {
                 Connexion
               </button>
               <button
-                onClick={() => setActiveTab('register')}
+                onClick={() => handleTabChange('register')}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                   activeTab === 'register'
                     ? 'bg-white text-purple-600 shadow-sm'
@@ -226,25 +232,12 @@ const LoginPage = () => {
                   </div>
                   
                   {/* Option "Se souvenir" */}
-                  <div className="flex items-center space-x-2 ">
-                    <button
-                      type="button"
-                      onClick={() => setRememberMe(!rememberMe)}
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        rememberMe 
-                          ? 'bg-purple-600 border-purple-600' 
-                          : 'border-gray-300 hover:border-purple-400'
-                      }`}
-                    >
-                      {rememberMe && <Check className="w-3 h-3 text-white " />}
-                    </button>
-                    <Label 
-                      className="text-sm text-gray-600 cursor-pointer "
-                      onClick={() => setRememberMe(!rememberMe)}
-                    >
-                      Se souvenir de moi
-                    </Label>
-                  </div>
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
+                    onChange={setRememberMe}
+                    label="Se souvenir de moi"
+                  />
                   
                   <Button
                     type="submit"

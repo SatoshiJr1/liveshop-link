@@ -51,10 +51,11 @@ if (isProduction) {
   });
   
 } else {
-  // DÉVELOPPEMENT : SQLite
-  console.log('🛠️ Configuration Développement : SQLite');
+  // DÉVELOPPEMENT : SQLite avec volume persistant
+  console.log('🛠️ Configuration Développement : SQLite avec volume persistant');
   
-  const storagePath = process.env.DB_STORAGE || path.join(__dirname, '../../database.sqlite');
+  // Utiliser le volume persistant si disponible, sinon fallback local
+  const storagePath = process.env.DB_STORAGE || path.join(__dirname, '../../database/database.sqlite');
   console.log('📁 Fichier SQLite:', storagePath);
   
   sequelize = new Sequelize({

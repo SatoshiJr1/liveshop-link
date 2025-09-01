@@ -6,8 +6,16 @@ services:
       - VIRTUAL_HOST=api.livelink.store
       - LETSENCRYPT_HOST=api.livelink.store
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
+      - NODE_ENV=production
     ports:
       - "3001:3001"
+    volumes:
+      # Volumes Docker nommés pour une vraie persistance
+      - liveshop_database:/app/database
+      - liveshop_uploads:/app/uploads
+      - liveshop_logs:/app/logs
+      # Volume pour les données utilisateur
+      - liveshop_userdata:/app/userdata
     networks:
       - nginx-proxy
     restart: unless-stopped
@@ -33,6 +41,17 @@ services:
     networks:
       - nginx-proxy
     restart: unless-stopped
+
+# Volumes Docker nommés pour la persistance
+volumes:
+  liveshop_database:
+    driver: local
+  liveshop_uploads:
+    driver: local
+  liveshop_logs:
+    driver: local
+  liveshop_userdata:
+    driver: local
 
 networks:
   nginx-proxy:

@@ -32,5 +32,38 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /srv/projects/livelink
+             
+            # Forcer la production
+            export NODE_ENV=production
+            
+            # Vérifier que DATABASE_URL est configuré
+            if [ -z "$DATABASE_URL" ]; then
+              echo "❌ ERREUR: DATABASE_URL non configuré en production!"
+              echo "🔧 Configurez DATABASE_URL dans votre VPS"
+              exit 1
+            fi
+            
+            echo "🚀 Déploiement en mode PRODUCTION"
+            echo "📊 Base de données: PostgreSQL"
+            echo "🔗 DATABASE_URL: ${DATABASE_URL:0:20}..."
+            
+            # Déployer
             docker compose pull
             docker compose up -d --build
+            
+            echo "✅ Déploiement terminé!"
+            echo "🔍 Vérification des services..."
+            docker compose ps
+            
+            # Attendre que le backend soit prêt
+            echo "⏳ Attente du démarrage du backend..."
+            sleep 10
+            
+            # Exécuter le seeding automatique
+            echo "🌱 Démarrage du seeding automatique..."
+            docker compose exec -T backend node src/scripts/auto-seed.js || {
+              echo "⚠️ Seeding automatique échoué, tentative manuelle..."
+              docker compose exec -T backend node src/scripts/seed-production.js
+            }
+            
+            echo "🎉 Déploiement et seeding terminés avec succès!"
