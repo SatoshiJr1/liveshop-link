@@ -21,9 +21,6 @@ class DebugMiddleware {
       'DB_DIALECT',
       'DB_STORAGE',
       'DATABASE_URL',
-      'SUPABASE_URL',
-      'SUPABASE_ANON_KEY',
-      'SUPABASE_SERVICE_KEY',
       'JWT_SECRET',
       'CORS_ORIGIN',
       'PORT'
@@ -67,8 +64,8 @@ class DebugMiddleware {
       console.log(`- Database: ${database}`);
       console.log(`- Username: ${username}`);
       
-      if (dialect === 'postgres' && host.includes('supabase')) {
-        console.log('✅ Supabase PostgreSQL détecté');
+      if (dialect === 'postgres') {
+        console.log('✅ PostgreSQL détecté');
       } else if (dialect === 'sqlite') {
         console.log('⚠️ SQLite détecté (vérifiez la configuration de production)');
       } else {

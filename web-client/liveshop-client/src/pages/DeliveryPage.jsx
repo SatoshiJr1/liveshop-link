@@ -15,7 +15,11 @@ const DeliveryPage = () => {
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/public/orders/${orderId}/delivery-info`);
+        const apiUrl = window.location.hostname.includes('livelink.store') 
+          ? `https://api.livelink.store/api/public/orders/${orderId}/delivery-info`
+          : `http://localhost:3001/api/public/orders/${orderId}/delivery-info`;
+        
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
           throw new Error('Commande non trouvée');

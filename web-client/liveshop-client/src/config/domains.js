@@ -14,6 +14,16 @@ const config = {
 const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const environment = isDevelopment ? 'development' : 'production';
 
+// Fonction pour obtenir le domaine client
+export const getClientDomain = () => {
+  return config[environment].clientDomain;
+};
+
+// Fonction pour obtenir le domaine backend
+export const getBackendDomain = () => {
+  return config[environment].backendDomain;
+};
+
 // Fonction pour construire le lien public d'un vendeur
 export const getPublicLink = (sellerId) => {
   if (window.location.hostname.includes('livelink.store')) {

@@ -26,7 +26,7 @@ const VoiceControls = () => {
         if (voiceNotification && typeof voiceNotification.isEnabled === 'function') {
           setIsEnabled(voiceNotification.isEnabled());
         } else {
-          setIsEnabled(true); // Activer par défaut
+          setIsEnabled(false); // Désactiver par défaut
         }
         
         setVolume(0.8);
