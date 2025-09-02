@@ -1,5 +1,11 @@
+#!/usr/bin/env node
+
+/**
+ * 🔧 Script de Migration Production pour PostgreSQL
+ * Crée la table comments avec la structure correcte
+ */
+
 const { sequelize } = require('../config/database');
-const { Comment } = require('../models');
 
 console.log('🚀 Migration Production : Création des tables Comment...');
 
