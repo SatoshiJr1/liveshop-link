@@ -136,7 +136,7 @@ const createSeller = async (sellerData) => {
     };
 
     const public_link_id = await generateId();
-    
+
     // Créer le vendeur avec tous les champs requis
     const sellerDataWithDefaults = {
       ...sellerData,
@@ -146,6 +146,7 @@ const createSeller = async (sellerData) => {
       is_active: true,
       pin_code: '1234' // Code PIN par défaut pour tous les utilisateurs de test
     };
+
 
     const seller = await Seller.create(sellerDataWithDefaults);
     log(`🆕 Vendeur créé: ${seller.name} (ID: ${seller.id}, Link: ${seller.public_link_id})`, 'green');
