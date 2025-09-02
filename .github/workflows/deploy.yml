@@ -47,9 +47,10 @@ jobs:
             echo "📊 Base de données: PostgreSQL"
             echo "🔗 DATABASE_URL: ${DATABASE_URL:0:20}..."
             
-            # Déployer
+            # Déployer avec rebuild forcé
+            docker compose down
             docker compose pull
-            docker compose up -d --build
+            docker compose up -d --build --force-recreate
             
             echo "✅ Déploiement terminé!"
             echo "🔍 Vérification des services..."
