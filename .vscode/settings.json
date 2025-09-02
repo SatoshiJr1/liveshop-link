@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "fitsen.life",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "livelinkshop",
+            "database": "liveshop",
+            "username": "liveshop_user",
+            "password": "motdepassefort"
+        }
+    ]
+}
