@@ -1,5 +1,11 @@
+#!/usr/bin/env node
+
+/**
+ * 🔧 Script de Migration Production pour PostgreSQL
+ * Crée la table comments avec la structure correcte
+ */
+
 const { sequelize } = require('../config/database');
-const { Comment } = require('../models');
 
 console.log('🚀 Migration Production : Création des tables Comment...');
 
@@ -51,19 +57,6 @@ const migrateProduction = async () => {
       await sequelize.sync({ alter: true });
       console.log('✅ Table comments créée');
     }
-
-    // Vérifier les index
-    console.log('🔍 Vérification des index...');
-    const [indexes] = await sequelize.query(`
-      SELECT indexname, indexdef
-      FROM pg_indexes 
-      WHERE tablename = 'comments'
-    `);
-    
-    console.log('📊 Index existants:');
-    indexes.forEach(idx => {
-      console.log(`  - ${idx.indexname}: ${idx.indexdef}`);
-    });
 
     console.log('🎉 Migration terminée avec succès !');
     process.exit(0);
