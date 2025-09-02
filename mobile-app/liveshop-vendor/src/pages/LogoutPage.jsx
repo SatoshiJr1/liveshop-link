@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { LogOut, X, User } from 'lucide-react';
-import Checkbox from '@/components/ui/Checkbox';
+import Checkbox from '@/components/ui/checkbox';
 
 const LogoutPage = () => {
   const { seller, logout } = useAuth();
