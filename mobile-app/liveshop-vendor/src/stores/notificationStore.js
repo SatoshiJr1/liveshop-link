@@ -14,7 +14,7 @@ class NotificationStore {
     
     this.listeners = new Set();
     this.pollingInterval = null;
-    this.voiceEnabled = true; // État local des notifications vocales
+    this.voiceEnabled = false; // État local des notifications vocales
     
     // Écouter les changements d'état des notifications vocales
     window.addEventListener('voiceNotificationToggle', (event) => {

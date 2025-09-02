@@ -1,5 +1,5 @@
 const express = require('express');
-const { Order, Product, Seller } = require('../models');
+const { Order, Product, Seller, Comment } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
 const { requireAndConsumeCredits } = require('../middleware/creditMiddleware');
 const { Op } = require('sequelize');
@@ -23,11 +23,18 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const orders = await Order.findAll({
       where: whereClause,
-      include: [{
-        model: Product,
-        as: 'product',
-        attributes: ['id', 'name', 'price', 'image_url']
-      }],
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['id', 'name', 'price', 'image_url']
+        },
+        {
+          model: Comment,
+          as: 'client_comment',
+          attributes: ['id', 'content', 'customer_name', 'rating', 'created_at']
+        }
+      ],
       order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: offset
@@ -56,6 +63,13 @@ router.get('/', authenticateToken, async (req, res) => {
           name: order.product.name,
           price: order.product.price,
           image_url: order.product.image_url
+        } : null,
+        comment_data: order.client_comment ? {
+          id: order.client_comment.id,
+          content: order.client_comment.content,
+          customer_name: order.client_comment.customer_name,
+          rating: order.client_comment.rating,
+          created_at: order.client_comment.created_at
         } : null
       })),
       pagination: {
@@ -202,11 +216,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
         id: orderId, 
         seller_id: req.seller.id 
       },
-      include: [{
-        model: Product,
-        as: 'product',
-        attributes: ['id', 'name', 'price', 'image_url', 'description']
-      }]
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['id', 'name', 'price', 'image_url', 'description']
+        },
+        {
+          model: Comment,
+          as: 'client_comment',
+          attributes: ['id', 'content', 'customer_name', 'rating', 'created_at']
+        }
+      ]
     });
 
     if (!order) {
@@ -237,6 +258,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
           price: order.product.price,
           image_url: order.product.image_url,
           description: order.product.description
+        } : null,
+        comment_data: order.client_comment ? {
+          id: order.client_comment.id,
+          content: order.client_comment.content,
+          customer_name: order.client_comment.customer_name,
+          rating: order.client_comment.rating,
+          created_at: order.client_comment.created_at
         } : null
       }
     });

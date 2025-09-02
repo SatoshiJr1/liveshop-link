@@ -37,9 +37,9 @@ const demoData = {
   sellers: [
     {
       name: 'Boutique Mode Paris',
-      phone: '+33123456789',
+      phone_number: '+33123456789',
       email: 'contact@boutiquemode.fr',
-      public_link_id: 'boutique-mode-paris',
+
       description: 'Boutique de mode parisienne avec des vêtements tendance',
       address: '123 Rue de la Mode, 75001 Paris, France',
       is_verified: true,
@@ -47,9 +47,9 @@ const demoData = {
     },
     {
       name: 'Tech Store Dakar',
-      phone: '+221777777777',
+      phone_number: '+221777777777',
       email: 'info@techstore.sn',
-      public_link_id: 'tech-store-dakar',
+
       description: 'Magasin de technologie et gadgets à Dakar',
       address: '456 Avenue Cheikh Anta Diop, Dakar, Sénégal',
       is_verified: true,
@@ -57,9 +57,9 @@ const demoData = {
     },
     {
       name: 'Artisanat Local',
-      phone: '+221788888888',
+      phone_number: '+221788888888',
       email: 'contact@artisanat.sn',
-      public_link_id: 'artisanat-local',
+
       description: 'Artisanat traditionnel sénégalais',
       address: '789 Rue des Artisans, Thiès, Sénégal',
       is_verified: true,
@@ -73,14 +73,14 @@ const demoData = {
       description: 'Robe d\'été élégante en coton, parfaite pour toutes occasions',
       price: 4500,
       stock_quantity: 25,
-      category: 'Vêtements',
+      category: 'vetements',
       is_active: true,
       is_pinned: true,
       seller_id: 1, // Boutique Mode Paris
       variants: [
-        { name: 'Taille S', price: 4500, stock_quantity: 8 },
-        { name: 'Taille M', price: 4500, stock_quantity: 10 },
-        { name: 'Taille L', price: 4500, stock_quantity: 7 }
+        { name: 'Taille S', price: 4500, stock_quantity: 8, attributes: { size: 'S', color: 'Noir' } },
+        { name: 'Taille M', price: 4500, stock_quantity: 10, attributes: { size: 'M', color: 'Noir' } },
+        { name: 'Taille L', price: 4500, stock_quantity: 7, attributes: { size: 'L', color: 'Noir' } }
       ]
     },
     {
@@ -88,13 +88,13 @@ const demoData = {
       description: 'Smartphone dernière génération avec appareil photo haute résolution',
       price: 150000,
       stock_quantity: 15,
-      category: 'Technologie',
+      category: 'accessoires',
       is_active: true,
       is_pinned: true,
       seller_id: 2, // Tech Store Dakar
       variants: [
-        { name: '128GB Noir', price: 150000, stock_quantity: 8 },
-        { name: '256GB Bleu', price: 165000, stock_quantity: 7 }
+        { name: '128GB Noir', price: 150000, stock_quantity: 8, attributes: { storage: '128GB', color: 'Noir' } },
+        { name: '256GB Bleu', price: 165000, stock_quantity: 7, attributes: { storage: '256GB', color: 'Bleu' } }
       ]
     },
     {
@@ -102,13 +102,13 @@ const demoData = {
       description: 'Bracelet traditionnel sénégalais fait main',
       price: 2500,
       stock_quantity: 50,
-      category: 'Accessoires',
+      category: 'bijoux',
       is_active: true,
       is_pinned: false,
       seller_id: 3, // Artisanat Local
       variants: [
-        { name: 'Bracelet Simple', price: 2500, stock_quantity: 30 },
-        { name: 'Bracelet Décoré', price: 3500, stock_quantity: 20 }
+        { name: 'Bracelet Simple', price: 2500, stock_quantity: 30, attributes: { type: 'Bracelet', material: 'Cuivre' } },
+        { name: 'Bracelet Décoré', price: 3500, stock_quantity: 20, attributes: { type: 'Bracelet', material: 'Cuivre', decoration: 'Oui' } }
       ]
     }
   ]
@@ -117,9 +117,9 @@ const demoData = {
 // Fonction pour créer un vendeur
 const createSeller = async (sellerData) => {
   try {
-    // Vérifier si le vendeur existe déjà
+    // Vérifier si le vendeur existe déjà par numéro de téléphone
     const existingSeller = await Seller.findOne({
-      where: { public_link_id: sellerData.public_link_id }
+      where: { phone_number: sellerData.phone_number }
     });
 
     if (existingSeller) {
@@ -127,9 +127,30 @@ const createSeller = async (sellerData) => {
       return existingSeller;
     }
 
-    // Créer le vendeur
-    const seller = await Seller.create(sellerData);
-    log(`🆕 Vendeur créé: ${seller.name} (ID: ${seller.id})`, 'green');
+    // Générer un public_link_id unique manuellement
+    const generateId = async () => {
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      let id, exists;
+      do {
+        id = Array.from({length:8},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+        exists = await Seller.findOne({ where: { public_link_id: id } });
+      } while (exists);
+      return id;
+    };
+
+    const public_link_id = await generateId();
+    
+    // Créer le vendeur avec tous les champs requis
+    const sellerDataWithDefaults = {
+      ...sellerData,
+      public_link_id,
+      credit_balance: 100,
+      role: 'seller',
+      is_active: true
+    };
+
+    const seller = await Seller.create(sellerDataWithDefaults);
+    log(`🆕 Vendeur créé: ${seller.name} (ID: ${seller.id}, Link: ${seller.public_link_id})`, 'green');
     return seller;
   } catch (error) {
     log(`❌ Erreur création vendeur "${sellerData.name}": ${error.message}`, 'red');
@@ -196,7 +217,7 @@ const seedProduction = async () => {
 
     // Synchroniser les modèles
     log('🔄 Synchronisation des modèles...', 'yellow');
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: true }); // Modifier la structure existante
     log('✅ Modèles synchronisés', 'green');
 
     // Créer les vendeurs

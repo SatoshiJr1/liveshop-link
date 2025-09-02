@@ -19,7 +19,8 @@ import {
   DollarSign,
   Package,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ApiService from '../services/api';
@@ -514,6 +515,23 @@ const OrdersPage = () => {
                     Quantité: {order.quantity} | {order.total_price.toLocaleString()} FCFA
                   </p>
                     </div>
+
+                {/* Commentaire client (si existe) */}
+                {order.comment_data && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <MessageCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      Commentaire client
+                    </span>
+                    {order.comment_data.rating && (
+                      <div className="flex items-center gap-1 ml-auto">
+                        <span className="text-xs text-blue-600 font-bold">
+                          {order.comment_data.rating}/5
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2 ">

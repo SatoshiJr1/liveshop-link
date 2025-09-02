@@ -32,7 +32,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /srv/projects/livelink
-             
+              
             # Forcer la production
             export NODE_ENV=production
             
@@ -66,4 +66,20 @@ jobs:
               docker compose exec -T backend node src/scripts/seed-production.js
             }
             
-            echo "🎉 Déploiement et seeding terminés avec succès!"
+            # Migration des commentaires
+            echo "🔧 Migration des commentaires..."
+            docker compose exec -T backend node src/scripts/migrate-production.js || {
+              echo "⚠️ Migration des commentaires échouée, vérification manuelle..."
+              docker compose exec -T backend node -e "
+                const { sequelize } = require('./src/config/database');
+                sequelize.query('SELECT table_name FROM information_schema.tables WHERE table_name = \\'comments\\'').then(([rows]) => {
+                  console.log('Tables comments:', rows);
+                  process.exit(0);
+                }).catch(err => {
+                  console.error('Erreur:', err);
+                  process.exit(1);
+                });
+              "
+            }
+            
+            echo "🎉 Déploiement, seeding et migration terminés avec succès!"

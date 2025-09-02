@@ -43,6 +43,7 @@ const publicRoutes = require('./routes/public');
 const liveRoutes = require('./routes/lives');
 const notificationRoutes = require('./routes/notifications');
 const creditRoutes = require('./routes/credits');
+// const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/sellers');
 const uploadRoutes = require('./routes/upload');
@@ -219,6 +220,8 @@ io.on('connection', (socket) => {
         }
       });
 
+
+
     } catch (error) {
       console.error('❌ Erreur d\'authentification WebSocket:', error);
       socket.emit('error', { message: 'Erreur d\'authentification' });
@@ -289,6 +292,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/lives', liveRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/credits', creditRoutes);
+// app.use('/api/comments', commentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/upload', uploadRoutes);
