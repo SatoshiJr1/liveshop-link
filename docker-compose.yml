@@ -19,6 +19,7 @@ services:
       - liveshop_userdata:/app/userdata
     networks:
       - nginx-proxy
+      - fitsen-backend_fitsen-network
     restart: unless-stopped
 
   dashboard:
@@ -56,4 +57,6 @@ volumes:
 
 networks:
   nginx-proxy:
+    external: true
+  fitsen-backend_fitsen-network:
     external: true
