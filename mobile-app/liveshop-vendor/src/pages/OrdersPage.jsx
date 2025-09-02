@@ -55,29 +55,28 @@ const OrdersPage = () => {
   const [ordersPerPage] = useState(6); // Utiliser la limite par défaut de l'API
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
+  
+  // Debounce pour éviter les appels multiples
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     fetchOrders();
     
-    // Rafraîchissement automatique toutes les 30 secondes
-    const interval = setInterval(() => {
-      fetchOrders();
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    // Pas de rafraîchissement automatique - WebSocket gère le temps réel
+    // Les données se mettent à jour automatiquement via WebSocket
   }, []);
 
   // Écouter les nouvelles commandes en temps réel
   useEffect(() => {
     // Écouter les nouvelles commandes
-    webSocketService.onNewOrder((data) => {
+    webSocketService.onNewOrder(() => {
       console.log('🔄 Nouvelle commande reçue, mise à jour de la liste...');
       // Rafraîchir immédiatement les données
       fetchOrders();
     });
 
     // Écouter les mises à jour de statut
-    webSocketService.onOrderStatusUpdate((data) => {
+    webSocketService.onOrderStatusUpdate(() => {
       console.log('🔄 Statut mis à jour, mise à jour de la liste...');
       // Rafraîchir immédiatement les données
       fetchOrders();
@@ -95,7 +94,14 @@ const OrdersPage = () => {
   }, [currentPage, activeTab]);
 
   const fetchOrders = async () => {
+    // Éviter les appels multiples simultanés
+    if (isFetching) {
+      console.log('🔄 Appel API déjà en cours, ignoré');
+      return;
+    }
+    
     try {
+      setIsFetching(true);
       setLoading(true);
       
       // Déterminer le statut à filtrer
@@ -132,6 +138,7 @@ const OrdersPage = () => {
       console.error('Erreur lors du chargement des commandes:', error);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
