@@ -1,6 +1,6 @@
 const express = require('express');
 const { Parser } = require('json2csv');
-const { Seller, Product, Order } = require('../models');
+const { Seller, Product, Order, Comment } = require('../models');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const notificationService = require('../services/notificationService');
@@ -334,15 +334,15 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
   }
 });
 
-// Ajouter un commentaire live
+// Ajouter un commentaire pour une commande
 router.post('/:linkId/comments', validatePublicLink, async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { comment } = req.body;
+    const { comment, customerName, orderId, rating } = req.body;
 
-    if (!comment) {
+    if (!comment || !customerName || !orderId) {
       return res.status(400).json({
-        error: 'Commentaire requis'
+        error: 'Commentaire, nom du client et ID de commande requis'
       });
     }
 
@@ -356,18 +356,103 @@ router.post('/:linkId/comments', validatePublicLink, async (req, res) => {
       });
     }
 
-    // Pour le MVP, on retourne simplement une confirmation
-    // Dans une version complète, on pourrait stocker les commentaires
-    // et les diffuser en temps réel via WebSocket
+    // Vérifier que la commande existe et appartient à ce vendeur
+    const order = await Order.findOne({
+      where: { 
+        id: orderId,
+        seller_id: seller.id
+      }
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        error: 'Commande non trouvée ou non autorisée'
+      });
+    }
+
+    // Vérifier qu'il n'y a pas déjà un commentaire pour cette commande
+    const existingComment = await Comment.findOne({
+      where: { order_id: orderId }
+    });
+
+    if (existingComment) {
+      return res.status(400).json({
+        error: 'Un commentaire existe déjà pour cette commande'
+      });
+    }
+
+    // Créer le commentaire
+    const newComment = await Comment.create({
+      order_id: orderId,
+      seller_id: seller.id,
+      customer_name: customerName.trim(),
+      content: comment.trim(),
+      rating: rating || null,
+      is_public: true
+    });
 
     res.status(201).json({
-      message: 'Commentaire envoyé avec succès',
-      comment: comment.trim(),
-      timestamp: new Date().toISOString()
+      message: 'Commentaire ajouté avec succès',
+      comment: {
+        id: newComment.id,
+        content: newComment.content,
+        customer_name: newComment.customer_name,
+        rating: newComment.rating,
+        timestamp: newComment.created_at
+      }
     });
 
   } catch (error) {
     console.error('Erreur lors de l\'ajout du commentaire:', error);
+    res.status(500).json({
+      error: 'Erreur interne du serveur'
+    });
+  }
+});
+
+// Récupérer les commentaires d'un vendeur (public)
+router.get('/:linkId/comments', validatePublicLink, async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const seller = await Seller.findOne({
+      where: { public_link_id: linkId }
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        error: 'Vendeur non trouvé'
+      });
+    }
+
+    const offset = (page - 1) * limit;
+    
+    const comments = await Comment.findAndCountAll({
+      where: {
+        seller_id: seller.id,
+        is_public: true
+      },
+      include: [{
+        model: Order,
+        as: 'order',
+        attributes: ['id', 'product_id', 'created_at']
+      }],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset,
+      attributes: ['id', 'content', 'customer_name', 'rating', 'created_at']
+    });
+
+    res.json({
+      comments: comments.rows,
+      total: comments.count,
+      page: parseInt(page),
+      totalPages: Math.ceil(comments.count / limit)
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des commentaires:', error);
     res.status(500).json({
       error: 'Erreur interne du serveur'
     });

@@ -35,8 +35,8 @@ const VoiceControls = () => {
         setWolofAudioAvailable(false); // Forcer à false pour désactiver Wolof
       } catch (error) {
         console.error('❌ Erreur initialisation contrôles vocaux:', error);
-        // En cas d'erreur, activer quand même par défaut
-        setIsEnabled(true);
+        // En cas d'erreur, désactiver par défaut
+        setIsEnabled(false);
         setIsInitialized(true);
       }
     };

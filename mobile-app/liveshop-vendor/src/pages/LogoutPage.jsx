@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { LogOut, Check, X, User } from 'lucide-react';
+import { LogOut, X, User } from 'lucide-react';
+import Checkbox from '@/components/ui/Checkbox';
 
 const LogoutPage = () => {
   const { seller, logout } = useAuth();
@@ -74,25 +75,12 @@ const LogoutPage = () => {
                 Options de déconnexion
               </Label>
               
-              <div className="flex items-center space-x-2 ">
-                <button
-                  type="button"
-                  onClick={() => setKeepRememberMe(!keepRememberMe)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    keepRememberMe 
-                      ? 'bg-purple-600 border-purple-600' 
-                      : 'border-gray-300 hover:border-purple-400'
-                  }`}
-                >
-                  {keepRememberMe && <Check className="w-3 h-3 text-white " />}
-                </button>
-                <Label 
-                  className="text-sm text-gray-600 cursor-pointer "
-                  onClick={() => setKeepRememberMe(!keepRememberMe)}
-                >
-                  Garder mes informations de connexion
-                </Label>
-              </div>
+              <Checkbox
+                id="keep-remember-me"
+                checked={keepRememberMe}
+                onChange={setKeepRememberMe}
+                label="Garder mes informations de connexion"
+              />
               
               <p className="text-xs text-gray-500 ">
                 {keepRememberMe 

@@ -136,29 +136,41 @@ const CreditsPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Crédits</h1>
-          <p className="text-gray-600 dark:text-gray-400">Gérez votre solde et vos transactions</p>
+    <div className="container mx-auto p-4 pb-20 sm:pb-6 space-y-6">
+      {/* Header moderne avec gradient */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
+          <Coins className="w-8 h-8 text-white" />
         </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          Gestion des Crédits
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 text-lg">Gérez votre solde et vos transactions</p>
+      </div>
+
+      {/* Bouton d'achat principal - Design moderne */}
+      <div className="text-center mb-6">
         <Dialog open={purchaseDialog} onOpenChange={setPurchaseDialog}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg">
+              <Plus className="w-5 h-5 mr-3" />
               Acheter des crédits
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Acheter des crédits</DialogTitle>
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto border-0 shadow-2xl">
+            <DialogHeader className="text-center pb-6">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                <CreditCard className="w-8 h-8 text-white" />
+              </div>
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Acheter des crédits
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <Label htmlFor="package" className="text-sm font-medium">Package</Label>
+                <Label htmlFor="package" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Package</Label>
                 <Select value={selectedPackage} onValueChange={setSelectedPackage}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 border-2 border-gray-200 dark:border-gray-600 hover:border-purple-400 focus:border-purple-500 rounded-xl">
                     <SelectValue placeholder="Sélectionner un package" />
                   </SelectTrigger>
                   <SelectContent>
@@ -176,9 +188,9 @@ const CreditsPage = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="payment" className="text-sm font-medium">Méthode de paiement</Label>
+                <Label htmlFor="payment" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Méthode de paiement</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 border-2 border-gray-200 dark:border-gray-600 hover:border-purple-400 focus:border-purple-500 rounded-xl">
                     <SelectValue placeholder="Sélectionner une méthode" />
                   </SelectTrigger>
                   <SelectContent>
@@ -193,7 +205,7 @@ const CreditsPage = () => {
               <Button 
                 onClick={handlePurchase} 
                 disabled={purchasing || !selectedPackage || !paymentMethod}
-                className="w-full mt-6"
+                className="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
               >
                 {purchasing ? 'Achat en cours...' : 'Acheter'}
               </Button>
@@ -202,105 +214,149 @@ const CreditsPage = () => {
         </Dialog>
       </div>
 
-      {/* Solde principal */}
-      <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Solde principal - Design moderne avec effet glassmorphism */}
+      <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+        
+        <CardContent className="relative p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div className="min-w-0 flex-1">
-              <p className="text-blue-100 text-sm sm:text-base">Solde actuel</p>
-              <h2 className="text-2xl sm:text-3xl font-bold break-words">{credits?.balance || 0} crédits</h2>
-              <p className="text-blue-100 text-xs sm:text-sm break-words">{credits?.sellerName}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <p className="text-blue-100 text-sm sm:text-base font-medium">Solde actuel</p>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold break-words mb-2">
+                {credits?.balance || 0} <span className="text-2xl sm:text-3xl">crédits</span>
+              </h2>
+              <p className="text-blue-100 text-sm sm:text-base break-words font-medium">
+                {credits?.sellerName}
+              </p>
             </div>
             <div className="flex justify-center sm:justify-end">
-              <Coins className="w-10 h-10 sm:w-12 sm:h-12 text-blue-200" />
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/20 rounded-full blur-xl"></div>
+                <div className="relative bg-white/20 p-4 rounded-full">
+                  <Coins className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">Vue d'ensemble</TabsTrigger>
-          <TabsTrigger value="packages" className="text-xs sm:text-sm">Packages</TabsTrigger>
-          <TabsTrigger value="history" className="text-xs sm:text-sm">Historique</TabsTrigger>
-          <TabsTrigger value="stats" className="text-xs sm:text-sm">Statistiques</TabsTrigger>
+      <Tabs defaultValue="overview" className="space-y-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-20 sm:mb-0">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm px-4 py-3 data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md rounded-xl transition-all duration-200">
+            Vue d'ensemble
+          </TabsTrigger>
+          <TabsTrigger value="packages" className="text-xs sm:text-sm px-4 py-3 data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md rounded-xl transition-all duration-200">
+            Packages
+          </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs sm:text-sm px-4 py-3 data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md rounded-xl transition-all duration-200">
+            Historique
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="text-xs sm:text-sm px-4 py-3 data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md rounded-xl transition-all duration-200">
+            Statistiques
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          {/* Coûts des actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5" />
+        <TabsContent value="overview" className="space-y-6 pt-4">
+          {/* Coûts des actions - Design moderne */}
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-full">
+                  <AlertCircle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                </div>
                 Coûts des actions
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {Object.entries(actionCosts).map(([action, cost]) => (
-                  <div key={action} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {getActionIcon(action)}
-                      <span className="text-sm font-medium break-words">
-                        {action === 'ADD_PRODUCT' && 'Ajouter un produit'}
-                        {action === 'PROCESS_ORDER' && 'Traiter une commande'}
-                        {action === 'PIN_PRODUCT' && 'Épingler un produit'}
-                        {action === 'GENERATE_CUSTOMER_CARD' && 'Fiche client'}
-                      </span>
+                  <div key={action} className="group p-4 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 hover:border-purple-200 dark:hover:border-purple-600 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                          {getActionIcon(action)}
+                        </div>
+                        <span className="text-sm font-medium break-words text-gray-700 dark:text-gray-200">
+                          {action === 'ADD_PRODUCT' && 'Ajouter un produit'}
+                          {action === 'PROCESS_ORDER' && 'Traiter une commande'}
+                          {action === 'PIN_PRODUCT' && 'Épingler un produit'}
+                          {action === 'GENERATE_CUSTOMER_CARD' && 'Fiche client'}
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="ml-3 flex-shrink-0 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                        {cost} crédit{cost > 1 ? 's' : ''}
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="ml-2 flex-shrink-0">{cost} crédit{cost > 1 ? 's' : ''}</Badge>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Statistiques rapides */}
+          {/* Statistiques rapides - Design moderne */}
           {stats && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total acheté</span>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 hover:shadow-xl transition-shadow duration-200">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-green-100 dark:bg-green-800/40 rounded-full">
+                      <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <span className="text-sm font-medium text-green-700 dark:text-green-300">Total acheté</span>
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold dark:text-white">{stats.totalPurchased}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-800 dark:text-green-200">{stats.totalPurchased}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">crédits achetés</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Minus className="w-5 h-5 text-red-600" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total consommé</span>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/20 dark:to-pink-900/20 hover:shadow-xl transition-shadow duration-200">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-red-100 dark:bg-red-800/40 rounded-full">
+                      <Minus className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    </div>
+                    <span className="text-sm font-medium text-red-700 dark:text-red-300">Total consommé</span>
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold dark:text-white">{stats.totalConsumed}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-red-800 dark:text-red-200">{stats.totalConsumed}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">crédits utilisés</p>
                 </CardContent>
               </Card>
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="packages" className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <TabsContent value="packages" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {Object.entries(packages).map(([key, pkg]) => (
-              <Card key={key} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <span className="capitalize break-words">{key}</span>
-                    <Badge variant="outline" className="self-start sm:self-auto">{pkg.credits} crédits</Badge>
+              <Card key={key} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <span className="capitalize break-words text-lg font-semibold text-gray-800 dark:text-gray-200">{key}</span>
+                    <Badge variant="outline" className="self-start sm:self-auto bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                      {pkg.credits} crédits
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <p className="text-xl sm:text-2xl font-bold text-green-600">
-                      {pkg.price.toLocaleString()} XOF
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {pkg.credits} crédits pour {pkg.price.toLocaleString()} XOF
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500">
-                      ~{(pkg.price / pkg.credits).toFixed(0)} XOF par crédit
-                    </p>
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
+                        {pkg.price.toLocaleString()} XOF
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {pkg.credits} crédits pour {pkg.price.toLocaleString()} XOF
+                      </p>
+                    </div>
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        ~{(pkg.price / pkg.credits).toFixed(0)} XOF par crédit
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -308,37 +364,43 @@ const CreditsPage = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="history" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="w-5 h-5" />
+        <TabsContent value="history" className="space-y-6 pt-4">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                  <History className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
                 Historique des transactions
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-80 sm:h-96">
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {history.map((transaction) => (
-                    <div key={transaction.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-3">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {getTransactionIcon(transaction.type)}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm break-words dark:text-white">
-                            {transaction.description}
+                    <div key={transaction.id} className="group p-4 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 hover:border-purple-200 dark:hover:border-purple-600 hover:shadow-md transition-all duration-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                            {getTransactionIcon(transaction.type)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm break-words dark:text-white text-gray-800 dark:text-gray-200">
+                              {transaction.description}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {formatDate(transaction.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-left sm:text-right flex-shrink-0">
+                          <p className={`font-bold text-lg ${transaction.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {transaction.amount > 0 ? '+' : ''}{transaction.amount} crédits
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(transaction.created_at)}
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Solde: {transaction.balance_after}
                           </p>
                         </div>
-                      </div>
-                      <div className="text-left sm:text-right flex-shrink-0">
-                        <p className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {transaction.amount > 0 ? '+' : ''}{transaction.amount} crédits
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Solde: {transaction.balance_after}
-                        </p>
                       </div>
                     </div>
                   ))}
@@ -348,58 +410,66 @@ const CreditsPage = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="stats" className="space-y-4">
+        <TabsContent value="stats" className="space-y-6 pt-4">
           {stats && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wallet className="w-5 h-5" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-800/40 rounded-full">
+                      <Wallet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
                     Solde actuel
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.currentBalance}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">crédits disponibles</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-blue-800 dark:text-blue-200 mb-2">{stats.currentBalance}</p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400">crédits disponibles</p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="p-2 bg-green-100 dark:bg-green-800/40 rounded-full">
+                      <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
                     Total acheté
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.totalPurchased}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">crédits achetés</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-green-800 dark:text-green-200 mb-2">{stats.totalPurchased}</p>
+                  <p className="text-sm text-green-600 dark:text-green-400">crédits achetés</p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                  <Minus className="w-5 h-5" />
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/20 dark:to-pink-900/20 hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="p-2 bg-red-100 dark:bg-red-800/40 rounded-full">
+                      <Minus className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    </div>
                     Total consommé
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl sm:text-3xl font-bold text-red-600">{stats.totalConsumed}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">crédits utilisés</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-red-800 dark:text-red-200 mb-2">{stats.totalConsumed}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">crédits utilisés</p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Gift className="w-5 h-5" />
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/20 dark:to-violet-900/20 hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-800/40 rounded-full">
+                      <Gift className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
                     Total bonus
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl sm:text-3xl font-bold text-purple-600">{stats.totalBonus}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">crédits bonus</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-purple-800 dark:text-purple-200 mb-2">{stats.totalBonus}</p>
+                  <p className="text-sm text-purple-600 dark:text-purple-400">crédits bonus</p>
                 </CardContent>
               </Card>
             </div>

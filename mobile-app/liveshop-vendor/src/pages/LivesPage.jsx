@@ -233,7 +233,7 @@ export default function LivesPage() {
   const lastLive = lives.length > 0 ? [...lives].sort((a, b) => new Date(b.date) - new Date(a.date))[0] : null;
 
   return (
-    <div className="w-full max-w-full md:max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-8 mt-4 md:mt-8 min-h-screen flex flex-col ">
+    <div className="w-full max-w-full md:max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-8 mt-4 md:mt-8 min-h-screen flex flex-col pb-20 sm:pb-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-2 md:gap-4 ">
         <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-400 flex items-center gap-2">
           <span className="text-red-500 text-2xl">🔴</span> Mes Lives
@@ -340,17 +340,32 @@ export default function LivesPage() {
             </div>
           </div>
           {error && <div className="text-red-600 dark:text-red-400 text-sm font-medium ">{error}</div>}
-          <button type="submit" disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition disabled:opacity-50 ">
-            {loading ? 'Création...' : 'Créer le live'}
-          </button>
+          <div className="flex gap-3">
+            <button 
+              type="button"
+              onClick={() => {
+                setShowCreate(false);
+                setTitle('');
+                setDate('');
+                setSelectedProducts([]);
+                setError('');
+              }}
+              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded transition"
+            >
+              Annuler
+            </button>
+            <button type="submit" disabled={loading}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition disabled:opacity-50 ">
+              {loading ? 'Création...' : 'Créer le live'}
+            </button>
+          </div>
         </form>
       )}
       {/* Bouton flottant mobile pour créer un live */}
       {!showCreate && (
         <button
           onClick={() => setShowCreate(true)}
-          className="fixed bottom-12 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
+          className="fixed bottom-29 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
           style={{ boxShadow: '0 4px 24px rgba(80,0,120,0.18)' }}
           title="Créer un live"
         >
