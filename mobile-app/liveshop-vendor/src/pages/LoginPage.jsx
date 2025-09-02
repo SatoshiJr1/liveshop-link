@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Store, Lock, ArrowRight, Phone, Lightbulb, User } from 'lucide-react';
 import PinInput from '@/components/ui/PinInput';
-import Checkbox from '@/components/ui/Checkbox';
+import Checkbox from '@/components/ui/checkbox';
 
 const LoginPage = () => {
   const { login, register, isAuthenticated } = useAuth();
