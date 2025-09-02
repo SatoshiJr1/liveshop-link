@@ -457,14 +457,14 @@ const ProductsPage = () => {
 
   return (
     <div className="space-y-6 ">
-      {/* Header avec titre et bouton d'ajout */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Header avec titre et bouton d'ajout - Responsive en bloc sur mobile */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-0 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mes Produits</h1>
-          <p className="text-gray-600">Gérez votre catalogue de produits</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Mes Produits</h1>
+          <p className="text-sm md:text-base text-gray-600">Gérez votre catalogue de produits</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           {/* Indicateur temps réel */}
           <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium">
             {realtimeStatus === 'connected' ? (
@@ -482,7 +482,7 @@ const ProductsPage = () => {
           
           <Button
             onClick={openCreateDialog}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto px-6 py-3"
           >
             <Plus className="w-4 h-4 mr-2" />
             Ajouter un produit
@@ -491,7 +491,7 @@ const ProductsPage = () => {
       </div>
 
       {/* Statistiques rapides */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 ">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 ">
           <CardContent className="p-4 ">
             <div className="flex items-center ">
@@ -558,26 +558,26 @@ const ProductsPage = () => {
 
       {/* Grille de produits */}
       {products.length === 0 ? (
-        <Card className="text-center py-16 border-0 shadow-sm bg-gradient-to-br from-gray-50 to-gray-100 ">
-          <CardContent>
-            <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6 ">
-              <Package className="w-10 h-10 text-gray-400 " />
+        <Card className="text-center py-12 md:py-16 border-0 shadow-sm bg-gradient-to-br from-gray-50 to-gray-100">
+          <CardContent className="px-4 md:px-6">
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
+              <Package className="w-8 h-8 md:w-10 md:h-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 ">Aucun produit</h3>
-            <p className="text-gray-600 mb-6 ">Commencez par ajouter votre premier produit</p>
-            <Button onClick={openCreateDialog} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700  ">
-              <Plus className="w-4 h-4 mr-2 " />
+            <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">Aucun produit</h3>
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 px-4">Commencez par ajouter votre premier produit</p>
+            <Button onClick={openCreateDialog} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-6 py-3 text-sm md:text-base">
+              <Plus className="w-4 h-4 md:w-4 md:h-4 mr-2" />
               Ajouter un produit
             </Button>
           </CardContent>
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {products.map(renderProductCard)}
-                  </div>
+          </div>
 
-                    {/* Pagination optimisée pour mobile */}
+          {/* Pagination optimisée pour mobile */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8 px-4">
               {/* Boutons Précédent/Suivant - Plus grands sur mobile */}
@@ -585,9 +585,9 @@ const ProductsPage = () => {
                 variant="outline"
                 onClick={handlePreviousPage}
                 disabled={currentPage === 1}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg border-gray-200 hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto text-sm sm:text-base"
+                className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-3 rounded-lg border-gray-200 hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto text-sm md:text-base"
               >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronLeft className="w-5 h-5 md:w-5 md:h-5" />
                 <span className="hidden sm:inline">Précédent</span>
                 <span className="sm:hidden">Préc.</span>
               </Button>
@@ -634,11 +634,11 @@ const ProductsPage = () => {
                 variant="outline"
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg border-gray-200 hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto text-sm sm:text-base"
+                className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-3 rounded-lg border-gray-200 hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto text-sm md:text-base"
               >
                 <span className="hidden sm:inline">Suivant</span>
                 <span className="sm:hidden">Suiv.</span>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronRight className="w-5 h-5 md:w-5 md:h-5" />
               </Button>
             </div>
           )}

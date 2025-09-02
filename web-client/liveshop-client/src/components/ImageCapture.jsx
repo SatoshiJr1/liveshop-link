@@ -88,7 +88,11 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch('http://localhost:3001/api/upload/payment-proof', {
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? 'https://api.livelink.store/api/upload/payment-proof'
+        : 'http://localhost:3001/api/upload/payment-proof';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData
       });

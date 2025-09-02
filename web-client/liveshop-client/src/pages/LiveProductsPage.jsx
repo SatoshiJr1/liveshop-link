@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Star, MessageCircle, Share2, ArrowLeft } from 'lucide-react';
-import { getApiUrl } from '../config/domains';
+import { getApiUrl, getPublicLink } from '../config/domains';
 
 export default function LiveProductsPage() {
   const { linkId, liveSlug } = useParams();
@@ -39,15 +39,15 @@ export default function LiveProductsPage() {
   }, [linkId, liveSlug]);
 
   const shareLive = () => {
-    const url = window.location.href;
+    const liveUrl = getPublicLink(linkId) + `/live/${liveSlug}`;
     if (navigator.share) {
       navigator.share({
         title: `Live de ${seller?.name}`,
         text: `Découvrez les produits en live !`,
-        url
+        url: liveUrl
       });
     } else {
-      navigator.clipboard.writeText(url);
+      navigator.clipboard.writeText(liveUrl);
       // TODO: toast
     }
   };

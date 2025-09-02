@@ -5,7 +5,7 @@ class VoiceNotification {
     this.speechSynthesis = window.speechSynthesis;
     this.isInitialized = false;
     this.audioElements = new Map();
-    this.isEnabled = true; // Activer par défaut
+    this.isEnabled = false; // Désactiver par défaut
     this.volume = 0.8;
     this.voice = null;
     this.wolofAudioAvailable = false; // Désactiver l'audio Wolof par défaut

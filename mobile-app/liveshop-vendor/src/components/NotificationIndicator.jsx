@@ -47,6 +47,14 @@ const NotificationIndicator = () => {
     }
   };
 
+  // Marquage automatique comme lu à l'ouverture
+  useEffect(() => {
+    if (showNotifications && unreadCount > 0) {
+      // Marquer automatiquement toutes les notifications comme lues
+      markAsRead();
+    }
+  }, [showNotifications, unreadCount, markAsRead]);
+
   const handleMarkAllAsRead = () => {
     markAsRead();
     setShowNotifications(false);
@@ -81,71 +89,67 @@ const NotificationIndicator = () => {
     window.location.href = `/orders/${orderId}`;
   };
 
+  const handleViewAllOrders = () => {
+    // Navigation vers la page générale des commandes
+    window.location.href = '/orders';
+  };
+
   const handleCloseToast = (toastId) => {
     setActiveToasts(prev => prev.filter(toast => toast.id !== toastId));
   };
 
   return (
     <div className="relative">
-      {/* Bouton de notification - Design moderne */}
+      {/* Bouton de notification - Design moderne et responsive */}
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setShowNotifications(!showNotifications)}
-        className={`relative p-3 rounded-full transition-all duration-200 hover:bg-purple-50 hover:scale-105 ${
+        className={`relative p-2.5 md:p-3 rounded-full transition-all duration-200 hover:bg-purple-50 hover:scale-105 ${
           showNotifications ? 'bg-purple-100 text-purple-600' : 'hover:text-purple-600'
         }`}
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4 md:w-5 md:h-5" />
         {unreadCount > 0 && (
           <div className="absolute -top-1 -right-1">
-            <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg animate-bounce">
+            <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center shadow-lg animate-bounce">
               {unreadCount > 99 ? '99+' : unreadCount}
             </div>
           </div>
         )}
         {isConnected && !unreadCount && (
-          <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full animate-pulse shadow-lg"></div>
+          <div className="absolute -top-1 -right-1 h-2.5 w-2.5 md:h-3 md:w-3 bg-green-500 rounded-full animate-pulse shadow-lg"></div>
         )}
       </Button>
 
-      {/* Panneau de notifications - Design moderne */}
+      {/* Panneau de notifications - Design moderne et responsive */}
       {showNotifications && (
-        <div className="absolute right-0 top-12 w-96 z-50 animate-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 top-12 w-80 sm:w-96 z-50 animate-in slide-in-from-top-2 duration-200 sm:right-0 right-2">
           <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-md rounded-2xl overflow-hidden">
-            {/* Header avec gradient */}
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-4 text-white">
+            {/* Header avec gradient - Responsive */}
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 md:p-4 text-white">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-full">
-                    <Bell className="w-5 h-5" />
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="p-1.5 md:p-2 bg-white/20 rounded-full">
+                    <Bell className="w-4 h-4 md:w-5 md:h-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Notifications</h3>
+                    <h3 className="font-semibold text-base md:text-lg">Notifications</h3>
                     {isConnected && (
-                      <div className="flex items-center gap-2 text-white/80 text-sm">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <span>Connecté en temps réel</span>
+                      <div className="flex items-center gap-1.5 md:gap-2 text-white/80 text-xs md:text-sm">
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="hidden sm:inline">Connecté en temps réel</span>
+                        <span className="sm:hidden">Temps réel</span>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleMarkAllAsRead}
-                      className="text-white/90 hover:text-white hover:bg-white/20 text-xs"
-                    >
-                      Tout marquer comme lu
-                    </Button>
-                  )}
+                <div className="flex items-center gap-1 md:gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowNotifications(false)}
-                    className="text-white/90 hover:text-white hover:bg-white/20"
+                    className="text-white/90 hover:text-white hover:bg-white/20 p-1.5 md:p-2"
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -153,35 +157,44 @@ const NotificationIndicator = () => {
               </div>
             </div>
 
-            {/* Contenu des notifications */}
-            <div className="max-h-96 overflow-y-auto">
+            {/* Contenu des notifications - Responsive */}
+            <div className="max-h-80 md:max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                    <Bell className="w-8 h-8 text-purple-500" />
+                <div className="p-6 md:p-8 text-center">
+                  <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                    <Bell className="w-6 h-6 md:w-8 md:h-8 text-purple-500" />
                   </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Aucune notification</h4>
-                  <p className="text-gray-500 text-sm">Vous serez notifié ici des nouvelles commandes</p>
+                  <h4 className="text-base md:text-lg font-medium text-gray-900 mb-2">Aucune notification</h4>
+                  <p className="text-gray-500 text-xs md:text-sm">Vous serez notifié ici des nouvelles commandes</p>
                 </div>
               ) : (
-                <div className="p-3 space-y-2">
+                <div className="p-2 md:p-3 space-y-2">
                   {notifications.slice(0, 10).map((notification) => (
                     <div
                       key={notification.id}
-                      className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
+                      className={`group relative p-3 md:p-4 rounded-xl border transition-all duration-300 hover:shadow-md cursor-pointer ${
                         !notification.read 
                           ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 shadow-sm' 
                           : 'bg-white border-gray-100 hover:border-gray-200'
                       }`}
+                      onClick={() => {
+                        // Marquer comme lu et rediriger si c'est une commande
+                        if (notification.type === 'new_order' && notification.data?.order?.id) {
+                          handleMarkAsRead(notification.id);
+                          handleViewOrder(notification.data.order.id);
+                        } else {
+                          handleMarkAsRead(notification.id);
+                        }
+                      }}
                     >
                       {/* Indicateur de lecture */}
                       {!notification.read && (
-                        <div className="absolute top-3 right-3 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div className="absolute top-2 md:top-3 right-2 md:right-3 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                       )}
                       
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-3 md:gap-4">
                         {/* Icône avec fond coloré */}
-                        <div className={`p-2 rounded-full ${
+                        <div className={`p-1.5 md:p-2 rounded-full ${
                           notification.type === 'new_order' 
                             ? 'bg-green-100 text-green-600' 
                             : 'bg-blue-100 text-blue-600'
@@ -200,15 +213,10 @@ const NotificationIndicator = () => {
                             <span className="text-xs text-gray-400">
                               {formatTime(notification.created_at)}
                             </span>
-                            {!notification.read && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleMarkAsRead(notification.id)}
-                                className="text-xs p-1 h-auto opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Check className="w-3 h-3 text-green-600" />
-                              </Button>
+                            {notification.type === 'new_order' && (
+                              <span className="text-blue-600 font-medium text-xs">
+                                Cliquer pour voir
+                              </span>
                             )}
                           </div>
                         </div>
@@ -219,13 +227,23 @@ const NotificationIndicator = () => {
               )}
             </div>
 
-            {/* Footer avec statistiques */}
+            {/* Footer avec statistiques et bouton voir toutes les commandes */}
             {notifications.length > 0 && (
-              <div className="border-t border-gray-100 p-3 bg-gray-50/50">
-                <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="border-t border-gray-100 p-2 md:p-3 bg-gray-50/50">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                   <span>{notifications.length} notification{notifications.length > 1 ? 's' : ''}</span>
                   <span>{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</span>
                 </div>
+                {notifications.some(n => n.type === 'new_order') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleViewAllOrders}
+                    className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs py-1.5"
+                  >
+                    Voir toutes les commandes
+                  </Button>
+                )}
               </div>
             )}
           </Card>

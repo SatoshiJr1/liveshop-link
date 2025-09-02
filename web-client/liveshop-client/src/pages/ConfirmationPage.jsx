@@ -233,7 +233,7 @@ const ConfirmationPage = () => {
           </Button>
           
           <Button 
-            onClick={() => navigate(`/${linkId}/comments`)}
+            onClick={() => navigate(`/${linkId}/comments/${order.id}`)}
             className="flex-1 bg-blue-600 hover:bg-blue-700"
           >
             <MessageCircle className="w-4 h-4 mr-2" />

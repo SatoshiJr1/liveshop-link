@@ -3,10 +3,37 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
-require('dotenv').config();
+
+// Configuration par défaut pour le déploiement #8
+const defaultConfig = {
+  NODE_ENV: 'development', // Par défaut en développement
+  PORT: 3001,
+  DATABASE_URL: 'postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop', // Pour production
+  JWT_SECRET: 'production_secret_key_very_secure',
+  CORS_ORIGIN: 'https://livelink.store,https://space.livelink.store',
+  CLOUDINARY_CLOUD_NAME: 'dp2838ewe',
+  CLOUDINARY_API_KEY: '837659378846734',
+  CLOUDINARY_API_SECRET: 'udbbN6TXXOkdwXJ271cSRPVIaq8'
+};
+
+// Appliquer les valeurs par défaut si pas définies
+Object.keys(defaultConfig).forEach(key => {
+  if (!process.env[key]) {
+    process.env[key] = defaultConfig[key];
+  }
+});
+
+console.log('🔧 Configuration appliquée:');
+console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('🔧 FRONTEND_URL:', process.env.FRONTEND_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('🔧 VENDOR_URL:', process.env.VENDOR_URL ? '✅ Configurée' : '❌ Manquante');
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
+
+// Import du middleware de debug
+const debugMiddleware = require('./middleware/debugMiddleware');
 
 // Import des routes
 const authRoutes = require('./routes/auth');
@@ -16,11 +43,22 @@ const publicRoutes = require('./routes/public');
 const liveRoutes = require('./routes/lives');
 const notificationRoutes = require('./routes/notifications');
 const creditRoutes = require('./routes/credits');
+// const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/sellers');
 const uploadRoutes = require('./routes/upload');
 
 const notificationService = require('./services/notificationService');
+
+console.log('🚀 Démarrage de LiveShop Link API...');
+console.log('=====================================');
+console.log('📋 Informations système :');
+console.log('- Node.js version:', process.version);
+console.log('- Plateforme:', process.platform);
+console.log('- Architecture:', process.arch);
+console.log('- Répertoire de travail:', process.cwd());
+console.log('- Variables d\'environnement chargées:', Object.keys(process.env).filter(key => key.includes('DB') || key.includes('NODE_ENV')).length);
+console.log('');
 
 const app = express();
 const server = http.createServer(app);
@@ -34,16 +72,98 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
+const corsOptions = {
+  origin: function (origin, callback) {
+    // ACCEPTER TOUTES LES ORIGINES POUR RÉSOUDRE LE PROBLÈME CORS
+    console.log('🌐 CORS - Origine demandée:', origin);
+    console.log('🌐 CORS - NODE_ENV:', process.env.NODE_ENV);
+    
+    // En développement, accepter localhost
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ CORS - Développement: autorisé');
+      callback(null, true);
+      return;
+    }
+    
+    // En production, accepter TOUTES les origines pour le moment
+    console.log('✅ CORS - Production: autorisé pour toutes les origines');
+    callback(null, true);
+    
+    // Configuration restrictive (à réactiver plus tard)
+    /*
+    const allowedOrigins = [
+      'https://livelink.store',
+      'https://space.livelink.store',
+      'https://api.livelink.store',
+      'http://localhost:5173',
+      'http://localhost:5174'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS bloqué pour:', origin);
+      callback(new Error('CORS non autorisé'));
+    }
+    */
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept']
+};
+
+app.use(cors(corsOptions));
+
+// Middleware de debug pour logger les requêtes
+app.use(debugMiddleware.requestLogger());
+
+// Middleware de gestion d'erreurs global
+app.use((err, req, res, next) => {
+  console.error('🚨 ERREUR GLOBALE:', err);
+  console.error('🚨 URL:', req.url);
+  console.error('🚨 Méthode:', req.method);
+  console.error('🚨 Headers:', req.headers);
+  
+  if (err.message === 'CORS non autorisé') {
+    return res.status(403).json({ 
+      error: 'CORS Error', 
+      message: 'Origine non autorisée',
+      origin: req.headers.origin 
+    });
+  }
+  
+  res.status(500).json({ 
+    error: 'Internal Server Error', 
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Servir les fichiers statiques (uploads)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Route de test simple
+app.get('/api/test', (req, res) => {
+  console.log('🧪 Test route appelée');
+  res.json({ 
+    message: 'API fonctionne !', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown'
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  console.log('🏥 Health check appelé');
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown',
+    cors: 'enabled'
+  });
+});
 
 // Stockage des connexions WebSocket par vendeur
 const sellerConnections = new Map();
@@ -99,6 +219,8 @@ io.on('connection', (socket) => {
           public_link_id: seller.public_link_id
         }
       });
+
+
 
     } catch (error) {
       console.error('❌ Erreur d\'authentification WebSocket:', error);
@@ -170,19 +292,13 @@ app.use('/api/public', publicRoutes);
 app.use('/api/lives', liveRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/credits', creditRoutes);
+// app.use('/api/comments', commentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// Route de santé
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'LiveShop Link API is running',
-    timestamp: new Date().toISOString(),
-    connectedSellers: sellerConnections.size
-  });
-});
+// Initialiser le middleware de debug après l'enregistrement des routes
+debugMiddleware.init(app, sequelize);
 
 // Servir le frontend (pour la production)
 if (process.env.NODE_ENV === 'production') {
@@ -201,6 +317,7 @@ app.use('*', (req, res) => {
 });
 
 // Gestion globale des erreurs
+app.use(debugMiddleware.errorLogger());
 app.use((error, req, res, next) => {
   console.error('Erreur globale:', error);
   res.status(500).json({

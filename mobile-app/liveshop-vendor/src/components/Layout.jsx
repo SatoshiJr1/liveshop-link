@@ -15,7 +15,8 @@ import {
   Shield,
   Users,
   Lock,
-  CreditCard
+  CreditCard,
+  MessageCircle
 } from 'lucide-react';
 import NotificationToast from './NotificationToast';
 import ThemeToggle from './ThemeToggle';
@@ -343,9 +344,9 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar - Amélioré pour mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
-        <div className="flex items-center justify-around px-1 py-1">
+        <div className="flex items-center justify-around px-2 py-3">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
@@ -353,14 +354,14 @@ const Layout = ({ children }) => {
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.path)}
-                className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
+                className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
                   isActive
                     ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
                     : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
                 }`}
               >
-                <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
-                <span className="text-[10px] font-medium truncate leading-tight">{getDisplayName(item)}</span>
+                <Icon className={`w-6 h-6 mb-2 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
+                <span className="text-xs font-semibold truncate leading-tight">{getDisplayName(item)}</span>
               </button>
             );
           })}
