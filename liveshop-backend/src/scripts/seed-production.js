@@ -39,7 +39,6 @@ const demoData = {
       name: 'Boutique Mode Paris',
       phone_number: '+33123456789',
       email: 'contact@boutiquemode.fr',
-
       description: 'Boutique de mode parisienne avec des vêtements tendance',
       address: '123 Rue de la Mode, 75001 Paris, France',
       is_verified: true,
@@ -49,7 +48,6 @@ const demoData = {
       name: 'Tech Store Dakar',
       phone_number: '+221777777777',
       email: 'info@techstore.sn',
-
       description: 'Magasin de technologie et gadgets à Dakar',
       address: '456 Avenue Cheikh Anta Diop, Dakar, Sénégal',
       is_verified: true,
@@ -59,7 +57,6 @@ const demoData = {
       name: 'Artisanat Local',
       phone_number: '+221788888888',
       email: 'contact@artisanat.sn',
-
       description: 'Artisanat traditionnel sénégalais',
       address: '789 Rue des Artisans, Thiès, Sénégal',
       is_verified: true,
@@ -76,7 +73,7 @@ const demoData = {
       category: 'vetements',
       is_active: true,
       is_pinned: true,
-      seller_id: 1, // Boutique Mode Paris
+      seller_id: 1,
       variants: [
         { name: 'Taille S', price: 4500, stock_quantity: 8, attributes: { size: 'S', color: 'Noir' } },
         { name: 'Taille M', price: 4500, stock_quantity: 10, attributes: { size: 'M', color: 'Noir' } },
@@ -88,10 +85,10 @@ const demoData = {
       description: 'Smartphone dernière génération avec appareil photo haute résolution',
       price: 150000,
       stock_quantity: 15,
-      category: 'accessoires',
+      category: 'electronique',
       is_active: true,
       is_pinned: true,
-      seller_id: 2, // Tech Store Dakar
+      seller_id: 2,
       variants: [
         { name: '128GB Noir', price: 150000, stock_quantity: 8, attributes: { storage: '128GB', color: 'Noir' } },
         { name: '256GB Bleu', price: 165000, stock_quantity: 7, attributes: { storage: '256GB', color: 'Bleu' } }
@@ -105,7 +102,7 @@ const demoData = {
       category: 'bijoux',
       is_active: true,
       is_pinned: false,
-      seller_id: 3, // Artisanat Local
+      seller_id: 3,
       variants: [
         { name: 'Bracelet Simple', price: 2500, stock_quantity: 30, attributes: { type: 'Bracelet', material: 'Cuivre' } },
         { name: 'Bracelet Décoré', price: 3500, stock_quantity: 20, attributes: { type: 'Bracelet', material: 'Cuivre', decoration: 'Oui' } }
@@ -139,16 +136,17 @@ const createSeller = async (sellerData) => {
     };
 
     const public_link_id = await generateId();
-    
-         // Créer le vendeur avec tous les champs requis
-     const sellerDataWithDefaults = {
-       ...sellerData,
-       public_link_id,
-       credit_balance: 100,
-       role: 'seller',
-       is_active: true,
-       pin_code: '1234' // Code PIN par défaut pour tous les utilisateurs de test
-     };
+
+    // Créer le vendeur avec tous les champs requis
+    const sellerDataWithDefaults = {
+      ...sellerData,
+      public_link_id,
+      credit_balance: 100,
+      role: 'seller',
+      is_active: true,
+      pin_code: '1234' // Code PIN par défaut pour tous les utilisateurs de test
+    };
+
 
     const seller = await Seller.create(sellerDataWithDefaults);
     log(`🆕 Vendeur créé: ${seller.name} (ID: ${seller.id}, Link: ${seller.public_link_id})`, 'green');
