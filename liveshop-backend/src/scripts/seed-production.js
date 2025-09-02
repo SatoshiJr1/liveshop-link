@@ -85,7 +85,7 @@ const demoData = {
       description: 'Smartphone dernière génération avec appareil photo haute résolution',
       price: 150000,
       stock_quantity: 15,
-      category: 'electronique',
+      category: 'accessoires',
       is_active: true,
       is_pinned: true,
       seller_id: 2,
