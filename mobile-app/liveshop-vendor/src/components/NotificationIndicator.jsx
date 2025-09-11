@@ -124,22 +124,22 @@ const NotificationIndicator = () => {
 
       {/* Panneau de notifications - Design moderne et responsive */}
       {showNotifications && (
-        <div className="absolute right-0 top-12 w-80 sm:w-96 z-50 animate-in slide-in-from-top-2 duration-200 sm:right-0 right-2">
+        <div className="absolute left-[-58%] transform -translate-x-1/2 top-12 w-80 sm:w-80 md:w-96 max-w-80 sm:max-w-sm z-50 animate-in slide-in-from-top-2 duration-200">
           <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-md rounded-2xl overflow-hidden">
-            {/* Header avec gradient - Responsive */}
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 md:p-4 text-white">
+            {/* Header avec gradient - Compact */}
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 md:gap-3">
-                  <div className="p-1.5 md:p-2 bg-white/20 rounded-full">
-                    <Bell className="w-4 h-4 md:w-5 md:h-5" />
+                  <div className="p-1.5 bg-white/20 rounded-full">
+                    <Bell className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-base md:text-lg">Notifications</h3>
+                    <h3 className="font-semibold text-sm">Notifications</h3>
                     {isConnected && (
-                      <div className="flex items-center gap-1.5 md:gap-2 text-white/80 text-xs md:text-sm">
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <span className="hidden sm:inline">Connecté en temps réel</span>
-                        <span className="sm:hidden">Temps réel</span>
+                      <div className="flex items-center gap-1.5 text-white/80 text-xs">
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="hidden sm:inline">Connecté</span>
+                        <span className="sm:hidden">En ligne</span>
                       </div>
                     )}
                   </div>
@@ -157,22 +157,22 @@ const NotificationIndicator = () => {
               </div>
             </div>
 
-            {/* Contenu des notifications - Responsive */}
-            <div className="max-h-80 md:max-h-96 overflow-y-auto">
+            {/* Contenu des notifications - Compact */}
+            <div className="max-h-64 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-6 md:p-8 text-center">
-                  <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                    <Bell className="w-6 h-6 md:w-8 md:h-8 text-purple-500" />
+                <div className="p-4 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-purple-500" />
                   </div>
-                  <h4 className="text-base md:text-lg font-medium text-gray-900 mb-2">Aucune notification</h4>
-                  <p className="text-gray-500 text-xs md:text-sm">Vous serez notifié ici des nouvelles commandes</p>
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Aucune notification</h4>
+                  <p className="text-gray-500 text-xs">Vous serez notifié ici des nouvelles commandes</p>
                 </div>
               ) : (
-                <div className="p-2 md:p-3 space-y-2">
+                <div className="p-2 space-y-2">
                   {notifications.slice(0, 10).map((notification) => (
                     <div
                       key={notification.id}
-                      className={`group relative p-3 md:p-4 rounded-xl border transition-all duration-300 hover:shadow-md cursor-pointer ${
+                      className={`group relative p-3 rounded-xl border transition-all duration-300 hover:shadow-md cursor-pointer ${
                         !notification.read 
                           ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 shadow-sm' 
                           : 'bg-white border-gray-100 hover:border-gray-200'
@@ -203,10 +203,10 @@ const NotificationIndicator = () => {
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
                             {notification.title}
                           </h4>
-                          <p className="text-sm text-gray-600 mb-2 leading-relaxed">
+                          <p className="text-xs sm:text-sm text-gray-600 mb-2 leading-relaxed line-clamp-2">
                             {notification.message}
                           </p>
                           <div className="flex items-center justify-between">
@@ -214,7 +214,7 @@ const NotificationIndicator = () => {
                               {formatTime(notification.created_at)}
                             </span>
                             {notification.type === 'new_order' && (
-                              <span className="text-blue-600 font-medium text-xs">
+                              <span className="text-blue-600 font-medium text-xs hidden sm:inline">
                                 Cliquer pour voir
                               </span>
                             )}
@@ -229,8 +229,8 @@ const NotificationIndicator = () => {
 
             {/* Footer avec statistiques et bouton voir toutes les commandes */}
             {notifications.length > 0 && (
-              <div className="border-t border-gray-100 p-2 md:p-3 bg-gray-50/50">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+              <div className="border-t border-gray-100 p-3 bg-gray-50/50">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                   <span>{notifications.length} notification{notifications.length > 1 ? 's' : ''}</span>
                   <span>{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</span>
                 </div>
@@ -239,9 +239,10 @@ const NotificationIndicator = () => {
                     variant="ghost"
                     size="sm"
                     onClick={handleViewAllOrders}
-                    className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs py-1.5"
+                    className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-sm py-2 h-10"
                   >
-                    Voir toutes les commandes
+                    <span className="hidden sm:inline">Voir toutes les commandes</span>
+                    <span className="sm:hidden">Voir commandes</span>
                   </Button>
                 )}
               </div>

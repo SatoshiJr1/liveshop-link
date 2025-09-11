@@ -58,12 +58,6 @@ const PerformanceIndicator = ({
           <Activity className="w-4 h-4 text-blue-500" />
           Performance API
         </h3>
-        <Badge 
-          variant={isRealtime ? 'default' : 'secondary'}
-          className={isRealtime ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
-        >
-          {isRealtime ? 'Temps réel' : 'Manuel'}
-        </Badge>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -115,7 +109,7 @@ const PerformanceIndicator = ({
       {/* Conseils d'optimisation */}
       {performance.efficiency < 60 && (
         <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-          💡 Conseil: Activez le mode temps réel pour réduire les appels API
+          💡 Conseil: Optimisez votre utilisation du cache pour de meilleures performances
         </div>
       )}
     </div>

@@ -16,9 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Camera,
-  Tag,
-  Wifi,
-  WifiOff
+  Tag
 } from 'lucide-react';
 import ProductForm from '../components/ProductForm';
 
@@ -28,7 +26,6 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [realtimeStatus, setRealtimeStatus] = useState('disconnected');
   
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,7 +42,6 @@ const ProductsPage = () => {
       realtimeService.off('product_created', handleProductCreated);
       realtimeService.off('product_updated', handleProductUpdated);
       realtimeService.off('product_deleted', handleProductDeleted);
-      realtimeService.off('connection', handleConnectionChange);
     };
   }, []);
 
@@ -58,7 +54,6 @@ const ProductsPage = () => {
     realtimeService.on('product_created', handleProductCreated);
     realtimeService.on('product_updated', handleProductUpdated);
     realtimeService.on('product_deleted', handleProductDeleted);
-    realtimeService.on('connection', handleConnectionChange);
   };
 
   // Gestion des événements temps réel
@@ -90,10 +85,6 @@ const ProductsPage = () => {
     showNotification('Produit supprimé', 'warning');
   };
 
-  const handleConnectionChange = (status) => {
-    console.log('🔌 Statut connexion temps réel:', status);
-    setRealtimeStatus(status.status);
-  };
 
   // Fonction pour afficher les notifications
   const showNotification = (message, type = 'info') => {
@@ -133,21 +124,9 @@ const ProductsPage = () => {
   };
 
   const openCreateDialog = async () => {
-    try {
-      // Vérifier les crédits avant d'ouvrir le dialogue
-      const creditCheck = await ApiService.checkCredits('ADD_PRODUCT');
-      
-      if (!creditCheck.data.hasEnough) {
-        alert(`Crédits insuffisants ! Vous avez ${creditCheck.data.currentBalance} crédits, mais il en faut ${creditCheck.data.requiredCredits} pour ajouter un produit.`);
-        return;
-      }
-      
-      setEditingProduct(null);
-      setShowDialog(true);
-    } catch (error) {
-      console.error('Erreur lors de la vérification des crédits:', error);
-      alert('Erreur lors de la vérification des crédits. Veuillez réessayer.');
-    }
+    // Plus de vérification de crédits - ouverture directe du dialogue
+    setEditingProduct(null);
+    setShowDialog(true);
   };
 
   const openEditDialog = (product) => {
@@ -309,24 +288,24 @@ const ProductsPage = () => {
             </Badge>
           )}
 
-          {/* Actions au survol */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 ">
-            <div className="flex gap-2 ">
+          {/* Actions au survol - Desktop seulement */}
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 items-center justify-center opacity-0 group-hover:opacity-100 hidden sm:flex">
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={() => openEditDialog(product)}
-                className="bg-white text-gray-900 hover:bg-gray-100 "
+                className="bg-white text-gray-900 hover:bg-gray-100"
               >
-                <Edit className="w-4 h-4 " />
+                <Edit className="w-4 h-4" />
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
                 onClick={() => handleDelete(product.id)}
-                className="bg-red-500 hover:bg-red-600 "
+                className="bg-red-500 hover:bg-red-600"
               >
-                <Trash2 className="w-4 h-4 " />
+                <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -439,6 +418,28 @@ const ProductsPage = () => {
               </div>
             </div>
           )}
+
+          {/* Boutons d'action - Visibles sur mobile */}
+          <div className="flex gap-2 pt-3 mt-3 border-t border-gray-200 sm:hidden">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openEditDialog(product)}
+              className="flex-1 text-xs"
+            >
+              <Edit className="w-3 h-3 mr-1" />
+              Modifier
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => handleDelete(product.id)}
+              className="flex-1 text-xs"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Supprimer
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -465,21 +466,6 @@ const ProductsPage = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          {/* Indicateur temps réel */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium">
-            {realtimeStatus === 'connected' ? (
-              <>
-                <Wifi className="w-3 h-3 text-green-500" />
-                <span className="text-green-600">Temps réel</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="w-3 h-3 text-gray-400" />
-                <span className="text-gray-500">Hors ligne</span>
-              </>
-            )}
-          </div>
-          
           <Button
             onClick={openCreateDialog}
             className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto px-6 py-3"
@@ -647,9 +633,9 @@ const ProductsPage = () => {
 
       {/* Modal pour ajouter/modifier un produit */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto ">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-0">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
               {editingProduct ? 'Modifier le produit' : 'Ajouter un produit'}
             </DialogTitle>
           </DialogHeader>
