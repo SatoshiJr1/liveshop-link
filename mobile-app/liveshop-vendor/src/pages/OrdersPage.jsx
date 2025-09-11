@@ -19,7 +19,8 @@ import {
   DollarSign,
   Package,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ApiService from '../services/api';
@@ -54,29 +55,28 @@ const OrdersPage = () => {
   const [ordersPerPage] = useState(6); // Utiliser la limite par défaut de l'API
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
+  
+  // Debounce pour éviter les appels multiples
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     fetchOrders();
     
-    // Rafraîchissement automatique toutes les 30 secondes
-    const interval = setInterval(() => {
-      fetchOrders();
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    // Pas de rafraîchissement automatique - WebSocket gère le temps réel
+    // Les données se mettent à jour automatiquement via WebSocket
   }, []);
 
   // Écouter les nouvelles commandes en temps réel
   useEffect(() => {
     // Écouter les nouvelles commandes
-    webSocketService.onNewOrder((data) => {
+    webSocketService.onNewOrder(() => {
       console.log('🔄 Nouvelle commande reçue, mise à jour de la liste...');
       // Rafraîchir immédiatement les données
       fetchOrders();
     });
 
     // Écouter les mises à jour de statut
-    webSocketService.onOrderStatusUpdate((data) => {
+    webSocketService.onOrderStatusUpdate(() => {
       console.log('🔄 Statut mis à jour, mise à jour de la liste...');
       // Rafraîchir immédiatement les données
       fetchOrders();
@@ -94,7 +94,14 @@ const OrdersPage = () => {
   }, [currentPage, activeTab]);
 
   const fetchOrders = async () => {
+    // Éviter les appels multiples simultanés
+    if (isFetching) {
+      console.log('🔄 Appel API déjà en cours, ignoré');
+      return;
+    }
+    
     try {
+      setIsFetching(true);
       setLoading(true);
       
       // Déterminer le statut à filtrer
@@ -131,6 +138,7 @@ const OrdersPage = () => {
       console.error('Erreur lors du chargement des commandes:', error);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
@@ -514,6 +522,23 @@ const OrdersPage = () => {
                     Quantité: {order.quantity} | {order.total_price.toLocaleString()} FCFA
                   </p>
                     </div>
+
+                {/* Commentaire client (si existe) */}
+                {order.comment_data && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <MessageCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      Commentaire client
+                    </span>
+                    {order.comment_data.rating && (
+                      <div className="flex items-center gap-1 ml-auto">
+                        <span className="text-xs text-blue-600 font-bold">
+                          {order.comment_data.rating}/5
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2 ">

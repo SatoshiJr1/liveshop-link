@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { Workbox } from 'workbox-window'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,3 +15,8 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+if ('serviceWorker' in navigator) {
+  const workbox = new Workbox('/sw.js', { scope: '/' })
+  workbox.register()
+}

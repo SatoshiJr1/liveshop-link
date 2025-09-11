@@ -24,6 +24,7 @@ function App() {
           <Route path="/:linkId/order/:productId" element={<OrderPage />} />
           <Route path="/:linkId/confirmation" element={<ConfirmationPage />} />
           <Route path="/:linkId/comments" element={<CommentsPage />} />
+          <Route path="/:linkId/comments/:orderId" element={<CommentsPage />} />
           <Route path="/:linkId/live/:liveSlug" element={<LiveProductsPage />} />
           
           {/* Route pour les tickets de livraison (QR code) */}

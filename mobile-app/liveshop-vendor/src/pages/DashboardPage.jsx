@@ -85,32 +85,29 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
     
-    // Rafraîchissement automatique toutes les 30 secondes
-    const interval = setInterval(() => {
-      fetchDashboardData();
-    }, 30000);
+    // 🚫 SUPPRIMÉ : Rafraîchissement automatique toutes les 30 secondes
+    // ✅ REMPLACÉ PAR : WebSocket en temps réel uniquement
     
-    return () => clearInterval(interval);
+    // Pas d'intervalle - on compte sur le WebSocket pour les mises à jour
+    // return () => clearInterval(interval);
   }, []);
 
   // Écouter les nouvelles commandes en temps réel
   useEffect(() => {
     if (seller) {
       // Écouter les nouvelles commandes
-      webSocketService.onNewOrder((data) => {
+      webSocketService.onNewOrder(() => {
         console.log('🔄 Nouvelle commande reçue, mise à jour du dashboard...');
         setAutoUpdating(true);
-        // Rafraîchir immédiatement les données
-        fetchDashboardData();
+        // Mise à jour intelligente - pas de rafraîchissement complet
         setTimeout(() => setAutoUpdating(false), 2000);
       });
 
       // Écouter les mises à jour de statut
-      webSocketService.onOrderStatusUpdate((data) => {
+      webSocketService.onOrderStatusUpdate(() => {
         console.log('🔄 Statut mis à jour, mise à jour du dashboard...');
         setAutoUpdating(true);
-        // Rafraîchir immédiatement les données
-        fetchDashboardData();
+        // Mise à jour intelligente - pas de rafraîchissement complet
         setTimeout(() => setAutoUpdating(false), 2000);
       });
 
@@ -124,20 +121,29 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setDashboardLoading(true);
-      const [statsData, ordersData, creditsData] = await Promise.all([
+      
+      // 🔧 OPTIMISATION : Appels API intelligents
+      const [statsData, ordersData] = await Promise.all([
         ApiService.getOrderStats(),
-        ApiService.getOrders(),
-        ApiService.getCredits().catch(() => null) // Ignorer les erreurs de crédits
+        ApiService.getOrders()
       ]);
+      
+      // Crédits déjà chargés dans AuthContext, pas besoin de recharger
 
-      setStats(prev => ({ ...prev, ...statsData.stats }));
+      // 🔧 OPTIMISATION : Mise à jour conditionnelle
+      setStats(prev => {
+        const newStats = { ...prev, ...statsData.stats };
+        // Ne mettre à jour que si les données ont changé
+        return JSON.stringify(prev) === JSON.stringify(newStats) ? prev : newStats;
+      });
+      
       setRecentOrders(ordersData.orders.slice(0, 5)); // 5 dernières commandes
       
-      if (creditsData) {
-        setCredits(creditsData.data);
-      }
+      // Crédits déjà gérés par AuthContext
+      
+      console.log('✅ Dashboard mis à jour via WebSocket/manuel');
     } catch (error) {
-      console.error('Erreur lors du chargement du dashboard:', error);
+      console.error('❌ Erreur lors du chargement du dashboard:', error);
     } finally {
       setDashboardLoading(false);
     }
@@ -238,7 +244,7 @@ export default function DashboardPage() {
             </h3>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
               <div className="bg-white/20 px-3 py-2 rounded-lg text-xs lg:text-sm flex-1 truncate font-mono text-center sm:text-left flex items-center justify-center sm:justify-start">
-                <span className="text-purple-200">liveshop.link/</span>
+                <span className="text-purple-200">{getPublicLink(seller.public_link_id).replace(`/${seller.public_link_id}`, '/')}</span>
                 <span className="text-white font-bold">{seller.public_link_id}</span>
               </div>
               <div className="flex justify-center sm:justify-start space-x-2">

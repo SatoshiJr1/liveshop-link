@@ -26,7 +26,7 @@ const VoiceControls = () => {
         if (voiceNotification && typeof voiceNotification.isEnabled === 'function') {
           setIsEnabled(voiceNotification.isEnabled());
         } else {
-          setIsEnabled(true); // Activer par défaut
+          setIsEnabled(false); // Désactiver par défaut
         }
         
         setVolume(0.8);
@@ -35,8 +35,8 @@ const VoiceControls = () => {
         setWolofAudioAvailable(false); // Forcer à false pour désactiver Wolof
       } catch (error) {
         console.error('❌ Erreur initialisation contrôles vocaux:', error);
-        // En cas d'erreur, activer quand même par défaut
-        setIsEnabled(true);
+        // En cas d'erreur, désactiver par défaut
+        setIsEnabled(false);
         setIsInitialized(true);
       }
     };

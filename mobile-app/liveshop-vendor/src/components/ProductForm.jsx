@@ -302,12 +302,12 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
     switch (attr.type) {
       case 'select':
         return (
-          <div key={attr.name} className="space-y-2 ">
-            <Label htmlFor={attr.name}>
+          <div key={attr.name} className="space-y-2">
+            <Label htmlFor={attr.name} className="text-sm font-medium">
               {attr.label}
             </Label>
             <Select value={value} onValueChange={(val) => handleAttributeChange(attr.name, val)}>
-              <SelectTrigger className={error ? 'border-red-500' : ''}>
+              <SelectTrigger className={`w-full ${error ? 'border-red-500' : ''}`}>
                 <SelectValue placeholder={`Sélectionner ${attr.label.toLowerCase()}`} />
               </SelectTrigger>
               <SelectContent>
@@ -316,90 +316,90 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
                 ))}
               </SelectContent>
             </Select>
-            {error && <p className="text-sm text-red-500 ">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
         );
 
       case 'number':
         return (
-          <div key={attr.name} className="space-y-2 ">
-            <Label htmlFor={attr.name}>
+          <div key={attr.name} className="space-y-2">
+            <Label htmlFor={attr.name} className="text-sm font-medium">
               {attr.label}
             </Label>
-            <div className="flex gap-2 ">
+            <div className="flex gap-2">
               <Input
                 type="number"
                 value={value}
                 onChange={(e) => handleAttributeChange(attr.name, e.target.value)}
-                className={error ? 'border-red-500' : ''}
+                className={`flex-1 ${error ? 'border-red-500' : ''}`}
                 step="0.01"
               />
-              {attr.unit && <span className="text-sm text-gray-500 self-center ">{attr.unit}</span>}
+              {attr.unit && <span className="text-sm text-gray-500 self-center">{attr.unit}</span>}
             </div>
-            {error && <p className="text-sm text-red-500 ">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
         );
 
       case 'date':
         return (
-          <div key={attr.name} className="space-y-2 ">
-            <Label htmlFor={attr.name}>
+          <div key={attr.name} className="space-y-2">
+            <Label htmlFor={attr.name} className="text-sm font-medium">
               {attr.label}
             </Label>
             <Input
               type="date"
               value={value}
               onChange={(e) => handleAttributeChange(attr.name, e.target.value)}
-              className={error ? 'border-red-500' : ''}
+              className={`w-full ${error ? 'border-red-500' : ''}`}
             />
-            {error && <p className="text-sm text-red-500 ">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
         );
 
       default: // text
         return (
-          <div key={attr.name} className="space-y-2 ">
-            <Label htmlFor={attr.name}>
+          <div key={attr.name} className="space-y-2">
+            <Label htmlFor={attr.name} className="text-sm font-medium">
               {attr.label}
             </Label>
             <Input
               type="text"
               value={value}
               onChange={(e) => handleAttributeChange(attr.name, e.target.value)}
-              className={error ? 'border-red-500' : ''}
+              className={`w-full ${error ? 'border-red-500' : ''}`}
             />
-            {error && <p className="text-sm text-red-500 ">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
         );
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 ">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {/* Informations de base */}
       <Card>
-        <CardHeader>
-          <CardTitle>Informations de base</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Informations de base</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 ">
-          <div className="space-y-2 ">
-            <Label htmlFor="name">
-              Nom du produit <span className="text-red-500 ">*</span>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-sm font-medium">
+              Nom du produit <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Ex: Robe élégante"
-              className={errors.name ? 'border-red-500' : ''}
+              className={`w-full ${errors.name ? 'border-red-500' : ''}`}
             />
-            {errors.name && <p className="text-sm text-red-500 ">{errors.name}</p>}
+            {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
           </div>
 
-          <div className="space-y-2 ">
-            <Label htmlFor="category">Catégorie</Label>
+          <div className="space-y-2">
+            <Label htmlFor="category" className="text-sm font-medium">Catégorie</Label>
             <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -410,10 +410,10 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 ">
-            <div className="space-y-2 ">
-              <Label htmlFor="price">
-                Prix (FCFA) <span className="text-red-500 ">*</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="price" className="text-sm font-medium">
+                Prix (FCFA) <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="price"
@@ -421,15 +421,15 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
                 value={formData.price}
                 onChange={(e) => handleInputChange('price', e.target.value)}
                 placeholder="Ex: 25000"
-                className={errors.price ? 'border-red-500' : ''}
+                className={`w-full ${errors.price ? 'border-red-500' : ''}`}
                 step="100"
               />
-              {errors.price && <p className="text-sm text-red-500 ">{errors.price}</p>}
+              {errors.price && <p className="text-sm text-red-500">{errors.price}</p>}
             </div>
 
-            <div className="space-y-2 ">
-              <Label htmlFor="stock_quantity">
-                Quantité en stock <span className="text-red-500 ">*</span>
+            <div className="space-y-2">
+              <Label htmlFor="stock_quantity" className="text-sm font-medium">
+                Quantité en stock <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="stock_quantity"
@@ -437,21 +437,22 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
                 value={formData.stock_quantity}
                 onChange={(e) => handleInputChange('stock_quantity', e.target.value)}
                 placeholder="Ex: 10"
-                className={errors.stock_quantity ? 'border-red-500' : ''}
+                className={`w-full ${errors.stock_quantity ? 'border-red-500' : ''}`}
                 min="0"
               />
-              {errors.stock_quantity && <p className="text-sm text-red-500 ">{errors.stock_quantity}</p>}
+              {errors.stock_quantity && <p className="text-sm text-red-500">{errors.stock_quantity}</p>}
             </div>
           </div>
 
-          <div className="space-y-2 ">
-            <Label htmlFor="description">Description</Label>
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Décrivez votre produit..."
               rows={3}
+              className="w-full resize-none"
             />
           </div>
         </CardContent>
@@ -460,10 +461,10 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
       {/* Attributs spécifiques à la catégorie */}
       {categories[formData.category]?.attributes?.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>Attributs spécifiques</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg">Attributs spécifiques</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 ">
+          <CardContent className="space-y-4">
             {categories[formData.category].attributes.map(renderAttributeField)}
           </CardContent>
         </Card>
@@ -471,8 +472,8 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
 
       {/* Photos */}
       <Card>
-        <CardHeader>
-          <CardTitle>Photos du produit</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Photos du produit</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <ImageGallery
@@ -488,13 +489,14 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
             type="button"
             onClick={() => setShowImageLibrary(true)}
             variant="outline"
-            className="w-full py-4 border-2 border-dashed border-blue-500 hover:border-blue-600 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium"
+            className="w-full py-3 sm:py-4 border-2 border-dashed border-blue-500 hover:border-blue-600 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-sm sm:text-base"
           >
-            <Search className="w-6 h-6 mr-3" />
-            📸 Rechercher dans la librairie d'images Unsplash
+            <Search className="w-4 h-4 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
+            <span className="hidden sm:inline">📸 Rechercher dans la librairie d'images Unsplash</span>
+            <span className="sm:hidden">📸 Rechercher images</span>
           </Button>
           
-          <div className="text-center text-sm text-gray-500 font-medium">
+          <div className="text-center text-xs sm:text-sm text-gray-500 font-medium">
             ─── ou ───
           </div>
           
@@ -510,27 +512,28 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
 
       {/* Tags */}
       <Card>
-        <CardHeader>
-          <CardTitle>Tags</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Tags</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 ">
-          <div className="flex flex-wrap gap-2 ">
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
             {(Array.isArray(formData.tags) ? formData.tags : []).map(tag => (
-              <Badge key={tag} variant="secondary" className="flex items-center gap-1 ">
+              <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-xs sm:text-sm">
                 {tag}
                 <button
                   type="button"
                   onClick={() => removeTag(tag)}
-                  className="ml-1 "
+                  className="ml-1"
                 >
-                  <X className="w-3 h-3 " />
+                  <X className="w-3 h-3" />
                 </button>
               </Badge>
             ))}
           </div>
-          <div className="flex gap-2 ">
+          <div className="flex gap-2">
             <Input
               placeholder="Ajouter un tag"
+              className="flex-1 text-sm"
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -542,6 +545,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={() => {
                 const input = document.querySelector('input[placeholder="Ajouter un tag"]');
                 if (input && input.value) {
@@ -550,7 +554,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
                 }
               }}
             >
-              <Plus className="w-4 h-4 " />
+              <Plus className="w-4 h-4" />
             </Button>
           </div>
         </CardContent>
@@ -558,12 +562,12 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
 
       {/* Informations de livraison */}
       <Card>
-        <CardHeader>
-          <CardTitle>Informations de livraison</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Informations de livraison</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 ">
-          <div className="space-y-2 ">
-            <Label htmlFor="weight">Poids (grammes)</Label>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="weight" className="text-sm font-medium">Poids (grammes)</Label>
             <Input
               id="weight"
               type="number"
@@ -571,12 +575,13 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
               onChange={(e) => handleInputChange('weight', e.target.value)}
               placeholder="Ex: 500"
               step="1"
+              className="w-full"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4 ">
-            <div className="space-y-2 ">
-              <Label htmlFor="length">Longueur (cm)</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="length" className="text-sm font-medium">Longueur (cm)</Label>
               <Input
                 id="length"
                 type="number"
@@ -584,10 +589,11 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
                 onChange={(e) => handleDimensionChange('length', e.target.value)}
                 placeholder="Ex: 30"
                 step="0.1"
+                className="w-full"
               />
             </div>
-            <div className="space-y-2 ">
-              <Label htmlFor="width">Largeur (cm)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="width" className="text-sm font-medium">Largeur (cm)</Label>
               <Input
                 id="width"
                 type="number"
@@ -595,10 +601,11 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
                 onChange={(e) => handleDimensionChange('width', e.target.value)}
                 placeholder="Ex: 20"
                 step="0.1"
+                className="w-full"
               />
             </div>
-            <div className="space-y-2 ">
-              <Label htmlFor="height">Hauteur (cm)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="height" className="text-sm font-medium">Hauteur (cm)</Label>
               <Input
                 id="height"
                 type="number"
@@ -606,6 +613,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
                 onChange={(e) => handleDimensionChange('height', e.target.value)}
                 placeholder="Ex: 10"
                 step="0.1"
+                className="w-full"
               />
             </div>
           </div>
@@ -613,19 +621,19 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
       </Card>
 
       {/* Boutons d'action */}
-      <div className="flex gap-4 ">
+      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="flex-1 "
+          className="flex-1 py-3 sm:py-2 text-sm sm:text-base"
         >
           Annuler
         </Button>
         <Button
           type="submit"
           disabled={isLoading}
-          className="flex-1 "
+          className="flex-1 py-3 sm:py-2 text-sm sm:text-base"
         >
           {isLoading ? 'Enregistrement...' : (initialData ? 'Modifier' : 'Ajouter')}
         </Button>
