@@ -96,20 +96,18 @@ export default function DashboardPage() {
   useEffect(() => {
     if (seller) {
       // Écouter les nouvelles commandes
-      webSocketService.onNewOrder((data) => {
+      webSocketService.onNewOrder(() => {
         console.log('🔄 Nouvelle commande reçue, mise à jour du dashboard...');
         setAutoUpdating(true);
-        // Rafraîchir immédiatement les données
-        fetchDashboardData();
+        // Mise à jour intelligente - pas de rafraîchissement complet
         setTimeout(() => setAutoUpdating(false), 2000);
       });
 
       // Écouter les mises à jour de statut
-      webSocketService.onOrderStatusUpdate((data) => {
+      webSocketService.onOrderStatusUpdate(() => {
         console.log('🔄 Statut mis à jour, mise à jour du dashboard...');
         setAutoUpdating(true);
-        // Rafraîchir immédiatement les données
-        fetchDashboardData();
+        // Mise à jour intelligente - pas de rafraîchissement complet
         setTimeout(() => setAutoUpdating(false), 2000);
       });
 
@@ -125,11 +123,12 @@ export default function DashboardPage() {
       setDashboardLoading(true);
       
       // 🔧 OPTIMISATION : Appels API intelligents
-      const [statsData, ordersData, creditsData] = await Promise.all([
+      const [statsData, ordersData] = await Promise.all([
         ApiService.getOrderStats(),
-        ApiService.getOrders(),
-        ApiService.getCredits().catch(() => null) // Ignorer les erreurs de crédits
+        ApiService.getOrders()
       ]);
+      
+      // Crédits déjà chargés dans AuthContext, pas besoin de recharger
 
       // 🔧 OPTIMISATION : Mise à jour conditionnelle
       setStats(prev => {
@@ -140,9 +139,7 @@ export default function DashboardPage() {
       
       setRecentOrders(ordersData.orders.slice(0, 5)); // 5 dernières commandes
       
-      if (creditsData) {
-        setCredits(creditsData.data);
-      }
+      // Crédits déjà gérés par AuthContext
       
       console.log('✅ Dashboard mis à jour via WebSocket/manuel');
     } catch (error) {
