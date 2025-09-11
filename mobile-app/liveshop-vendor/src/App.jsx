@@ -27,6 +27,7 @@ import AdminSecurityPage from './pages/AdminSecurityPage';
 import PaymentSettingsPage from './pages/PaymentSettingsPage';
 import TestImageUpload from './components/TestImageUpload';
 import { AdminRoute, SellerRoute, AuthRoute } from './components/ProtectedRoute';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const AppContent = () => {
   const { isAuthenticated, loading, isAdmin, token } = useAuth();
@@ -63,6 +64,7 @@ const AppContent = () => {
 
   return (
     <>
+      <PWAInstallPrompt />
       <Toaster 
         position="top-right"
         richColors

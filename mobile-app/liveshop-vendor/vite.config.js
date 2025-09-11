@@ -40,9 +40,23 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            // API: NetworkFirst pour GET, et Background Sync pour POST/PUT/DELETE produits
+            urlPattern: ({ url, request }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
+            method: 'GET',
             options: { cacheName: 'api', networkTimeoutSeconds: 3 }
+          },
+          {
+            urlPattern: ({ url, request }) => url.pathname.startsWith('/api/products') && ['POST','PUT','DELETE'].includes(request.method),
+            handler: 'NetworkOnly',
+            options: {
+              backgroundSync: {
+                name: 'products-queue',
+                options: {
+                  maxRetentionTime: 24 * 60
+                }
+              }
+            }
           }
         ]
       }
