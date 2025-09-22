@@ -243,11 +243,10 @@ const OrdersPage = () => {
       }
 
       // URL dynamique basée sur l'environnement
-      const protocol = window.location.protocol;
-      const hostname = window.location.hostname;
-      const port = '3001';
-      
-      const ticketUrl = `${protocol}//${hostname}:${port}/api/orders/${orderId}/delivery-ticket`;
+      // Construire l'URL en prod ou dev
+      const isProd = window.location.hostname.includes('livelink.store');
+      const baseUrl = isProd ? 'https://api.livelink.store' : `${window.location.protocol}//${window.location.hostname}:3001`;
+      const ticketUrl = `${baseUrl}/api/orders/${orderId}/delivery-ticket`;
       console.log('🖨️ Téléchargement du ticket:', ticketUrl);
       
       // Créer un lien temporaire avec le token

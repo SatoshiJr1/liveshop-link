@@ -59,10 +59,12 @@ const NotificationToast = ({ notification, onClose, onViewOrder }) => {
   if (!isVisible) return null;
 
   return (
-    <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transition-all duration-300 ${
-      isAnimating ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-    }`}>
-      <Card className={`shadow-lg border-2 ${getNotificationColor(notification.type)}`}>
+    <div className={`fixed z-50 w-full sm:w-auto ${
+      // Mobile: en bas type snackbar; Desktop: en haut à droite
+      'sm:top-4 sm:right-4 bottom-4 left-0 px-3 sm:px-0'
+    } transition-all duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0 translate-y-2 sm:translate-y-0 sm:translate-x-2'}`}>
+      <Card className={`shadow-lg border-2 ${getNotificationColor(notification.type)} sm:max-w-sm sm:w-full rounded-2xl sm:rounded-xl`}
+      >
         <CardContent className="p-4">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0 mt-0.5">
