@@ -27,6 +27,11 @@ export default defineConfig({
         navigateFallback: '/offline.html',
         runtimeCaching: [
           {
+            // Ne jamais mettre en cache la page d'offline pour éviter le faux "hors ligne" en prod
+            urlPattern: ({ url }) => url.pathname.endsWith('/offline.html'),
+            handler: 'NetworkOnly'
+          },
+          {
             urlPattern: ({ request }) => ['script', 'style', 'font'].includes(request.destination),
             handler: 'StaleWhileRevalidate',
             options: { cacheName: 'assets' }
