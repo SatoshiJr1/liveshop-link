@@ -36,7 +36,7 @@ router.get('/payment-settings', authenticateToken, async (req, res) => {
 // POST /api/sellers/payment-settings - Mettre à jour les paramètres de paiement
 router.post('/payment-settings', authenticateToken, async (req, res) => {
   try {
-    const { payment_settings, payment_methods_enabled } = req.body;
+    const { payment_settings, payment_methods_enabled, wave_phone, orange_money_phone } = req.body;
 
     const seller = await Seller.findByPk(req.seller.id);
     
@@ -44,9 +44,23 @@ router.post('/payment-settings', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Vendeur non trouvé' });
     }
 
+    // Préparer les settings fusionnés
+    const currentSettings = seller.payment_settings || {};
+    const mergedSettings = {
+      ...currentSettings,
+      ...(payment_settings || {})
+    };
+
+    if (typeof wave_phone === 'string') {
+      mergedSettings.wave = { ...(mergedSettings.wave || {}), phone: wave_phone };
+    }
+    if (typeof orange_money_phone === 'string') {
+      mergedSettings.orange_money = { ...(mergedSettings.orange_money || {}), phone: orange_money_phone };
+    }
+
     // Mettre à jour les paramètres
     await seller.update({
-      payment_settings: payment_settings || {},
+      payment_settings: mergedSettings,
       payment_methods_enabled: payment_methods_enabled || ['manual']
     });
 

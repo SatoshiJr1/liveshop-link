@@ -127,7 +127,7 @@ const OrderDetailPage = () => {
               <span className="font-semibold ">Preuve de paiement :</span>
               <div className="mt-2">
                 <img 
-                  src={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  src={order.payment_proof_url?.startsWith('http') ? order.payment_proof_url : `http://localhost:3001${order.payment_proof_url}`}
                   alt="Preuve de paiement"
                   className="w-full max-w-md rounded-lg border-2 border-gray-200"
                   onError={(e) => {
@@ -139,7 +139,7 @@ const OrderDetailPage = () => {
                   Image non disponible
                 </div>
                 <a 
-                  href={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  href={order.payment_proof_url?.startsWith('http') ? order.payment_proof_url : `http://localhost:3001${order.payment_proof_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-block"

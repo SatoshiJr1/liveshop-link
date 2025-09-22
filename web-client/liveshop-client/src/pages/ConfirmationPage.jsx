@@ -8,9 +8,9 @@ const ConfirmationPage = () => {
   const navigate = useNavigate();
   const { linkId } = useParams();
   
-  const { order, product, seller } = location.state || {};
+  const { order, product, seller, orders, items, isMultipleOrders } = location.state || {};
 
-  if (!order || !product || !seller) {
+  if (!order && !orders) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -60,6 +60,11 @@ const ConfirmationPage = () => {
     return colors[status] || 'text-gray-600 bg-gray-50 border-gray-200';
   };
 
+  // Calculer le total pour les commandes multiples
+  const totalAmount = isMultipleOrders 
+    ? orders.reduce((sum, order) => sum + order.total_price, 0)
+    : order.total_price;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
       {/* Header */}
@@ -70,83 +75,166 @@ const ConfirmationPage = () => {
               <CheckCircle className="w-16 h-16 text-green-500" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              🎉 Commande confirmée !
+              🎉 {isMultipleOrders ? 'Commandes confirmées !' : 'Commande confirmée !'}
             </h1>
             <p className="text-gray-600">
-              Votre commande a été envoyée à {seller.name}
+              {isMultipleOrders 
+                ? `Vos ${orders.length} commandes ont été envoyées`
+                : 'Votre commande a été envoyée'
+              }
             </p>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Order Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                Détails de la commande
-              </CardTitle>
-              <CardDescription>
-                Commande #{order.id} - {new Date(order.created_at).toLocaleDateString('fr-FR')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Statut:</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
-                  {getStatusLabel(order.status)}
-                </span>
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Produit commandé</h4>
-                <div className="flex items-center space-x-3">
-                  {product.image_url ? (
-                    <img 
-                      src={product.image_url} 
-                      alt={product.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
-                      <span className="text-2xl">📦</span>
+        {isMultipleOrders ? (
+          // Affichage pour commandes multiples
+          <div className="space-y-6">
+            {orders.map((orderData, index) => {
+              const item = items[index];
+              return (
+                <Card key={orderData.id}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                      Commande #{orderData.id}
+                    </CardTitle>
+                    <CardDescription>
+                      {new Date(orderData.created_at).toLocaleDateString('fr-FR')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Statut:</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(orderData.status)}`}>
+                        {getStatusLabel(orderData.status)}
+                      </span>
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <h5 className="font-medium text-gray-900">{product.name}</h5>
-                    <p className="text-sm text-gray-600">
-                      {order.quantity} × {product.price.toLocaleString()} FCFA
-                    </p>
+
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Produit commandé</h4>
+                      <div className="flex items-center space-x-3">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name}
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+                            <span className="text-2xl">📦</span>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h5 className="font-medium text-gray-900">{item.name}</h5>
+                          <p className="text-sm text-gray-600">
+                            {orderData.quantity} × {item.price.toLocaleString()} FCFA
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between text-lg font-bold text-purple-600">
+                        <span>Total:</span>
+                        <span>{orderData.total_price.toLocaleString()} FCFA</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Moyen de paiement</h4>
+                      <p className="text-gray-600">{getPaymentMethodLabel(orderData.payment_method)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+
+            {/* Total général */}
+            <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Total général</h3>
+                  <div className="text-3xl font-bold text-purple-600">
+                    {totalAmount.toLocaleString()} FCFA
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Pour {orders.length} commande{orders.length > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          // Affichage pour commande simple (code existant)
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                  Détails de la commande
+                </CardTitle>
+                <CardDescription>
+                  Commande #{order.id} - {new Date(order.created_at).toLocaleDateString('fr-FR')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Statut:</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
+                    {getStatusLabel(order.status)}
+                  </span>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Produit commandé</h4>
+                  <div className="flex items-center space-x-3">
+                    {product.image_url ? (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-16 h-16 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+                        <span className="text-2xl">📦</span>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h5 className="font-medium text-gray-900">{product.name}</h5>
+                      <p className="text-sm text-gray-600">
+                        {order.quantity} × {product.price.toLocaleString()} FCFA
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between text-lg font-bold text-purple-600">
-                  <span>Total payé:</span>
-                  <span>{order.total_price.toLocaleString()} FCFA</span>
+                <div className="border-t pt-4">
+                  <div className="flex justify-between text-lg font-bold text-purple-600">
+                    <span>Total payé:</span>
+                    <span>{order.total_price.toLocaleString()} FCFA</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="border-t pt-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Moyen de paiement</h4>
-                <p className="text-gray-600">{getPaymentMethodLabel(order.payment_method)}</p>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Moyen de paiement</h4>
+                  <p className="text-gray-600">{getPaymentMethodLabel(order.payment_method)}</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Customer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations de livraison</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Nom</h4>
-                <p className="text-gray-600">{order.customer_name}</p>
-              </div>
+            {/* Customer Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Informations de livraison</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-1">Nom</h4>
+                  <p className="text-gray-600">{order.customer_name}</p>
+                </div>
 
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">Téléphone</h4>
@@ -167,8 +255,8 @@ const ConfirmationPage = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Next Steps */}
+        )}
+        
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Prochaines étapes</CardTitle>
@@ -182,7 +270,7 @@ const ConfirmationPage = () => {
                 <div>
                   <h4 className="font-medium text-gray-900">Validation du vendeur</h4>
                   <p className="text-sm text-gray-600">
-                    {seller.name} va examiner votre commande et confirmer la disponibilité.
+                    {seller?.name ?? 'Le vendeur'} va examiner votre commande et confirmer la disponibilité.
                   </p>
                 </div>
               </div>
@@ -221,7 +309,7 @@ const ConfirmationPage = () => {
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
+        
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <Button 
             onClick={() => navigate(`/${linkId}`)}

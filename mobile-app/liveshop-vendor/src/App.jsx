@@ -25,8 +25,10 @@ import AdminCreditsPage from './pages/AdminCreditsPage';
 import AdminSellerDetailPage from './pages/AdminSellerDetailPage';
 import AdminSecurityPage from './pages/AdminSecurityPage';
 import PaymentSettingsPage from './pages/PaymentSettingsPage';
+import WalletPage from './pages/WalletPage';
 import TestImageUpload from './components/TestImageUpload';
 import { AdminRoute, SellerRoute, AuthRoute } from './components/ProtectedRoute';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const AppContent = () => {
   const { isAuthenticated, loading, isAdmin, token } = useAuth();
@@ -63,6 +65,7 @@ const AppContent = () => {
 
   return (
     <>
+      <PWAInstallPrompt />
       <Toaster 
         position="top-right"
         richColors
@@ -156,6 +159,11 @@ const AppContent = () => {
                   <Route path="credits" element={
                     <SellerRoute>
                       <CreditsPage />
+                    </SellerRoute>
+                  } />
+                  <Route path="wallet" element={
+                    <SellerRoute>
+                      <WalletPage />
                     </SellerRoute>
                   } />
                   <Route path="payment-settings" element={

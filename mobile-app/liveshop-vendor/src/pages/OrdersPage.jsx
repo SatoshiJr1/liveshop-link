@@ -392,11 +392,11 @@ const OrdersPage = () => {
 
   return (
     <div className="space-y-6 ">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ">
+      {/* Header (titre masqué sur mobile) */}
+      <div className="hidden sm:flex sm:flex-row justify-between items-center gap-4 ">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 ">Commandes</h1>
-          <p className="text-gray-600 ">Gérez toutes vos commandes en un seul endroit</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Commandes</h1>
+          <p className="text-gray-600 dark:text-gray-300">Gérez toutes vos commandes en un seul endroit</p>
         </div>
         
         <Button
@@ -411,7 +411,7 @@ const OrdersPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 ">
+      <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 ">
         <button
           onClick={() => {
             setActiveTab('all');
@@ -487,16 +487,16 @@ const OrdersPage = () => {
           ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
           {orders.map((order) => (
-                <Card key={order.id} className="hover: transition-shadow ">
+                <Card key={order.id} className="hover: transition-shadow dark:bg-[#0f1a2a] dark:border-[#1c2638]">
               <CardHeader className="pb-3 ">
                 <div className="flex items-center justify-between ">
-                  <CardTitle className="text-lg ">Commande #{order.id}</CardTitle>
+                  <CardTitle className="text-lg dark:text-white">Commande #{order.id}</CardTitle>
                       <Badge className={getStatusColor(order.status)}>
                         {getStatusIcon(order.status)}
                         <span className="ml-1 ">{getStatusLabel(order.status)}</span>
                       </Badge>
                     </div>
-                <p className="text-sm text-gray-500 ">
+                <p className="text-sm text-gray-500 dark:text-gray-400 ">
                   {new Date(order.created_at).toLocaleDateString('fr-FR', {
                     day: 'numeric',
                     month: 'long',
@@ -510,15 +510,15 @@ const OrdersPage = () => {
               <CardContent className="space-y-4 ">
                 {/* Customer Info */}
                       <div>
-                  <h4 className="font-semibold text-gray-900 ">{order.customer_name}</h4>
-                  <p className="text-sm text-gray-600 ">{order.customer_phone}</p>
-                  <p className="text-sm text-gray-500 truncate ">{order.customer_address}</p>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">{order.customer_name}</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{order.customer_phone}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate ">{order.customer_address}</p>
                       </div>
 
                 {/* Product Info */}
                       <div>
-                  <p className="font-medium text-gray-900 ">{order.product?.name}</p>
-                  <p className="text-sm text-gray-600 ">
+                  <p className="font-medium text-gray-900 dark:text-white">{order.product?.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 ">
                     Quantité: {order.quantity} | {order.total_price.toLocaleString()} FCFA
                   </p>
                     </div>
@@ -662,10 +662,10 @@ const OrdersPage = () => {
 
       {/* Order Detail Dialog */}
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="max-w-2xl ">
+        <DialogContent className="max-w-2xl dark:bg-[#0f1a2a] dark:text-gray-100">
           <DialogHeader>
-            <DialogTitle>Détails de la commande #{selectedOrder?.id}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="dark:text-white">Détails de la commande #{selectedOrder?.id}</DialogTitle>
+            <DialogDescription className="dark:text-gray-300">
               Commande passée le {selectedOrder && new Date(selectedOrder.created_at).toLocaleDateString('fr-FR')}
             </DialogDescription>
           </DialogHeader>
@@ -696,7 +696,7 @@ const OrdersPage = () => {
               {/* Customer Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
                     <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 ">Informations client</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 ">Informations client</h4>
                   <div className="space-y-1 text-sm ">
                     <p><span className="font-medium ">Nom:</span> {selectedOrder.customer_name}</p>
                     <p><span className="font-medium ">Téléphone:</span> {selectedOrder.customer_phone}</p>
@@ -705,7 +705,7 @@ const OrdersPage = () => {
                     </div>
                 
                     <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 ">Détails commande</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 ">Détails commande</h4>
                   <div className="space-y-1 text-sm ">
                     <p><span className="font-medium ">Produit:</span> {selectedOrder.product?.name}</p>
                     <p><span className="font-medium ">Quantité:</span> {selectedOrder.quantity}</p>
@@ -717,14 +717,14 @@ const OrdersPage = () => {
 
               {/* Payment Info */}
                   <div>
-                <h4 className="font-semibold text-gray-900 mb-2 ">Paiement</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2 ">Paiement</h4>
                 <div className="space-y-1 text-sm ">
                   <p><span className="font-medium ">Méthode:</span> {selectedOrder.payment_method}</p>
                   {selectedOrder.payment_proof_url && (
                     <p>
                       <span className="font-medium ">Preuve:</span>{' '}
                       <a 
-                        href={`http://localhost:3001/api/upload${selectedOrder.payment_proof_url}`}
+                        href={selectedOrder.payment_proof_url?.startsWith('http') ? selectedOrder.payment_proof_url : `http://localhost:3001${selectedOrder.payment_proof_url}`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-purple-600 hover:underline "
@@ -766,7 +766,7 @@ const OrdersPage = () => {
               </div>
 
               {/* Delete Action */}
-              <div className="pt-4 border-t border-gray-200 ">
+              <div className="pt-4 border-t border-gray-200 dark:border-[#1c2638] ">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button

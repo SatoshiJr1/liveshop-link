@@ -40,9 +40,23 @@ export default defineConfig({
             }
           },
           {
+            // API: NetworkFirst pour GET, timeout plus long pour éviter faux hors-ligne
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
-            options: { cacheName: 'api', networkTimeoutSeconds: 3 }
+            method: 'GET',
+            options: { cacheName: 'api', networkTimeoutSeconds: 10 }
+          },
+          {
+            urlPattern: ({ url, request }) => url.pathname.startsWith('/api/products') && ['POST','PUT','DELETE'].includes(request.method),
+            handler: 'NetworkOnly',
+            options: {
+              backgroundSync: {
+                name: 'products-queue',
+                options: {
+                  maxRetentionTime: 24 * 60
+                }
+              }
+            }
           }
         ]
       }
@@ -50,7 +64,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(new URL('.', import.meta.url).pathname, "./src"),
     },
   },
   define: {
