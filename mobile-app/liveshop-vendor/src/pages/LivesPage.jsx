@@ -3,7 +3,29 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LiveDetail from './LiveDetail';
 import { Badge } from '@/components/ui/badge';
-import { Copy, ExternalLink, Plus, Edit2, Trash2, Repeat } from 'lucide-react';
+import { 
+  Copy, 
+  ExternalLink, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Repeat,
+  Share2,
+  Eye,
+  Settings,
+  Play,
+  Users,
+  Calendar,
+  Package,
+  Link,
+  Globe,
+  Video,
+  Radio,
+  Zap,
+  Heart,
+  MessageCircle,
+  Send
+} from 'lucide-react';
 import LiveIcon from '/images/diffusion-en-direct.png';
 import { getPublicLink } from '../config/domains';
 
@@ -45,7 +67,7 @@ export default function LivesPage() {
   const [success, setSuccess] = useState('');
   const [selectedLive, setSelectedLive] = useState(null);
   const [copiedLiveId, setCopiedLiveId] = useState(null);
-  const [search, setSearch] = useState('');
+  const [search] = useState('');
   // const [sortOrder, setSortOrder] = useState('desc'); // plus utilisé
   const [pageSize] = useState(5);
   const [deletingId, setDeletingId] = useState(null);
@@ -142,8 +164,8 @@ export default function LivesPage() {
 
   // Pagination calculée
   // Recherche/tri avancé (exemple sur titre, date)
-  const [sortField, setSortField] = useState('date');
-  const [sortDirection, setSortDirection] = useState('desc');
+  const [sortField] = useState('date');
+  const [sortDirection] = useState('desc');
   const advancedFilteredLives = lives
     .filter(live => live.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
@@ -236,7 +258,11 @@ export default function LivesPage() {
     <div className="w-full max-w-full md:max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-8 mt-4 md:mt-8 min-h-screen flex flex-col pb-20 sm:pb-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-2 md:gap-4 ">
         <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-400 flex items-center gap-2">
-          <span className="text-red-500 text-2xl">🔴</span> Mes Lives
+          <div className="relative">
+            <Video className="w-8 h-8 text-red-500" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+          </div>
+          Mes Lives
         </h2>
         {/* Le bouton 'Créer un live' n'est plus ici sur mobile */}
         <div className="hidden md:flex flex-col gap-3 w-full md:w-auto">
@@ -256,7 +282,10 @@ export default function LivesPage() {
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <span className="font-semibold text-blue-700 dark:text-blue-300">Lien public de la boutique :</span>
+              <span className="font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                Lien public de la boutique :
+              </span>
               <div className="font-mono text-blue-800 dark:text-blue-200 text-sm break-all mt-1">
                 {getPublicShopLink()}
               </div>
@@ -264,16 +293,18 @@ export default function LivesPage() {
             <div className="flex flex-col sm:flex-row gap-2 min-w-0">
               <button 
                 onClick={() => handleCopyLink(getPublicShopLink())}
-                className="bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded text-sm font-medium border border-blue-200 dark:border-blue-600 whitespace-nowrap transition-colors duration-200 active:scale-95"
+                className="bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded text-sm font-medium border border-blue-200 dark:border-blue-600 whitespace-nowrap transition-colors duration-200 active:scale-95 flex items-center gap-2"
               >
+                <Copy className="w-4 h-4" />
                 {copiedLiveId === 'shop' ? 'Lien copié !' : 'Copier le lien'}
               </button>
               <a 
                 href={getPublicShopLink()} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium text-center whitespace-nowrap"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium text-center whitespace-nowrap flex items-center gap-2"
               >
+                <Eye className="w-4 h-4" />
                 Voir la page
               </a>
             </div>
@@ -286,27 +317,33 @@ export default function LivesPage() {
         <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <span className="font-semibold text-purple-700 dark:text-purple-300">Dernier live créé :</span>
+              <span className="font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                <Radio className="w-4 h-4" />
+                Dernier live créé :
+              </span>
               <div className="font-medium dark:text-white break-words mt-1">
                 {lastLive.title}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
                 ({new Date(lastLive.date).toLocaleString()})
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 min-w-0">
               <button 
                 onClick={() => handleCopyLink(getLivePublicLink(lastLive), lastLive.id)}
-                className="bg-gray-100 dark:bg-gray-700 hover:bg-purple-100 dark:hover:bg-purple-800/30 text-purple-700 dark:text-purple-300 px-3 py-2 rounded text-sm font-medium border border-purple-200 dark:border-purple-600 whitespace-nowrap transition-colors duration-200 active:scale-95"
+                className="bg-gray-100 dark:bg-gray-700 hover:bg-purple-100 dark:hover:bg-purple-800/30 text-purple-700 dark:text-purple-300 px-3 py-2 rounded text-sm font-medium border border-purple-200 dark:border-purple-600 whitespace-nowrap transition-colors duration-200 active:scale-95 flex items-center gap-2"
               >
+                <Copy className="w-4 h-4" />
                 {copiedLiveId === lastLive.id ? 'Lien copié !' : 'Copier le lien'}
               </button>
               <a 
                 href={getLivePublicLink(lastLive)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm font-medium text-center whitespace-nowrap"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm font-medium text-center whitespace-nowrap flex items-center gap-2"
               >
+                <Play className="w-4 h-4" />
                 Voir la page
               </a>
             </div>
@@ -317,17 +354,26 @@ export default function LivesPage() {
       {showCreate && (
         <form onSubmit={handleCreateLive} className="space-y-5 mb-8 bg-purple-50 dark:bg-purple-900/20 p-6 rounded ">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ">Titre du live</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+              <Video className="w-4 h-4" />
+              Titre du live
+            </label>
             <input value={title} onChange={e => setTitle(e.target.value)} required
               className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white " />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ">Date et heure</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Date et heure
+            </label>
             <input type="datetime-local" value={date} onChange={e => setDate(e.target.value)} required
               className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white " />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ">Produits à mettre en avant</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Produits à mettre en avant
+            </label>
             <div className="grid grid-cols-1 gap-2 ">
               {products.length === 0 && <span className="text-gray-400 dark:text-gray-500 text-sm ">Aucun produit disponible</span>}
               {products.map(prod => (
@@ -355,8 +401,18 @@ export default function LivesPage() {
               Annuler
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition disabled:opacity-50 ">
-              {loading ? 'Création...' : 'Créer le live'}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition disabled:opacity-50 flex items-center justify-center gap-2">
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Création...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  Créer le live
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -369,7 +425,7 @@ export default function LivesPage() {
           style={{ boxShadow: '0 4px 24px rgba(80,0,120,0.18)' }}
           title="Créer un live"
         >
-          <Plus className="w-8 h-8" />
+          <Video className="w-8 h-8" />
         </button>
       )}
       {/* Liste paginée des lives */}
@@ -381,11 +437,19 @@ export default function LivesPage() {
             <div key={live.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 w-full mb-2">
               {/* Ligne titre + icône live + badge */}
               <div className="flex items-center gap-3 mb-1">
-                {/* Icône live image */}
-                <img src={LiveIcon} alt="Live" className="w-8 h-8 object-contain" />
+                {/* Icône live moderne */}
+                <div className="relative">
+                  <Video className="w-8 h-8 text-red-500" />
+                  {getLiveStatus(live) === 'En cours' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  )}
+                </div>
                 <span className="font-bold text-lg text-gray-900 dark:text-white">{live.title}</span>
                 {getLiveStatus(live) === 'En cours' && (
-                  <span className="ml-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-live-pulse">EN LIVE</span>
+                  <span className="ml-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-live-pulse flex items-center gap-1">
+                    <Radio className="w-3 h-3" />
+                    EN LIVE
+                  </span>
                 )}
                 {getLiveStatus(live) === 'Terminé' && (
                   <span className="ml-2 bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">Terminé</span>
@@ -393,17 +457,52 @@ export default function LivesPage() {
               </div>
               {/* Infos date + produits */}
               <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mb-1">
+                <Calendar className="w-3 h-3" />
                 <span>{new Date(live.date).toLocaleString()}</span>
                 <span>•</span>
+                <Package className="w-3 h-3" />
                 <span>{live.products ? live.products.length : '?'} produits</span>
               </div>
-              {/* Actions en ligne */}
+              {/* Actions en ligne avec icônes plus parlantes */}
               <div className="flex gap-2 mt-2">
-                <button onClick={() => handleCopyLink(getLivePublicLink(live), live.id)} title="Copier le lien" className="text-blue-600 hover:text-blue-800 p-2 rounded-full bg-blue-50"><Copy className="w-5 h-5" /></button>
-                <a href={getLivePublicLink(live)} target="_blank" rel="noopener noreferrer" title="Voir la page" className="text-purple-600 hover:text-purple-800 p-2 rounded-full bg-purple-50"><ExternalLink className="w-5 h-5" /></a>
-                <button onClick={() => setSelectedLive(live)} title="Détails" className="text-gray-600 hover:text-gray-800 p-2 rounded-full bg-gray-100"><Edit2 className="w-5 h-5" /></button>
-                <button onClick={() => handleDuplicateLive(live)} title="Dupliquer" className="text-purple-400 hover:text-purple-700 p-2 rounded-full bg-purple-100"><Repeat className="w-5 h-5" /></button>
-                <button onClick={() => handleDeleteLive(live.id)} disabled={deletingId === live.id} title="Supprimer" className="text-red-500 hover:text-red-700 p-2 rounded-full bg-red-50"><Trash2 className="w-5 h-5" /></button>
+                <button 
+                  onClick={() => handleCopyLink(getLivePublicLink(live), live.id)} 
+                  title="Copier le lien de partage" 
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+                <a 
+                  href={getLivePublicLink(live)} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  title="Regarder le live" 
+                  className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 p-2 rounded-full bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                >
+                  <Play className="w-5 h-5" />
+                </a>
+                <button 
+                  onClick={() => setSelectedLive(live)} 
+                  title="Paramètres du live" 
+                  className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 p-2 rounded-full bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => handleDuplicateLive(live)} 
+                  title="Dupliquer ce live" 
+                  className="text-purple-400 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200 p-2 rounded-full bg-purple-100 dark:bg-purple-900/20 hover:bg-purple-200 dark:hover:bg-purple-900/30 transition-colors"
+                >
+                  <Repeat className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => handleDeleteLive(live.id)} 
+                  disabled={deletingId === live.id} 
+                  title="Supprimer ce live" 
+                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-full bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             </div>
           ))

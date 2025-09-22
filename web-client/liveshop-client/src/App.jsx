@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { CartProvider } from './contexts/CartContext';
 import ProductsPage from './pages/ProductsPage';
 import OrderPage from './pages/OrderPage';
+import CheckoutPage from './pages/CheckoutPage';
 import ConfirmationPage from './pages/ConfirmationPage';
 import CommentsPage from './pages/CommentsPage';
 import LiveProductsPage from './pages/LiveProductsPage';
@@ -10,9 +12,10 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
+    <CartProvider>
+      <Router>
+        <div className="App">
+          <Routes>
           {/* Landing page pour les vendeurs */}
           <Route path="/landing" element={<LandingPage />} />
           
@@ -22,6 +25,7 @@ function App() {
           {/* Routes publiques pour les clients */}
           <Route path="/:linkId" element={<ProductsPage />} />
           <Route path="/:linkId/order/:productId" element={<OrderPage />} />
+          <Route path="/:linkId/checkout" element={<CheckoutPage />} />
           <Route path="/:linkId/confirmation" element={<ConfirmationPage />} />
           <Route path="/:linkId/comments" element={<CommentsPage />} />
           <Route path="/:linkId/comments/:orderId" element={<CommentsPage />} />
@@ -41,8 +45,9 @@ function App() {
             </div>
           } />
         </Routes>
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </CartProvider>
   );
 }
 

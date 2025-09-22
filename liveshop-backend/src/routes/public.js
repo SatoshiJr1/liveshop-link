@@ -4,6 +4,7 @@ const { Seller, Product, Order, Comment } = require('../models');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const notificationService = require('../services/notificationService');
+const { uploadPaymentProof } = require('../config/cloudinary');
 
 const router = express.Router();
 
@@ -86,16 +87,32 @@ router.get('/:linkId/payment-methods', validatePublicLink, async (req, res) => {
       });
     }
 
+    // Normaliser payment_methods_enabled (peut être JSON ou string JSON)
+    let enabledMethods = seller.payment_methods_enabled || [];
+    if (typeof enabledMethods === 'string') {
+      try {
+        enabledMethods = JSON.parse(enabledMethods);
+      } catch (e) {
+        enabledMethods = [];
+      }
+    }
+
+    const paymentSettings = seller.payment_settings || {};
+    const wavePhone = paymentSettings.wave?.phone || null;
+    const omPhone = paymentSettings.orange_money?.phone || null;
+
     const paymentMethods = {
-      wave: seller.wave_qr_code_url ? {
-        available: true,
-        qr_code_url: seller.wave_qr_code_url
-      } : { available: false },
-      orange_money: seller.orange_money_qr_code_url ? {
-        available: true,
-        qr_code_url: seller.orange_money_qr_code_url
-      } : { available: false },
-      manual: { available: true } // Toujours disponible
+      wave: {
+        available: Boolean(enabledMethods.includes('wave') || wavePhone || seller.wave_qr_code_url),
+        phone: wavePhone,
+        qr_code_url: seller.wave_qr_code_url || null
+      },
+      orange_money: {
+        available: Boolean(enabledMethods.includes('orange_money') || omPhone || seller.orange_money_qr_code_url),
+        phone: omPhone,
+        qr_code_url: seller.orange_money_qr_code_url || null
+      },
+      manual: { available: true }
     };
 
     res.json({
@@ -823,4 +840,28 @@ router.get('/database-info', async (req, res) => {
 });
 
 module.exports = router;
+
+// Upload public de preuve de paiement (sans auth)
+router.post('/upload/payment-proof', uploadPaymentProof.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucune image fournie' });
+    }
+
+    const imageData = {
+      url: req.file.path,
+      publicId: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      format: req.file.format,
+      width: req.file.width,
+      height: req.file.height
+    };
+
+    res.json({ success: true, image: imageData });
+  } catch (error) {
+    console.error('Erreur upload public preuve paiement:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'upload de la preuve' });
+  }
+});
 

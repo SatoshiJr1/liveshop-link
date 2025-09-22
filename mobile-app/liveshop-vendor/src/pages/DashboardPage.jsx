@@ -209,13 +209,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="w-full px-4 py-6 lg:py-8">
+      <div className="w-full px-4 py-2 lg:py-8">
         {/* Header avec salutation et actions */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-4 lg:p-6 text-white mb-6 lg:mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 lg:mb-6">
-            <div className="mb-4 lg:mb-0">
-              <h1 className="text-2xl lg:text-3xl font-bold">Bonjour, {seller.name} 👋</h1>
-              <p className="text-purple-100 text-base lg:text-lg">Voici un aperçu de votre boutique</p>
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-3 lg:p-6 text-white mb-4 lg:mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-3 lg:mb-6">
+            <div className="mb-3 lg:mb-0">
+              <h1 className="text-xl lg:text-3xl font-bold">Bonjour, {seller.name} 👋</h1>
+              <p className="text-purple-100 text-sm lg:text-lg">Voici un aperçu de votre boutique</p>
             </div>
             <div className="flex items-center gap-2">
               {autoUpdating && (
@@ -237,8 +237,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Lien public - Design amélioré */}
-          <div className="bg-white/10 rounded-xl p-3 lg:p-4">
-            <h3 className="font-semibold mb-3 flex items-center text-sm lg:text-base">
+          <div className="bg-white/10 rounded-xl p-2 lg:p-4">
+            <h3 className="font-semibold mb-2 lg:mb-3 flex items-center text-sm lg:text-base">
               <ExternalLink className="w-4 h-4 mr-2" />
               Votre lien de boutique
             </h3>

@@ -377,7 +377,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {/* Informations de base */}
-      <Card>
+      <Card className="dark:bg-[#0f1a2a] dark:border-[#1c2638]">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg">Informations de base</CardTitle>
         </CardHeader>
@@ -460,7 +460,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
 
       {/* Attributs spécifiques à la catégorie */}
       {categories[formData.category]?.attributes?.length > 0 && (
-        <Card>
+        <Card className="dark:bg-[#0f1a2a] dark:border-[#1c2638]">
           <CardHeader className="pb-3">
             <CardTitle className="text-base sm:text-lg">Attributs spécifiques</CardTitle>
           </CardHeader>
@@ -471,7 +471,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
       )}
 
       {/* Photos */}
-      <Card>
+      <Card className="dark:bg-[#0f1a2a] dark:border-[#1c2638]">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg">Photos du produit</CardTitle>
         </CardHeader>
@@ -511,7 +511,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
       </Card>
 
       {/* Tags */}
-      <Card>
+      <Card className="dark:bg-[#0f1a2a] dark:border-[#1c2638]">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg">Tags</CardTitle>
         </CardHeader>
@@ -561,7 +561,7 @@ const ProductForm = ({ onSubmit, initialData = null, onCancel }) => {
       </Card>
 
       {/* Informations de livraison */}
-      <Card>
+      <Card className="dark:bg-[#0f1a2a] dark:border-[#1c2638]">
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg">Informations de livraison</CardTitle>
         </CardHeader>

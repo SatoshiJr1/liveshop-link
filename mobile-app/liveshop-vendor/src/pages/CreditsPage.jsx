@@ -247,7 +247,7 @@ const CreditsPage = () => {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-8">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-20 sm:mb-0">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-3 p-2 bg-white-100 dark:bg-gray-800 rounded-2xl mb-20 sm:mb-0">
           <TabsTrigger value="overview" className="text-xs sm:text-sm px-4 py-3 data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md rounded-xl transition-all duration-200">
             Vue d'ensemble
           </TabsTrigger>

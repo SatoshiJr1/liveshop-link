@@ -1,13 +1,16 @@
-  import React, { useEffect, useState } from 'react';
+  import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock, X } from 'lucide-react';
+import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock, X, Zap } from 'lucide-react';
 import { getPublicLink } from '../config/domains';
 import realtimeService from '../services/realtimeService';
+import CartModal from '../components/CartModal';
+import MobileHeader from '../components/MobileHeader';
+import MobileProductCard from '../components/MobileProductCard';
 
-const ProductsPage = () => {
+const ProductsPageContent = () => {
   const { linkId } = useParams();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -18,20 +21,11 @@ const ProductsPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState('connecting');
-
-  useEffect(() => {
-    console.log('🚀 ProductsPage monté - linkId:', linkId);
-    fetchProducts();
-    setupRealtime();
-    
-    return () => {
-      // Nettoyer les écouteurs WebSocket
-      realtimeService.removeAllListeners();
-    };
-  }, [linkId]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Configuration du WebSocket en temps réel
-  const setupRealtime = () => {
+  const setupRealtime = useCallback(() => {
     try {
       // Se connecter au WebSocket
       realtimeService.connect();
@@ -129,7 +123,41 @@ const ProductsPage = () => {
       console.error('❌ Erreur configuration WebSocket:', error);
       setRealtimeStatus('error');
     }
-  };
+  }, [linkId]);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/products`
+        : `http://localhost:3001/api/public/${linkId}/products`;
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error('Vendeur non trouvé');
+      }
+      
+      const data = await response.json();
+      setProducts(data.products);
+      setSeller(data.seller);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [linkId]);
+
+  useEffect(() => {
+    console.log('🚀 ProductsPage monté - linkId:', linkId);
+    fetchProducts();
+    setupRealtime();
+    
+    return () => {
+      // Nettoyer les écouteurs WebSocket
+      realtimeService.removeAllListeners();
+    };
+  }, [linkId, fetchProducts, setupRealtime]);
 
   // Afficher une notification en temps réel
   const showRealtimeNotification = (message, type = 'info') => {
@@ -162,29 +190,6 @@ const ProductsPage = () => {
     }, 3000);
   };
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const apiUrl = window.location.hostname.includes('livelink.store') 
-        ? `https://api.livelink.store/api/public/${linkId}/products`
-        : `http://localhost:3001/api/public/${linkId}/products`;
-      
-      const response = await fetch(apiUrl);
-      
-      if (!response.ok) {
-        throw new Error('Vendeur non trouvé');
-      }
-      
-      const data = await response.json();
-      setProducts(data.products);
-      setSeller(data.seller);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleOrderProduct = (productId) => {
     navigate(`/${linkId}/order/${productId}`);
   };
@@ -210,6 +215,16 @@ const ProductsPage = () => {
     } else {
       navigator.clipboard.writeText(shopUrl);
     }
+  };
+
+  const handleToggleCart = () => {
+    setIsCartOpen(!isCartOpen);
+  };
+
+  const handleCheckout = () => {
+    setIsCartOpen(false);
+    // Rediriger vers la page de commande avec les produits du panier
+    navigate(`/${linkId}/checkout`);
   };
 
   const filteredProducts = selectedCategory === 'all' 
@@ -259,8 +274,20 @@ const ProductsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header moderne et épuré */}
-      <header className="header">
+      {/* Header mobile - visible seulement sur mobile */}
+      <div className="md:hidden">
+        <MobileHeader
+          seller={seller}
+          onShare={shareShop}
+          onToggleMenu={() => setIsMenuOpen(!isMenuOpen)}
+          isMenuOpen={isMenuOpen}
+          realtimeStatus={realtimeStatus}
+          onToggleCart={handleToggleCart}
+        />
+      </div>
+
+      {/* Header desktop - visible seulement sur desktop */}
+      <header className="hidden md:block header">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
@@ -313,8 +340,39 @@ const ProductsPage = () => {
         </div>
       </header>
 
-      {/* Filtres avec design moderne */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Filtres mobile - visible seulement sur mobile */}
+      <div className="md:hidden px-4 py-3 bg-white border-b border-gray-100">
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setSelectedCategory('all')}
+            variant={selectedCategory === 'all' ? 'default' : 'outline'}
+            size="sm"
+            className={`flex-1 ${
+              selectedCategory === 'all' 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+            }`}
+          >
+            Tous ({products.length})
+          </Button>
+          <Button
+            onClick={() => setSelectedCategory('live')}
+            variant={selectedCategory === 'live' ? 'default' : 'outline'}
+            size="sm"
+            className={`flex-1 ${
+              selectedCategory === 'live' 
+                ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                : 'bg-white hover:bg-orange-50 border-orange-200 text-gray-700'
+            }`}
+          >
+            <Star className="w-3 h-3 mr-1" />
+            Épinglés ({products.filter(p => p.is_pinned).length})
+          </Button>
+        </div>
+      </div>
+
+      {/* Filtres desktop - visible seulement sur desktop */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 py-8">
         <div className="flex justify-center space-x-3">
           <Button
             onClick={() => setSelectedCategory('all')}
@@ -342,8 +400,39 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Grille de produits */}
-      <div className="max-w-7xl mx-auto px-6 pb-24">
+      {/* Liste de produits mobile - visible seulement sur mobile */}
+      <div className="md:hidden px-4 py-4 pb-24">
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Package className="w-10 h-10 text-gray-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              {selectedCategory === 'live' ? 'Aucun produit épinglé' : 'Aucun produit disponible'}
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {selectedCategory === 'live' 
+                ? 'Aucun produit n\'est actuellement mis en avant.'
+                : 'Le vendeur n\'a pas encore ajouté de produits.'
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredProducts.map((product) => (
+              <MobileProductCard
+                key={product.id}
+                product={product}
+                onOrder={handleOrderProduct}
+                onView={handleViewProduct}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Grille de produits desktop - visible seulement sur desktop */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 pb-24">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-24 h-24 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
@@ -428,18 +517,23 @@ const ProductsPage = () => {
                 <CardFooter className="pt-4 space-x-3">
                   <Button 
                     onClick={() => handleOrderProduct(product.id)}
-                    className={`btn-primary flex-1 ${product.stock_quantity === 0 ? 'bg-gray-400 cursor-not-allowed' : ''}`}
+                    variant="outline"
+                    className={`flex-1 h-12 text-sm font-medium ${
+                      product.stock_quantity === 0 
+                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
+                        : 'border-green-500 text-green-600 hover:bg-green-50 hover:border-green-600'
+                    }`}
                     disabled={product.stock_quantity === 0}
                   >
-                    <ShoppingCart className="w-4 h-4 mr-2 animate-bounce" />
-                    {product.stock_quantity === 0 ? 'Rupture' : 'Commander'}
+                    <Zap className="w-4 h-4 mr-2" />
+                    {product.stock_quantity === 0 ? 'Rupture' : 'Commander directement'}
                   </Button>
                   
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => handleViewProduct(product)}
-                    className="bg-white hover:bg-gray-50 border-gray-200 text-gray-600 hover:text-gray-700 rounded-xl p-3 transition-all duration-300"
+                    className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 rounded-xl p-3 transition-all duration-300"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -450,8 +544,8 @@ const ProductsPage = () => {
         )}
       </div>
       
-      {/* Widget de commentaires flottant */}
-      <div className="fixed bottom-8 right-8 z-20">
+      {/* Widget de commentaires flottant - visible seulement sur desktop */}
+      <div className="hidden md:block fixed bottom-8 right-8 z-20">
         <Button 
           onClick={() => navigate(`/${linkId}/comments`)}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl p-4 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
@@ -459,6 +553,13 @@ const ProductsPage = () => {
           <MessageCircle className="w-6 h-6" />
         </Button>
       </div>
+
+      {/* Modal panier */}
+      <CartModal
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onCheckout={handleCheckout}
+      />
 
       {/* Modal de visualisation des photos */}
       {showImageModal && selectedProduct && (
@@ -557,6 +658,10 @@ const ProductsPage = () => {
       </div>
     </div>
   );
+};
+
+const ProductsPage = () => {
+  return <ProductsPageContent />;
 };
 
 export default ProductsPage; 

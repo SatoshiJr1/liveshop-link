@@ -5,10 +5,18 @@ export default function PWAInstallPrompt() {
   const [isInstallable, setIsInstallable] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
     setIsIOS(/iphone|ipad|ipod/i.test(window.navigator.userAgent))
     setIsStandalone(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)
+    // Ne pas afficher si l'utilisateur a masqué récemment
+    try {
+      const snoozeUntil = localStorage.getItem('pwa_prompt_snooze_until')
+      if (snoozeUntil && Date.now() < Number(snoozeUntil)) {
+        setHidden(true)
+      }
+    } catch {}
 
     const handler = (e) => {
       e.preventDefault()
@@ -19,7 +27,7 @@ export default function PWAInstallPrompt() {
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  if (isStandalone) return null
+  if (isStandalone || hidden) return null
 
   const onInstallClick = async () => {
     if (!deferredPrompt) return
@@ -31,9 +39,19 @@ export default function PWAInstallPrompt() {
     }
   }
 
+  const onClose = () => {
+    setHidden(true)
+    try {
+      // Masquer pendant 7 jours
+      const sevenDays = 7 * 24 * 60 * 60 * 1000
+      localStorage.setItem('pwa_prompt_snooze_until', String(Date.now() + sevenDays))
+    } catch {}
+  }
+
   return (
     <div className="fixed bottom-4 inset-x-0 px-4 z-[60]">
       <div className="mx-auto max-w-sm rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur px-4 py-3 text-white shadow-xl">
+        <button onClick={onClose} aria-label="Fermer" className="absolute right-6 -mt-2 text-white/70 hover:text-white">×</button>
         {isIOS ? (
           <div className="text-sm leading-5">
             <div className="font-semibold mb-1">Installer l’app</div>
