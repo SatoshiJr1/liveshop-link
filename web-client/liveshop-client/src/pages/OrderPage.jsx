@@ -95,7 +95,7 @@ const OrderPage = () => {
       ...prev,
       payment_method: method
     }));
-    setSelectedPaymentMethod(method);
+      setSelectedPaymentMethod(method);
   };
 
   const handleQRCodePayment = () => {
@@ -116,7 +116,7 @@ const OrderPage = () => {
       setError(null);
       
       const combinedComment = `${formData.comment || ''}${paymentReference ? (formData.comment ? ' | ' : '') + 'Réf: ' + paymentReference : ''}`;
-
+      
       const orderData = {
         ...formData,
         comment: combinedComment,
@@ -417,15 +417,15 @@ const OrderPage = () => {
                           {/* Preuve de paiement (optionnel) */}
                           <div className="pt-2">
                             <Label className="text-sm font-medium text-gray-700">Preuve de paiement (optionnel)</Label>
-                            <div className="mt-2">
-                              <ImageCapture 
-                                onImageCaptured={(imageUrl) => {
-                                  handleInputChange('payment_proof_url', imageUrl);
-                                }}
-                                onImageRemoved={() => {
-                                  handleInputChange('payment_proof_url', '');
-                                }}
-                              />
+                          <div className="mt-2">
+                            <ImageCapture 
+                              onImageCaptured={(imageUrl) => {
+                                handleInputChange('payment_proof_url', imageUrl);
+                              }}
+                              onImageRemoved={() => {
+                                handleInputChange('payment_proof_url', '');
+                              }}
+                            />
                             </div>
                           </div>
                         </div>

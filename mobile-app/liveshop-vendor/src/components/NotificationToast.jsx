@@ -60,10 +60,10 @@ const NotificationToast = ({ notification, onClose, onViewOrder }) => {
 
   return (
     <div className={`fixed z-50 w-full sm:w-auto ${
-      // Mobile: en bas type snackbar; Desktop: en haut à droite
-      'sm:top-4 sm:right-4 bottom-4 left-0 px-3 sm:px-0'
+      // Mobile: en bas centré; Desktop: en haut à droite
+      'sm:top-4 sm:right-4 bottom-4 left-4 right-4 sm:left-auto sm:right-4 px-0 sm:px-0'
     } transition-all duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0 translate-y-2 sm:translate-y-0 sm:translate-x-2'}`}>
-      <Card className={`shadow-lg border-2 ${getNotificationColor(notification.type)} sm:max-w-sm sm:w-full rounded-2xl sm:rounded-xl`}
+      <Card className={`shadow-lg border-2 ${getNotificationColor(notification.type)} w-full sm:max-w-sm sm:w-full rounded-2xl sm:rounded-xl`}
       >
         <CardContent className="p-4">
           <div className="flex items-start space-x-3">
@@ -91,12 +91,23 @@ const NotificationToast = ({ notification, onClose, onViewOrder }) => {
               </p>
               
               {notification.type === 'new_order' && notification.data?.order && (
-                <div className="mt-2 p-2 bg-white dark:bg-gray-800 rounded border">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Commande #{notification.data.order.id}
+                <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      Commande #{notification.data.order.id}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(notification.data.order.created_at).toLocaleTimeString()}
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {notification.data.order.customer_name} - {notification.data.order.total_price?.toLocaleString()} FCFA
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                    {notification.data.order.customer_name}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    {notification.data.order.product?.name} • {notification.data.order.quantity}x
+                  </div>
+                  <div className="text-sm font-bold text-green-600 dark:text-green-400 mt-1">
+                    {notification.data.order.total_price?.toLocaleString()} FCFA
                   </div>
                 </div>
               )}
@@ -111,9 +122,10 @@ const NotificationToast = ({ notification, onClose, onViewOrder }) => {
                     variant="outline"
                     size="sm"
                     onClick={handleViewOrder}
-                    className="text-xs h-7 px-2"
+                    className="text-xs h-8 px-3 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800"
                   >
-                    Voir la commande
+                    <span className="hidden sm:inline">Voir la commande</span>
+                    <span className="sm:hidden">Voir</span>
                   </Button>
                 )}
               </div>

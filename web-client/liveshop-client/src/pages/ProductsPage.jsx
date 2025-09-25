@@ -9,10 +9,12 @@ import realtimeService from '../services/realtimeService';
 import CartModal from '../components/CartModal';
 import MobileHeader from '../components/MobileHeader';
 import MobileProductCard from '../components/MobileProductCard';
+import { useCart } from '../contexts/CartContext';
 
 const ProductsPageContent = () => {
   const { linkId } = useParams();
   const navigate = useNavigate();
+  const { addToCart, items } = useCart();
   const [products, setProducts] = useState([]);
   const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -194,6 +196,12 @@ const ProductsPageContent = () => {
     navigate(`/${linkId}/order/${productId}`);
   };
 
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    // Notification visuelle
+    showRealtimeNotification(`${product.name} ajouté au panier !`, 'success');
+  };
+
   const handleViewProduct = (product) => {
     setSelectedProduct(product);
     setShowImageModal(true);
@@ -274,6 +282,8 @@ const ProductsPageContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Espace pour le header fixe sur desktop */}
+      <div className="hidden md:block h-24"></div>
       {/* Header mobile - visible seulement sur mobile */}
       <div className="md:hidden">
         <MobileHeader
@@ -287,50 +297,49 @@ const ProductsPageContent = () => {
       </div>
 
       {/* Header desktop - visible seulement sur desktop */}
-      <header className="hidden md:block header">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+      <header className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
-              <div className="flex items-center justify-center space-x-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="header-title flex items-center gap-2">
+            {/* Logo et nom de la boutique */}
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <ShoppingCart className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <span role="img" aria-label="shopping">🛍️</span>
                   {seller?.name}
                 </h1>
+                <p className="text-sm text-gray-600">
+                  Découvrez nos produits et commandez en toute simplicité
+                </p>
               </div>
-              <p className="header-desc">
-                Découvrez nos produits et commandez en toute simplicité
-              </p>
             </div>
-            <div className="flex items-center space-x-3">
-              {/* Indicateur de temps réel */}
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm ${
-                realtimeStatus === 'active' ? 'bg-green-100 text-green-700' :
-                realtimeStatus === 'connecting' ? 'bg-yellow-100 text-yellow-700' :
-                realtimeStatus === 'disconnected' ? 'bg-red-100 text-red-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${
-                  realtimeStatus === 'active' ? 'bg-green-500 animate-pulse' :
-                  realtimeStatus === 'connecting' ? 'bg-yellow-500 animate-spin' :
-                  realtimeStatus === 'disconnected' ? 'bg-red-500' :
-                  'bg-gray-500'
-                }`}></div>
-                <span>
-                  {realtimeStatus === 'active' ? 'Temps réel actif' :
-                   realtimeStatus === 'connecting' ? 'Connexion...' :
-                   realtimeStatus === 'disconnected' ? 'Déconnecté' :
-                   'Erreur'}
-                </span>
-              </div>
+            
+            {/* Actions à droite */}
+            <div className="flex items-center space-x-4">
+              {/* Bouton panier */}
+              <Button 
+                onClick={handleToggleCart}
+                variant="outline" 
+                size="sm"
+                className="relative bg-blue-50/80 hover:bg-blue-100/80 border-blue-200/50 text-blue-700 hover:text-blue-800 px-4 py-2.5 backdrop-blur-sm"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Panier
+                {items.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-lg">
+                    {items.length}
+                  </span>
+                )}
+              </Button>
               
+              {/* Bouton partager */}
               <Button 
                 onClick={shareShop}
                 variant="outline" 
                 size="sm"
-                className="header-share"
+                className="bg-purple-50/80 hover:bg-purple-100/80 border-purple-200/50 text-purple-700 hover:text-purple-800 px-4 py-2.5 backdrop-blur-sm"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Partager
@@ -449,11 +458,11 @@ const ProductsPageContent = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product, index) => (
               <Card 
                 key={product.id} 
-                className="card group overflow-hidden"
+                className="card group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white border-0 shadow-lg rounded-2xl"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Badge Épinglé */}
@@ -489,15 +498,15 @@ const ProductsPageContent = () => {
                   </CardTitle>
                   
                   <div className="flex items-center justify-between mt-4">
-                    <span className="card-price">
+                    <span className="text-2xl font-bold text-blue-600">
                       {product.price.toLocaleString()} FCFA
                     </span>
                     {product.stock_quantity > 0 ? (
-                      <Badge className="card-stock">
+                      <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1 rounded-full text-sm font-medium">
                         <span role="img" aria-label="stock">✅</span> Stock: {product.stock_quantity}
                       </Badge>
                     ) : (
-                      <Badge className="card-rupture">
+                      <Badge className="bg-red-100 text-red-700 border-red-200 px-3 py-1 rounded-full text-sm font-medium">
                         <span role="img" aria-label="rupture">❌</span> Rupture
                       </Badge>
                     )}
@@ -514,26 +523,40 @@ const ProductsPageContent = () => {
                 )}
                 
                 {/* Actions */}
-                <CardFooter className="pt-4 space-x-3">
+                <CardFooter className="pt-4 space-x-2">
                   <Button 
                     onClick={() => handleOrderProduct(product.id)}
-                    variant="outline"
-                    className={`flex-1 h-12 text-sm font-medium ${
+                    className={`flex-1 h-11 text-sm font-semibold rounded-xl transition-all duration-300 ${
                       product.stock_quantity === 0 
-                        ? 'border-gray-300 text-gray-400 cursor-not-allowed' 
-                        : 'border-green-500 text-green-600 hover:bg-green-50 hover:border-green-600'
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'
                     }`}
                     disabled={product.stock_quantity === 0}
                   >
                     <Zap className="w-4 h-4 mr-2" />
-                    {product.stock_quantity === 0 ? 'Rupture' : 'Commander directement'}
+                    {product.stock_quantity === 0 ? 'Rupture' : 'Commander'}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleAddToCart(product)}
+                    disabled={product.stock_quantity === 0}
+                    className={`${
+                      product.stock_quantity === 0 
+                        ? 'border-gray-300 text-gray-300 cursor-not-allowed' 
+                        : 'border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600 hover:shadow-md'
+                    } rounded-xl p-3 transition-all duration-300`}
+                    aria-label="Ajouter au panier"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
                   </Button>
                   
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => handleViewProduct(product)}
-                    className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 rounded-xl p-3 transition-all duration-300"
+                    className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 hover:shadow-md rounded-xl p-3 transition-all duration-300"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>

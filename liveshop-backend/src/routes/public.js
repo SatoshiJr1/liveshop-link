@@ -839,9 +839,41 @@ router.get('/database-info', async (req, res) => {
   }
 });
 
-module.exports = router;
+// Endpoint pour vérifier le statut d'une commande (retour PayDunya)
+router.get('/orders/:orderId/status', async (req, res) => {
+  try {
+    const { orderId } = req.params;
 
-// Upload public de preuve de paiement (sans auth)
+    const order = await Order.findOne({
+      where: { id: orderId },
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['name', 'price']
+        }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Commande non trouvée' });
+    }
+
+    res.json({
+      order_id: order.id,
+      status: order.status,
+      total_price: order.total_price,
+      customer_name: order.customer_name,
+      product_name: order.product?.name
+    });
+
+  } catch (error) {
+    console.error('Erreur vérification statut commande:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Upload public de preuve de paiement (sans auth) - Cloudinary
 router.post('/upload/payment-proof', uploadPaymentProof.single('image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -858,10 +890,13 @@ router.post('/upload/payment-proof', uploadPaymentProof.single('image'), async (
       height: req.file.height
     };
 
+    console.log('✅ Preuve de paiement uploadée sur Cloudinary:', imageData);
     res.json({ success: true, image: imageData });
   } catch (error) {
     console.error('Erreur upload public preuve paiement:', error);
     res.status(500).json({ error: 'Erreur lors de l\'upload de la preuve' });
   }
 });
+
+module.exports = router;
 
