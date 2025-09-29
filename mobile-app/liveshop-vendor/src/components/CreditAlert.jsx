@@ -14,7 +14,7 @@ const CreditAlert = ({
   const navigate = useNavigate();
 
   const handlePurchaseCredits = () => {
-    navigate('/credits');
+    // navigate('/credits'); // Désactivé temporairement
     if (onClose) onClose();
   };
 

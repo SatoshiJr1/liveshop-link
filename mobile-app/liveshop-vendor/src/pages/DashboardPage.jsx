@@ -26,7 +26,7 @@ import {
   Activity,
   Mic,
   TestTube,
-  Coins
+  // Coins // Désactivé temporairement
 } from 'lucide-react';
 import VoiceControls from '../components/VoiceControls';
 import { getPublicLink } from '../config/domains';
@@ -44,10 +44,11 @@ export default function DashboardPage() {
     pending_orders: 0,
     paid_orders: 0
   });
-  const [credits, setCredits] = useState(null);
+  // const [credits, setCredits] = useState(null); // Désactivé temporairement
   const [recentOrders, setRecentOrders] = useState([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [autoUpdating, setAutoUpdating] = useState(false);
 
   useEffect(() => {
@@ -158,6 +159,9 @@ export default function DashboardPage() {
   const copyPublicLink = () => {
     const link = getPublicLink(seller.public_link_id);
     navigator.clipboard.writeText(link).then(() => {
+      // Effet visuel du bouton
+      setCopied(true);
+      
       // Notification de succès
       const event = new CustomEvent('showToast', {
         detail: {
@@ -166,6 +170,11 @@ export default function DashboardPage() {
         }
       });
       window.dispatchEvent(event);
+      
+      // Remettre l'état normal après 2 secondes
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
     }).catch(() => {
       // Notification d'erreur
       const event = new CustomEvent('showToast', {
@@ -252,10 +261,18 @@ export default function DashboardPage() {
                   onClick={copyPublicLink} 
                   size="sm" 
                   variant="secondary" 
-                  className="bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-105"
-                  title="Copier le lien"
+                  className={`transition-all duration-300 ${
+                    copied 
+                      ? 'bg-green-500/80 hover:bg-green-600/80 text-white scale-110' 
+                      : 'bg-white/20 hover:bg-white/30 hover:scale-105'
+                  }`}
+                  title={copied ? "Lien copié !" : "Copier le lien"}
                 >
-                  <Copy className="w-4 h-4" />
+                  {copied ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
                 </Button>
                 <Button 
                   onClick={openPublicLink} 

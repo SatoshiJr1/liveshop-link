@@ -274,7 +274,7 @@ const Layout = ({ children }) => {
           </div>
           
           {/* Bouton crédits pour vendeurs (sidebar desktop) */}
-          {!isAdmin && (
+          {/* {!isAdmin && (
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
               <Button
                 variant="ghost"
@@ -285,7 +285,7 @@ const Layout = ({ children }) => {
                 <span className="font-medium">Gérer les crédits</span>
               </Button>
             </div>
-          )}
+          )} */}
         </nav>
 
         {/* Logout Button */}
@@ -374,4 +374,3 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
-

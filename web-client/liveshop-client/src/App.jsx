@@ -16,11 +16,9 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
-          {/* Landing page pour les vendeurs */}
+          {/* Landing page - Page d'accueil par défaut */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />
-          
-          {/* Route par défaut - redirection vers une page d'exemple */}
-          <Route path="/" element={<Navigate to="/demo123" replace />} />
           
           {/* Routes publiques pour les clients */}
           <Route path="/:linkId" element={<ProductsPage />} />
