@@ -298,7 +298,9 @@ app.use('/api/sellers', sellerRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Initialiser le middleware de debug après l'enregistrement des routes
-debugMiddleware.init(app, sequelize);
+if (debugMiddleware.init) {
+  debugMiddleware.init(app, sequelize);
+}
 
 // Servir le frontend (pour la production)
 if (process.env.NODE_ENV === 'production') {

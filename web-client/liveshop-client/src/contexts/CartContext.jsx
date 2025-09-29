@@ -111,7 +111,11 @@ export const CartProvider = ({ children }) => {
   };
 
   // Calculer le total
-  const total = state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = state.items.reduce((sum, item) => {
+    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
+    const quantity = item.quantity || 1;
+    return sum + (price * quantity);
+  }, 0);
   const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
 
   const value = {

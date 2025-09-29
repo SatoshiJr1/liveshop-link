@@ -79,6 +79,9 @@ const CheckoutPage = () => {
     setSelectedPaymentMethod(method);
   };
 
+  // Fonction PayDunya désactivée temporairement
+  // const handlePayWithPayDunya = async () => { ... };
+
   const handleQRCodePayment = () => {
     setShowQRModal(false);
   };
@@ -439,21 +442,25 @@ const CheckoutPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Bouton de soumission */}
-              <Button
-                type="submit"
-                disabled={submitting || !formData.customer_name || !formData.customer_phone || !formData.payment_method}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-              >
-                {submitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                    Traitement...
-                  </>
-                ) : (
-                  `Commander • ${total.toLocaleString()} FCFA`
-                )}
-              </Button>
+              {/* Boutons de soumission */}
+              <div className="space-y-3">
+                {/* Bouton PayDunya supprimé - utilisation de l'ancienne méthode */}
+                
+                <Button
+                  type="submit"
+                  disabled={submitting || !formData.customer_name || !formData.customer_phone || !formData.payment_method}
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                      Traitement...
+                    </>
+                  ) : (
+                    `Commander (Manuel) • ${total.toLocaleString()} FCFA`
+                  )}
+                </Button>
+              </div>
             </form>
           </div>
 

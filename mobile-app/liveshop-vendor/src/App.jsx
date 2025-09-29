@@ -16,12 +16,12 @@ import { Toaster } from 'sonner';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import OrderDetailPage from './pages/OrderDetailPage';
-import CreditsPage from './pages/CreditsPage';
+// import CreditsPage from './pages/CreditsPage'; // Désactivé temporairement
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminSellersPage from './pages/AdminSellersPage';
 import AdminOrdersPage from './pages/AdminOrdersPage';
 import AdminProductsPage from './pages/AdminProductsPage';
-import AdminCreditsPage from './pages/AdminCreditsPage';
+// import AdminCreditsPage from './pages/AdminCreditsPage'; // Désactivé temporairement
 import AdminSellerDetailPage from './pages/AdminSellerDetailPage';
 import AdminSecurityPage from './pages/AdminSecurityPage';
 import PaymentSettingsPage from './pages/PaymentSettingsPage';
@@ -114,11 +114,11 @@ const AppContent = () => {
                       <AdminProductsPage />
                     </AdminRoute>
                   } />
-                  <Route path="admin/credits" element={
+                  {/* <Route path="admin/credits" element={
                     <AdminRoute>
                       <AdminCreditsPage />
                     </AdminRoute>
-                  } />
+                  } /> */}
                   <Route path="admin/security" element={
                     <AdminRoute>
                       <AdminSecurityPage />
@@ -156,11 +156,11 @@ const AppContent = () => {
                       <LivesPage />
                     </SellerRoute>
                   } />
-                  <Route path="credits" element={
+                  {/* <Route path="credits" element={
                     <SellerRoute>
                       <CreditsPage />
                     </SellerRoute>
-                  } />
+                  } /> */}
                   <Route path="wallet" element={
                     <SellerRoute>
                       <WalletPage />

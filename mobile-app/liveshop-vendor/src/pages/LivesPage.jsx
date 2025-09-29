@@ -24,7 +24,8 @@ import {
   Zap,
   Heart,
   MessageCircle,
-  Send
+  Send,
+  CheckCircle
 } from 'lucide-react';
 import LiveIcon from '/images/diffusion-en-direct.png';
 import { getPublicLink } from '../config/domains';
@@ -293,9 +294,17 @@ export default function LivesPage() {
             <div className="flex flex-col sm:flex-row gap-2 min-w-0">
               <button 
                 onClick={() => handleCopyLink(getPublicShopLink())}
-                className="bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded text-sm font-medium border border-blue-200 dark:border-blue-600 whitespace-nowrap transition-colors duration-200 active:scale-95 flex items-center gap-2"
+                className={`px-3 py-2 rounded text-sm font-medium border whitespace-nowrap transition-all duration-300 flex items-center gap-2 ${
+                  copiedLiveId === 'shop' 
+                    ? 'bg-green-500 hover:bg-green-600 text-white border-green-400 scale-105' 
+                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-600 hover:scale-105'
+                }`}
               >
-                <Copy className="w-4 h-4" />
+                {copiedLiveId === 'shop' ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
                 {copiedLiveId === 'shop' ? 'Lien copié !' : 'Copier le lien'}
               </button>
               <a 
@@ -467,10 +476,18 @@ export default function LivesPage() {
               <div className="flex gap-2 mt-2">
                 <button 
                   onClick={() => handleCopyLink(getLivePublicLink(live), live.id)} 
-                  title="Copier le lien de partage" 
-                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                  title={copiedLiveId === live.id ? "Lien copié !" : "Copier le lien de partage"} 
+                  className={`p-2 rounded-full transition-all duration-300 ${
+                    copiedLiveId === live.id 
+                      ? 'text-white bg-green-500 hover:bg-green-600 scale-110' 
+                      : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:scale-105'
+                  }`}
                 >
-                  <Share2 className="w-5 h-5" />
+                  {copiedLiveId === live.id ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <Share2 className="w-5 h-5" />
+                  )}
                 </button>
                 <a 
                   href={getLivePublicLink(live)} 

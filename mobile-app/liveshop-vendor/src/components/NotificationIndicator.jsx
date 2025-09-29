@@ -261,7 +261,14 @@ const NotificationIndicator = () => {
 
       {/* Toasts de notifications en temps réel */}
       {activeToasts.map((toast, index) => (
-        <div key={toast.id} style={{ top: `${4 + (index * 120)}rem` }}>
+        <div key={toast.id} className={`fixed z-50 ${
+          // Mobile: empiler en bas; Desktop: empiler en haut à droite
+          'bottom-4 left-4 right-4 sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto'
+        }`} style={{ 
+          // Espacement entre les toasts
+          transform: `translateY(${index * -20}px)`,
+          zIndex: 50 + index
+        }}>
           <NotificationToast
             notification={toast.notification}
             onClose={() => handleCloseToast(toast.id)}
