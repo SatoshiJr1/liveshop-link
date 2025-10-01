@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test EmailJS</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+    <h1>Test EmailJS Direct</h1>
+    <button onclick="testEmail()">Tester l'envoi d'email</button>
+    <div id="result"></div>
+
+    <script>
+        // Configuration EmailJS
+        const SERVICE_ID = 'service_3kxswy4';
+        const TEMPLATE_ID = 'template_lx42nwm';
+        const PUBLIC_KEY = 'RingPNZJXA9wUu5sa';
+
+        // Initialiser EmailJS
+        emailjs.init(PUBLIC_KEY);
+
+        async function testEmail() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Envoi en cours...';
+
+            const templateParams = {
+                from_name: 'Test User',
+                from_email: 'test@example.com',
+                phone: '+221 123 456 789',
+                message: 'Ceci est un test EmailJS',
+                to_email: 'contact@livelink.store'
+            };
+
+            try {
+                console.log('Configuration:', { SERVICE_ID, TEMPLATE_ID, PUBLIC_KEY });
+                console.log('Données:', templateParams);
+
+                const result = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+                
+                console.log('Succès:', result);
+                resultDiv.innerHTML = '<p style="color: green;">✅ Email envoyé avec succès!</p>';
+            } catch (error) {
+                console.error('Erreur:', error);
+                resultDiv.innerHTML = `<p style="color: red;">❌ Erreur: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
