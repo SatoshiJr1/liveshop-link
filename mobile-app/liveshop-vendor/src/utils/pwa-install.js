@@ -1,9 +1,61 @@
 // PWA Installation Helper
 let deferredPrompt;
+let installButton = null;
+let userDismissed = false; // Track si l'utilisateur a déjà refusé
+
+// Vérifier la connectivité réelle
+function checkRealConnectivity() {
+  return new Promise((resolve) => {
+    // Test avec une requête simple
+    fetch('/favicon.jpg', { 
+      method: 'HEAD',
+      cache: 'no-cache',
+      mode: 'no-cors'
+    }).then(() => {
+      resolve(true);
+    }).catch(() => {
+      // Si ça échoue, tester avec une URL externe
+      fetch('https://www.google.com/favicon.ico', { 
+        method: 'HEAD',
+        mode: 'no-cors'
+      }).then(() => {
+        resolve(true);
+      }).catch(() => {
+        resolve(false);
+      });
+    });
+  });
+}
+
+// Masquer le message "hors ligne" si on est connecté
+function hideOfflineMessage() {
+  const offlineElements = document.querySelectorAll('[data-offline], .offline-message, [class*="offline"]');
+  offlineElements.forEach(element => {
+    element.style.display = 'none';
+  });
+}
+
+// Vérifier la connectivité au chargement
+document.addEventListener('DOMContentLoaded', async () => {
+  const isOnline = await checkRealConnectivity();
+  if (isOnline) {
+    hideOfflineMessage();
+  }
+});
+
+// Écouter les changements de connectivité
+window.addEventListener('online', () => {
+  console.log('🌐 Connexion rétablie');
+  hideOfflineMessage();
+});
+
+window.addEventListener('offline', () => {
+  console.log('📴 Connexion perdue');
+});
 
 // Écouter l'événement beforeinstallprompt
 window.addEventListener('beforeinstallprompt', (e) => {
-  console.log('PWA install prompt triggered');
+  console.log('🚀 PWA install prompt triggered');
   
   // Empêcher l'affichage automatique du prompt
   e.preventDefault();
@@ -13,17 +65,54 @@ window.addEventListener('beforeinstallprompt', (e) => {
   
   // Afficher un bouton d'installation personnalisé
   showInstallButton();
+  
+  // Debug: vérifier les critères PWA
+  console.log('📱 PWA Criteria Check:');
+  console.log('- HTTPS:', location.protocol === 'https:');
+  console.log('- Manifest:', document.querySelector('link[rel="manifest"]') !== null);
+  console.log('- Service Worker:', 'serviceWorker' in navigator);
+  console.log('- Icons:', document.querySelectorAll('link[rel="icon"]').length > 0);
 });
 
 // Fonction pour afficher le bouton d'installation
 function showInstallButton() {
-  // Créer un bouton d'installation si il n'existe pas
+  // Vérifier si un bouton existe déjà
   let installButton = document.getElementById('pwa-install-button');
   
+  if (installButton) {
+    console.log('⚠️ Bouton PWA déjà existant, ignoré');
+    return;
+  }
+  
+  // Vérifier si l'app est déjà installée
+  if (checkIfAppIsInstalled()) {
+    console.log('✅ App déjà installée, pas de bouton');
+    return;
+  }
+  
+  // Vérifier si l'utilisateur a déjà refusé
+  if (userDismissed) {
+    console.log('⚠️ Utilisateur a déjà refusé, pas de bouton');
+    return;
+  }
+  
   if (!installButton) {
-    installButton = document.createElement('button');
+    installButton = document.createElement('div');
     installButton.id = 'pwa-install-button';
-    installButton.innerHTML = '📱 Installer l\'app';
+    installButton.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span>📱 Installer l'app</span>
+        <button id="pwa-close-btn" style="
+          background: none;
+          border: none;
+          color: white;
+          font-size: 16px;
+          cursor: pointer;
+          padding: 0;
+          margin-left: 8px;
+        ">×</button>
+      </div>
+    `;
     installButton.style.cssText = `
       position: fixed;
       bottom: 20px;
@@ -52,10 +141,38 @@ function showInstallButton() {
       installButton.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
     });
     
-    // Gérer le clic
-    installButton.addEventListener('click', installPWA);
+    // Gérer le clic principal
+    installButton.addEventListener('click', (e) => {
+      if (e.target.id !== 'pwa-close-btn') {
+        installPWA();
+      }
+    });
+    
+    // Gérer le bouton de fermeture
+    const closeBtn = installButton.querySelector('#pwa-close-btn');
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDismissed = true;
+      installButton.style.opacity = '0';
+      installButton.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        installButton.remove();
+      }, 300);
+    });
     
     document.body.appendChild(installButton);
+    
+    // Auto-masquer le bouton après 30 secondes
+    setTimeout(() => {
+      const button = document.getElementById('pwa-install-button');
+      if (button) {
+        button.style.opacity = '0';
+        button.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+          button.remove();
+        }, 300);
+      }
+    }, 30000); // 30 secondes
   }
 }
 
@@ -133,10 +250,29 @@ function showNotification(message) {
 }
 
 // Vérifier si l'app est déjà installée
-if (window.matchMedia('(display-mode: standalone)').matches) {
-  console.log('PWA is already installed');
-} else {
-  console.log('PWA is not installed');
+function checkIfAppIsInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches || 
+         window.navigator.standalone === true;
 }
+
+// Vérifier l'installabilité PWA de manière simple
+function checkPWAInstallability() {
+  // Vérifier si l'app est déjà installée
+  if (checkIfAppIsInstalled()) {
+    return;
+  }
+  
+  // Vérifier les critères PWA de base
+  const hasManifest = document.querySelector('link[rel="manifest"]') !== null;
+  const hasServiceWorker = 'serviceWorker' in navigator;
+  
+  // Si les critères sont remplis mais pas de beforeinstallprompt, afficher le bouton
+  if (hasManifest && hasServiceWorker && !deferredPrompt) {
+    showInstallButton();
+  }
+}
+
+// Vérifier l'installabilité après un délai
+setTimeout(checkPWAInstallability, 3000);
 
 export { showInstallButton, installPWA };

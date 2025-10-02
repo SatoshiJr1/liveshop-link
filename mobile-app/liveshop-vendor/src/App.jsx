@@ -35,12 +35,11 @@ const AppContent = () => {
 
   // Initialiser le store de notifications
   useEffect(() => {
-    console.log('🔔 App.jsx - Token disponible:', token ? 'OUI' : 'NON');
+    if (loading) return;
+    
     if (token) {
-      console.log('🔔 App.jsx - Initialisation NotificationStore avec token');
       notificationStore.setToken(token);
     } else {
-      console.log('🔔 App.jsx - Déconnexion NotificationStore');
       notificationStore.setToken(null);
     }
   }, [token]);

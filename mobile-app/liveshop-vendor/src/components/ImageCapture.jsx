@@ -15,6 +15,7 @@ const ImageCapture = ({
 }) => {
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -26,6 +27,7 @@ const ImageCapture = ({
   const uploadImage = useCallback(async (file) => {
     setUploading(true);
     setError(null);
+    setUploadSuccess(false);
 
     try {
       const formData = new FormData();
@@ -45,61 +47,23 @@ const ImageCapture = ({
       }
 
       const result = await response.json();
+      setUploadSuccess(true);
+      
+      // Masquer le succès après 3 secondes
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 3000);
+      
       return result.image;
     } catch (err) {
       console.error('Erreur upload image:', err);
       setError(err.message);
+      setUploadSuccess(false);
       throw err;
     } finally {
       setUploading(false);
     }
   }, [uploadType]);
-
-  // Fonction pour capturer une image depuis la caméra
-  const captureImage = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    // Définir les dimensions du canvas
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Dessiner l'image de la vidéo sur le canvas
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convertir le canvas en blob
-    canvas.toBlob(async (blob) => {
-      if (blob) {
-        const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        await handleImageUpload(file);
-      }
-    }, 'image/jpeg', 0.8);
-  }, []);
-
-  // Fonction pour démarrer la caméra
-  const startCamera = useCallback(async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        } 
-      });
-      
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setShowCamera(true);
-    } catch (err) {
-      console.error('Erreur accès caméra:', err);
-      setError('Impossible d\'accéder à la caméra');
-    }
-  }, []);
 
   // Fonction pour arrêter la caméra
   const stopCamera = useCallback(() => {
@@ -148,6 +112,54 @@ const ImageCapture = ({
     }
   }, [disabled, uploading, multiple, maxImages, images, onImageUpload, uploadImage]);
 
+  // Fonction pour capturer une image depuis la caméra
+  const captureImage = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // Définir les dimensions du canvas
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Dessiner l'image de la vidéo sur le canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convertir le canvas en blob
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        await handleImageUpload(file);
+        // Fermer la caméra après capture
+        stopCamera();
+      }
+    }, 'image/jpeg', 0.8);
+  }, [handleImageUpload, stopCamera]);
+
+  // Fonction pour démarrer la caméra
+  const startCamera = useCallback(async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } 
+      });
+      
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setShowCamera(true);
+    } catch (err) {
+      console.error('Erreur accès caméra:', err);
+      setError('Impossible d\'accéder à la caméra');
+    }
+  }, []);
+
   // Fonction pour supprimer une image
   const removeImage = useCallback((index) => {
     const newImages = images.filter((_, i) => i !== index);
@@ -180,8 +192,13 @@ const ImageCapture = ({
     <div className={`space-y-4 ${className}`}>
       {/* Interface caméra */}
       {showCamera && (
-        <Card className="relative">
-          <CardContent className="p-4">
+        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-4 max-w-md w-full">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold">Capture de l'image du produit</h3>
+              <p className="text-sm text-gray-600">Positionnez votre téléphone pour capturer l'image</p>
+            </div>
+            
             <div className="relative">
               <video
                 ref={videoRef}
@@ -196,25 +213,26 @@ const ImageCapture = ({
               />
               
               {/* Contrôles caméra */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                <Button
-                  onClick={captureImage}
-                  size="sm"
-                  className="bg-white/20 hover:bg-white/30 text-white"
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
+              <div className="flex gap-3 mt-4">
                 <Button
                   onClick={stopCamera}
-                  size="sm"
-                  variant="destructive"
+                  variant="outline"
+                  className="flex-1"
                 >
-                  <X className="h-4 w-4" />
+                  Annuler
+                </Button>
+                <Button
+                  onClick={captureImage}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={uploading}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  {uploading ? 'Capture...' : 'Capturer'}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Zone d'upload */}
@@ -303,9 +321,20 @@ const ImageCapture = ({
 
       {/* Indicateur de chargement */}
       {uploading && (
-        <div className="text-blue-600 text-sm bg-blue-50 p-3 rounded-lg flex items-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          Upload en cours...
+        <div className="text-blue-600 text-sm bg-blue-50 p-4 rounded-lg flex items-center gap-3 border border-blue-200">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+          <div>
+            <div className="font-medium">Upload en cours...</div>
+            <div className="text-xs text-blue-500">Sauvegarde de votre image</div>
+          </div>
+        </div>
+      )}
+
+      {/* Message de succès temporaire */}
+      {uploadSuccess && (
+        <div className="text-green-600 text-sm bg-green-50 p-3 rounded-lg flex items-center gap-2 animate-pulse border border-green-200">
+          <Check className="w-4 h-4" />
+          <span className="font-medium">Image sauvegardée avec succès !</span>
         </div>
       )}
 
@@ -322,7 +351,9 @@ const ImageCapture = ({
                 <img
                   src={image.thumbnailUrl || image.url}
                   alt={`Image ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-lg"
+                  className={`w-full h-24 object-cover rounded-lg border-2 transition-all duration-300 ${
+                    uploadSuccess ? 'border-green-400 shadow-lg shadow-green-200' : 'border-gray-200'
+                  }`}
                 />
                 
                 <Button
@@ -334,11 +365,15 @@ const ImageCapture = ({
                   <X className="h-3 w-3" />
                 </Button>
                 
-                {image.publicId && (
-                  <div className="absolute bottom-1 left-1">
-                    <Check className="h-3 w-3 text-green-600 bg-white rounded-full" />
-                  </div>
-                )}
+                {/* Indicateur de succès */}
+                <div className={`absolute bottom-1 left-1 px-2 py-1 rounded-full text-xs flex items-center transition-all duration-300 ${
+                  uploadSuccess 
+                    ? 'bg-green-500 text-white shadow-lg animate-pulse' 
+                    : 'bg-green-500 text-white'
+                }`}>
+                  <Check className="h-3 w-3 mr-1" />
+                  {uploadSuccess ? '✅' : '✓'}
+                </div>
               </div>
             ))}
           </div>
