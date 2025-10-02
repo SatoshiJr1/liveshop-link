@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '@/config/emailjs';
+import SEO from '@/components/SEO';
 import { 
   Smartphone,
   BarChart3,
@@ -66,6 +67,30 @@ const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+
+  // Structured Data pour le SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "LiveShop Link",
+    "description": "L'app qui vend pour vous pendant que vous animez vos lives",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Mobile",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "XOF"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "ratingCount": "1000"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "LiveShop Link"
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -304,7 +329,16 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
+    <>
+      <SEO 
+        title="LiveShop Link - Commerce en Direct Révolutionnaire"
+        description="L'app qui vend pour vous pendant que vous animez vos lives. Augmentez vos revenus de 40% avec notre écosystème communautaire. Rejoignez +1000 vendeurs actifs."
+        keywords="commerce en direct, live shopping, vente en ligne, mobile, Sénégal, Afrique, e-commerce, vente directe, live commerce"
+        image="/og-image.jpg"
+        url="https://livelink.store"
+        structuredData={structuredData}
+      />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
       {/* Navigation - Style Glassmorphism */}
       <motion.nav 
         initial={{ y: -100, opacity: 0 }}
@@ -318,7 +352,7 @@ const LandingPage = () => {
           isScrolled ? 'border-purple-700/30 shadow-xl' : 'border-white/20'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-4">
           <div className="flex items-center justify-between">
             <motion.div 
               initial={{ x: -50, opacity: 0 }}
@@ -328,13 +362,17 @@ const LandingPage = () => {
             >
               <motion.div 
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className=" "
+                className="flex items-center space-x-2"
               >
-<img  src="/liveshop.png" alt="LiveShopLogo" className="w-[200px] h-[auto] object-contain sm:w-10 sm:h-10" />
+                <img 
+                  src="/liveshop.png" 
+                  alt="LiveShopLogo" 
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain" 
+                />
+                <span className="text-sm sm:text-lg lg:text-2xl font-bold text-white">
+                  LiveShop Link
+                </span>
               </motion.div>
-              <span className="text-lg sm:text-2xl font-bold text-white">
-                LiveShop Link
-              </span>
             </motion.div>
             
             {/* Navigation Links - Desktop */}
@@ -1718,7 +1756,8 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 };
 
