@@ -58,8 +58,8 @@ class WebSocketService {
           const port = envPort || '3001';
           wsUrl = `${protocol}//${hostname}:${port}`;
         } else {
-          // Prod: même host (port par défaut)
-          wsUrl = `${protocol}//${hostname}`;
+          // Prod: même host avec port 3001 pour WebSocket
+          wsUrl = `${protocol}//${hostname}:3001`;
         }
         
         console.log('🔗 Connexion WebSocket vers:', wsUrl);

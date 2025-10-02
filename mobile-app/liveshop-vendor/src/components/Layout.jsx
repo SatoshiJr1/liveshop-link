@@ -15,7 +15,8 @@ import {
   Shield,
   Users,
   Lock,
-  CreditCard
+  Wallet,
+  MessageCircle
 } from 'lucide-react';
 import NotificationToast from './NotificationToast';
 import ThemeToggle from './ThemeToggle';
@@ -23,7 +24,7 @@ import NotificationIndicator from './NotificationIndicator';
 
 const Layout = ({ children }) => {
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // const [sidebarOpen, setSidebarOpen] = useState(false); // réservé pour futures évolutions
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,6 +46,7 @@ const Layout = ({ children }) => {
     { id: 'orders', name: 'Commandes', icon: ShoppingBag, path: '/orders' },
     { id: 'stats', name: 'Stats', icon: BarChart3, path: '/stats' },
     { id: 'lives', name: 'Lives', icon: Store, path: '/lives' },
+    { id: 'wallet', name: 'Wallet', icon: Wallet, path: '/wallet' },
     // Paiements retiré de la barre de navigation; accessible via menu
   ];
 
@@ -61,12 +63,11 @@ const Layout = ({ children }) => {
 
   const handleNavigation = (path) => {
     navigate(path);
-    setSidebarOpen(false);
   };
 
-  const handleViewOrder = (orderId) => {
-    navigate(`/orders/${orderId}`);
-  };
+  // const handleViewOrder = (orderId) => {
+  //   navigate(`/orders/${orderId}`);
+  // };
 
   const handleCreditsClick = () => {
     navigate('/credits');
@@ -169,13 +170,13 @@ const Layout = ({ children }) => {
                   </button>
                   <button
                     onClick={() => {
-                      navigate('/payment-settings');
+                      navigate('/wallet');
                       setShowMobileMenu(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                   >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Paramètres de paiement
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Wallet
                   </button>
                   <button
                     onClick={() => {
@@ -273,7 +274,7 @@ const Layout = ({ children }) => {
           </div>
           
           {/* Bouton crédits pour vendeurs (sidebar desktop) */}
-          {!isAdmin && (
+          {/* {!isAdmin && (
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
               <Button
                 variant="ghost"
@@ -284,7 +285,7 @@ const Layout = ({ children }) => {
                 <span className="font-medium">Gérer les crédits</span>
               </Button>
             </div>
-          )}
+          )} */}
         </nav>
 
         {/* Logout Button */}
@@ -337,30 +338,30 @@ const Layout = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="pt-16 lg:pt-16 lg:ml-72">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 lg:pb-6 pt-[59px]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-6 pb-20 lg:pb-6 pt-2 lg:pt-[59px]">
             {children}
           </div>
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar - Amélioré pour mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
-        <div className="flex items-center justify-around px-1 py-1">
-          {navigation.map((item) => {
+        <div className="flex items-center justify-around px-2 py-3">
+          {navigation.filter((item) => item.id !== 'wallet').map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.path)}
-                className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
+                className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
                   isActive
                     ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
                     : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
                 }`}
               >
-                <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
-                <span className="text-[10px] font-medium truncate leading-tight">{getDisplayName(item)}</span>
+                <Icon className={`w-6 h-6 mb-2 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
+                <span className="text-xs font-semibold truncate leading-tight">{getDisplayName(item)}</span>
               </button>
             );
           })}
@@ -373,4 +374,3 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
-

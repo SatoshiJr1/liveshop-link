@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const OrderDetailPage = () => {
@@ -73,9 +73,51 @@ const OrderDetailPage = () => {
           <div className="mb-4 ">
             <span className="font-semibold ">Méthode de paiement :</span> {order.payment_method}
           </div>
+          {/* Commentaire de la commande */}
           {order.comment && (
             <div className="mb-4 ">
               <span className="font-semibold ">Commentaire :</span> {order.comment}
+            </div>
+          )}
+
+          {/* Commentaire client (après commande) */}
+          {order.comment_data && (
+            <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageCircle className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-blue-800 dark:text-blue-200">Commentaire Client</span>
+              </div>
+              
+              <div className="mb-2">
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {order.comment_data.customer_name}
+                </span>
+                {order.comment_data.rating && (
+                  <div className="flex items-center gap-1 mt-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`w-4 h-4 ${
+                          i < order.comment_data.rating 
+                            ? 'text-yellow-500 fill-current' 
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                    <span className="text-sm text-gray-500 ml-2">
+                      {order.comment_data.rating}/5
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                "{order.comment_data.content}"
+              </p>
+              
+              <div className="text-xs text-gray-500 mt-2">
+                Posté le {new Date(order.comment_data.created_at).toLocaleDateString('fr-FR')}
+              </div>
             </div>
           )}
           
@@ -85,7 +127,7 @@ const OrderDetailPage = () => {
               <span className="font-semibold ">Preuve de paiement :</span>
               <div className="mt-2">
                 <img 
-                  src={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  src={order.payment_proof_url?.startsWith('http') ? order.payment_proof_url : `http://localhost:3001${order.payment_proof_url}`}
                   alt="Preuve de paiement"
                   className="w-full max-w-md rounded-lg border-2 border-gray-200"
                   onError={(e) => {
@@ -97,7 +139,7 @@ const OrderDetailPage = () => {
                   Image non disponible
                 </div>
                 <a 
-                  href={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  href={order.payment_proof_url?.startsWith('http') ? order.payment_proof_url : `http://localhost:3001${order.payment_proof_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-block"
