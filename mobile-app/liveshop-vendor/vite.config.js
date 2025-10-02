@@ -11,16 +11,40 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.jpg'],
+      includeAssets: ['favicon.jpg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'LiveShop Vendor',
-        short_name: 'LS Vendor',
+        name: 'LiveShop Link - Espace Vendeur',
+        short_name: 'LiveShop Vendor',
+        description: 'L\'app qui vend pour vous pendant que vous animez vos lives',
         start_url: '/',
         display: 'standalone',
+        orientation: 'portrait',
         background_color: '#ffffff',
-        theme_color: '#111827',
+        theme_color: '#8B5CF6',
+        scope: '/',
+        lang: 'fr',
+        categories: ['business', 'shopping', 'productivity'],
         icons: [
-          { src: '/favicon.jpg', sizes: '512x512', type: 'image/jpeg' }
+          {
+            src: '/favicon.jpg',
+            sizes: '192x192',
+            type: 'image/jpeg',
+            purpose: 'any maskable'
+          },
+          {
+            src: '/favicon.jpg',
+            sizes: '512x512',
+            type: 'image/jpeg',
+            purpose: 'any maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: '/screenshot-mobile.png',
+            sizes: '390x844',
+            type: 'image/png',
+            form_factor: 'narrow'
+          }
         ]
       },
       workbox: {
