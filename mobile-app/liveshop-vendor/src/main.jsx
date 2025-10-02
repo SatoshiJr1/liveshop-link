@@ -17,6 +17,7 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
+// Service Worker registration simplifié
 if ('serviceWorker' in navigator) {
   const workbox = new Workbox('/sw.js', { scope: '/' })
   workbox.addEventListener('activated', (event) => {
@@ -25,5 +26,7 @@ if ('serviceWorker' in navigator) {
       self.registration.navigationPreload.enable().catch(() => {})
     }
   })
-  workbox.register()
+  workbox.register().catch(() => {
+    // Ignorer les erreurs de service worker
+  })
 }

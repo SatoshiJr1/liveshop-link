@@ -26,15 +26,15 @@ export default defineConfig({
         categories: ['business', 'shopping', 'productivity'],
         icons: [
           {
-            src: '/favicon.jpg',
+            src: '/pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/favicon.jpg',
+            src: '/pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ],
@@ -48,19 +48,20 @@ export default defineConfig({
         ]
       },
       workbox: {
-        navigateFallback: '/offline.html',
+        // Désactiver le navigateFallback pour éviter les faux "hors ligne"
+        navigateFallback: null,
         runtimeCaching: [
           {
-            // Ne jamais mettre en cache la page d'offline pour éviter le faux "hors ligne" en prod
-            urlPattern: ({ url }) => url.pathname.endsWith('/offline.html'),
-            handler: 'NetworkOnly'
-          },
-          {
+            // Assets statiques : cache avec revalidation
             urlPattern: ({ request }) => ['script', 'style', 'font'].includes(request.destination),
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'assets' }
+            options: { 
+              cacheName: 'assets',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 7 } // 7 jours
+            }
           },
           {
+            // Images : cache first avec expiration
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {
@@ -69,22 +70,23 @@ export default defineConfig({
             }
           },
           {
-            // API: NetworkFirst pour GET, timeout plus long pour éviter faux hors-ligne
+            // API calls : toujours NetworkFirst avec timeout court
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
-            method: 'GET',
-            options: { cacheName: 'api', networkTimeoutSeconds: 10 }
+            options: { 
+              cacheName: 'api',
+              networkTimeoutSeconds: 3, // Timeout court pour éviter faux hors-ligne
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 5 } // 5 minutes
+            }
           },
           {
-            urlPattern: ({ url, request }) => url.pathname.startsWith('/api/products') && ['POST','PUT','DELETE'].includes(request.method),
-            handler: 'NetworkOnly',
-            options: {
-              backgroundSync: {
-                name: 'products-queue',
-                options: {
-                  maxRetentionTime: 24 * 60
-                }
-              }
+            // Pages HTML : NetworkFirst pour éviter le cache des pages
+            urlPattern: ({ request }) => request.destination === 'document',
+            handler: 'NetworkFirst',
+            options: { 
+              cacheName: 'pages',
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 5 }
             }
           }
         ]
