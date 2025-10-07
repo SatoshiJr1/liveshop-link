@@ -113,6 +113,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// Gérer explicitement les pré-requêtes CORS (preflight) pour toutes les routes
+app.options('*', cors(corsOptions));
 
 // Middleware de debug pour logger les requêtes
 app.use(debugMiddleware.requestLogger());
