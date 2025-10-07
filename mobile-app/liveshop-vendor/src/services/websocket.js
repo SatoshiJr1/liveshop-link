@@ -227,15 +227,15 @@ class WebSocketService {
 
   // Écouter les nouvelles commandes
   onNewOrder(callback) {
-    if (!this.socket || !this.isConnected) {
-      const token = this.currentToken || (typeof window !== 'undefined' ? localStorage.getItem('liveshop_token') : null);
-      console.warn('⚠️ WebSocket non connecté pour onNewOrder, tentative de connexion automatique');
-      this.connect(token).catch(() => {});
+    if (!this.socket) {
+      console.warn('⚠️ WebSocket non connecté pour onNewOrder');
+      return;
     }
 
-    if (this.socket) this.socket.off('new_order');
-
-    this.socket?.on('new_order', (data) => {
+    // Supprimer l'ancien listener s'il existe
+    this.socket.off('new_order');
+    
+    this.socket.on('new_order', (data) => {
       console.log('🛒 Nouvelle commande reçue:', data);
       try {
         callback(data);
@@ -249,15 +249,15 @@ class WebSocketService {
 
   // Écouter les mises à jour de statut
   onOrderStatusUpdate(callback) {
-    if (!this.socket || !this.isConnected) {
-      const token = this.currentToken || (typeof window !== 'undefined' ? localStorage.getItem('liveshop_token') : null);
-      console.warn('⚠️ WebSocket non connecté pour onOrderStatusUpdate, tentative de connexion automatique');
-      this.connect(token).catch(() => {});
+    if (!this.socket) {
+      console.warn('⚠️ WebSocket non connecté pour onOrderStatusUpdate');
+      return;
     }
 
-    if (this.socket) this.socket.off('order_status_update');
-
-    this.socket?.on('order_status_update', (data) => {
+    // Supprimer l'ancien listener s'il existe
+    this.socket.off('order_status_update');
+    
+    this.socket.on('order_status_update', (data) => {
       console.log('📊 Mise à jour de statut reçue:', data);
       try {
         callback(data);
@@ -290,15 +290,15 @@ class WebSocketService {
 
   // Écouter les notifications générales
   onNotification(callback) {
-    if (!this.socket || !this.isConnected) {
-      const token = this.currentToken || (typeof window !== 'undefined' ? localStorage.getItem('liveshop_token') : null);
-      console.warn('⚠️ WebSocket non connecté pour onNotification, tentative de connexion automatique');
-      this.connect(token).catch(() => {});
+    if (!this.socket) {
+      console.warn('⚠️ WebSocket non connecté pour onNotification');
+      return;
     }
 
-    if (this.socket) this.socket.off('notification');
-
-    this.socket?.on('notification', (data) => {
+    // Supprimer l'ancien listener s'il existe
+    this.socket.off('notification');
+    
+    this.socket.on('notification', (data) => {
       console.log('🔔 Notification reçue:', data);
       try {
         callback(data);
