@@ -52,14 +52,15 @@ class WebSocketService {
 
         let wsUrl;
         if (envUrl) {
-          // Permettre de forcer l'URL depuis l'environnement (ex: http://192.168.1.10:3001)
+          // Permettre de forcer l'URL depuis l'environnement (ex: https://api.livelink.store)
           wsUrl = envUrl.replace(/\/$/, '').replace(/\/api$/, '');
         } else if (isPrivateIp(hostname)) {
+          // Dev réseau local
           const port = envPort || '3001';
           wsUrl = `${protocol}//${hostname}:${port}`;
         } else {
-          // Prod: même host avec port 3001 pour WebSocket
-          wsUrl = `${protocol}//${hostname}:3001`;
+          // Prod: utiliser le domaine API public, pas le même host:3001
+          wsUrl = 'https://api.livelink.store';
         }
         
         console.log('🔗 Connexion WebSocket vers:', wsUrl);

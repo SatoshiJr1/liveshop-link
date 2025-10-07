@@ -126,19 +126,19 @@ export const AuthProvider = ({ children }) => {
     setIsAdmin(false);
   };
 
-  // const refreshCredits = async () => {
-  //   // Ne pas rafraîchir les crédits pour les admins
-  //   if (isAdmin) return null;
-  //   
-  //   try {
-  //     const response = await apiService.getCredits();
-  //     setCredits(response.data);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error('Erreur lors du rafraîchissement des crédits:', error);
-  //     return null;
-  //   }
-  // }; // Désactivé temporairement
+  // Rafraîchir les crédits (version compatible, même si l'état crédits est inactif)
+  const refreshCredits = async () => {
+    // Ne pas rafraîchir pour les admins
+    if (isAdmin) return null;
+    try {
+      const response = await apiService.getCredits();
+      // setCredits(response.data); // Laisser l'état désactivé pour l'instant
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement des crédits:', error);
+      return null;
+    }
+  };
 
   // Récupérer le token depuis localStorage
   const token = localStorage.getItem('liveshop_token');
@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    // refreshCredits, // Désactivé temporairement
+    refreshCredits,
     isAuthenticated: !!seller
   };
 
