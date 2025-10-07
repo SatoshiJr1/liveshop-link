@@ -4,7 +4,6 @@ import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, MessageCircle, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import ApiService from '../services/api';
 
 const OrderDetailPage = () => {
   const { orderId } = useParams();
@@ -19,10 +18,19 @@ const OrderDetailPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await ApiService.getOrderDetail(orderId);
-        setOrder(data.order);
-      } catch (e) {
-        setError(e?.message || 'Erreur lors du chargement de la commande');
+        const res = await fetch(`http://localhost:3001/api/orders/${orderId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setOrder(data.order);
+        } else {
+          setError(data.error || 'Erreur lors du chargement de la commande');
+        }
+      } catch {
+        setError('Erreur réseau');
       } finally {
         setLoading(false);
       }
@@ -119,11 +127,7 @@ const OrderDetailPage = () => {
               <span className="font-semibold ">Preuve de paiement :</span>
               <div className="mt-2">
                 <img 
-                  src={order.payment_proof_url?.startsWith('http') 
-                    ? order.payment_proof_url 
-                    : (window.location.hostname.includes('livelink.store') 
-                      ? `https://api.livelink.store${order.payment_proof_url}` 
-                      : `${window.location.protocol}//${window.location.hostname}:3001${order.payment_proof_url}`)}
+                  src={order.payment_proof_url?.startsWith('http') ? order.payment_proof_url : `http://localhost:3001${order.payment_proof_url}`}
                   alt="Preuve de paiement"
                   className="w-full max-w-md rounded-lg border-2 border-gray-200"
                   onError={(e) => {
@@ -135,11 +139,7 @@ const OrderDetailPage = () => {
                   Image non disponible
                 </div>
                 <a 
-                  href={order.payment_proof_url?.startsWith('http') 
-                    ? order.payment_proof_url 
-                    : (window.location.hostname.includes('livelink.store') 
-                      ? `https://api.livelink.store${order.payment_proof_url}` 
-                      : `${window.location.protocol}//${window.location.hostname}:3001${order.payment_proof_url}`)}
+                  href={order.payment_proof_url?.startsWith('http') ? order.payment_proof_url : `http://localhost:3001${order.payment_proof_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-block"
