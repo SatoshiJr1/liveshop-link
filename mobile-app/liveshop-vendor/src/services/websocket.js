@@ -105,8 +105,12 @@ class WebSocketService {
           this.startHeartbeat();
         });
 
-        this.socket.on('authenticated', (data) => {
+        this.socket.on('authenticated', async (data) => {
           console.log('✅ WebSocket authentifié:', data.message);
+          
+          // Récupérer les notifications manquées au reconnect
+          await this.requestMissedNotifications();
+          
           resolve(data);
         });
 
@@ -228,7 +232,7 @@ class WebSocketService {
   // Écouter les nouvelles commandes
   onNewOrder(callback) {
     if (!this.socket) {
-      console.warn('⚠️ WebSocket non connecté pour onNewOrder');
+      console.warn('⚠️  WebSocket non connecté pour onNewOrder');
       return;
     }
 
@@ -236,8 +240,12 @@ class WebSocketService {
     this.socket.off('new_order');
     
     this.socket.on('new_order', (data) => {
-      console.log('🛒 Nouvelle commande reçue:', data);
+      console.log('🛍️ Nouvelle commande reçue:', data);
       try {
+        // Envoyer ACK au serveur
+        if (data.notification?.id) {
+          this.sendNotificationAck(data.notification.id);
+        }
         callback(data);
       } catch (error) {
         console.error('❌ Erreur dans callback new_order:', error);
@@ -247,51 +255,10 @@ class WebSocketService {
     this.listeners.set('new_order', callback);
   }
 
-  // Écouter les mises à jour de statut
-  onOrderStatusUpdate(callback) {
-    if (!this.socket) {
-      console.warn('⚠️ WebSocket non connecté pour onOrderStatusUpdate');
-      return;
-    }
-
-    // Supprimer l'ancien listener s'il existe
-    this.socket.off('order_status_update');
-    
-    this.socket.on('order_status_update', (data) => {
-      console.log('📊 Mise à jour de statut reçue:', data);
-      try {
-        callback(data);
-      } catch (error) {
-        console.error('❌ Erreur dans callback order_status_update:', error);
-      }
-    });
-
-    this.listeners.set('order_status_update', callback);
-  }
-
-  // Écouter les nouveaux commentaires
-  onNewComment(callback) {
-    if (!this.socket) {
-      console.warn('⚠️ WebSocket non connecté pour onNewComment');
-      return;
-    }
-
-    this.socket.on('new_comment', (data) => {
-      console.log('💬 Nouveau commentaire reçu:', data);
-      try {
-        callback(data);
-      } catch (error) {
-        console.error('❌ Erreur dans callback new_comment:', error);
-      }
-    });
-
-    this.listeners.set('new_comment', callback);
-  }
-
   // Écouter les notifications générales
   onNotification(callback) {
     if (!this.socket) {
-      console.warn('⚠️ WebSocket non connecté pour onNotification');
+      console.warn('⚠️  WebSocket non connecté pour onNotification');
       return;
     }
 
@@ -301,6 +268,10 @@ class WebSocketService {
     this.socket.on('notification', (data) => {
       console.log('🔔 Notification reçue:', data);
       try {
+        // Envoyer ACK au serveur
+        if (data.notification?.id) {
+          this.sendNotificationAck(data.notification.id);
+        }
         callback(data);
       } catch (error) {
         console.error('❌ Erreur dans callback notification:', error);
@@ -361,6 +332,57 @@ class WebSocketService {
         this.connect(this.currentToken);
       }
     }, 1000);
+  }
+
+  // Envoyer ACK de réception de notification
+  sendNotificationAck(notificationId) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('notification_ack', { notificationId });
+      console.log(`✅ ACK envoyé pour notification ${notificationId}`);
+    }
+  }
+
+  // Récupérer les notifications manquées
+  async requestMissedNotifications() {
+    if (!this.socket || !this.isConnected) {
+      console.warn('⚠️  WebSocket non connecté, impossible de récupérer les notifications manquées');
+      return [];
+    }
+
+    try {
+      const lastNotificationId = localStorage.getItem('lastNotificationId') || 0;
+      console.log(`🔄 Demande notifications manquées depuis ID ${lastNotificationId}`);
+
+      return new Promise((resolve) => {
+        this.socket.emit('request_missed_notifications', 
+          { lastNotificationId: parseInt(lastNotificationId) },
+          (response) => {
+            if (response.success && response.notifications) {
+              console.log(`✅ ${response.notifications.length} notifications manquées récupérées`);
+              
+              // Émettre un événement pour que l'app traite ces notifications
+              if (response.notifications.length > 0) {
+                window.dispatchEvent(new CustomEvent('missedNotifications', {
+                  detail: { notifications: response.notifications }
+                }));
+                
+                // Mettre à jour le dernier ID
+                const maxId = Math.max(...response.notifications.map(n => n.id));
+                localStorage.setItem('lastNotificationId', maxId.toString());
+              }
+              
+              resolve(response.notifications);
+            } else {
+              console.error('❌ Erreur récupération notifications manquées:', response.error);
+              resolve([]);
+            }
+          }
+        );
+      });
+    } catch (error) {
+      console.error('❌ Erreur demande notifications manquées:', error);
+      return [];
+    }
   }
 }
 

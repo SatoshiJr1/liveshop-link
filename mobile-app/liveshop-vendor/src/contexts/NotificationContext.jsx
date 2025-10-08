@@ -80,6 +80,25 @@ export const NotificationProvider = ({ children }) => {
         webSocketService.off('new_order');
         webSocketService.off('notification');
 
+        // Écouter les notifications manquées récupérées
+        const handleMissedNotifications = (event) => {
+          if (!mounted) return;
+          const { notifications } = event.detail;
+          console.log(`📥 Traitement de ${notifications.length} notifications manquées`);
+          
+          setNotifications((prev) => [...notifications, ...prev]);
+          setUnreadCount((prev) => prev + notifications.filter(n => !n.read).length);
+          
+          // Mettre à jour le dernier ID
+          if (notifications.length > 0) {
+            const maxId = Math.max(...notifications.map(n => n.id));
+            setLastNotificationId((prev) => Math.max(prev, maxId));
+            localStorage.setItem('lastNotificationId', maxId.toString());
+          }
+        };
+        
+        window.addEventListener('missedNotifications', handleMissedNotifications);
+
         // Nouvelle commande (temps réel)
         webSocketService.onNewOrder((data) => {
           if (!mounted) return;
@@ -132,6 +151,7 @@ export const NotificationProvider = ({ children }) => {
       try {
         webSocketService.off('new_order');
         webSocketService.off('notification');
+        window.removeEventListener('missedNotifications', handleMissedNotifications);
       } catch {
         console.warn('NotificationContext: erreur nettoyage listeners socket');
       }

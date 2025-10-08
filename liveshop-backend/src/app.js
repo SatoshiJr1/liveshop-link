@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const redisManager = require('./config/redis');
 
 // Configuration par défaut pour le déploiement #8
 const defaultConfig = {
@@ -47,6 +49,7 @@ const creditRoutes = require('./routes/credits');
 const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/sellers');
 const uploadRoutes = require('./routes/upload');
+const pushRoutes = require('./routes/push');
 
 const notificationService = require('./services/notificationService');
 
@@ -62,50 +65,51 @@ console.log('');
 
 const app = express();
 const server = http.createServer(app);
+
+// Configuration Socket.IO avec origines sécurisées
+const allowedOrigins = [
+  'https://livelink.store',
+  'https://space.livelink.store',
+  'https://api.livelink.store'
+];
+
+if (process.env.NODE_ENV === 'development') {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000');
+}
+
 const io = socketIo(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Middleware CORS sécurisé
 const corsOptions = {
   origin: function (origin, callback) {
-    // ACCEPTER TOUTES LES ORIGINES POUR RÉSOUDRE LE PROBLÈME CORS
     console.log('🌐 CORS - Origine demandée:', origin);
     console.log('🌐 CORS - NODE_ENV:', process.env.NODE_ENV);
     
-    // En développement, accepter localhost
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ CORS - Développement: autorisé');
+    // Autoriser les requêtes sans origine (Postman, curl, etc.)
+    if (!origin) {
       callback(null, true);
       return;
     }
     
-    // En production, accepter TOUTES les origines pour le moment
-    console.log('✅ CORS - Production: autorisé pour toutes les origines');
-    callback(null, true);
-    
-    // Configuration restrictive (à réactiver plus tard)
-    /*
-    const allowedOrigins = [
-      'https://livelink.store',
-      'https://space.livelink.store',
-      'https://api.livelink.store',
-      'http://localhost:5173',
-      'http://localhost:5174'
-    ];
-    
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Vérifier si l'origine est autorisée
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ CORS - Origine autorisée:', origin);
       callback(null, true);
     } else {
-      console.log('🚫 CORS bloqué pour:', origin);
+      console.log('🚫 CORS - Origine refusée:', origin);
       callback(new Error('CORS non autorisé'));
     }
-    */
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -234,6 +238,45 @@ io.on('connection', (socket) => {
     socket.emit('pong', Date.now() - startTime);
   });
 
+  // ACK de réception de notification
+  socket.on('notification_ack', async (data) => {
+    try {
+      const { notificationId } = data;
+      if (!notificationId) return;
+
+      console.log(`✅ ACK reçu pour notification ${notificationId} du vendeur ${socket.sellerId}`);
+      
+      // Pour l'instant, on log juste l'ACK (à implémenter plus tard avec colonnes DB)
+      console.log(`📝 ACK traité pour notification ${notificationId} du vendeur ${socket.sellerId}`);
+    } catch (error) {
+      console.error('❌ Erreur traitement ACK notification:', error);
+    }
+  });
+
+  // Récupération delta au reconnect
+  socket.on('request_missed_notifications', async (data, callback) => {
+    try {
+      const { lastNotificationId } = data;
+      console.log(`🔄 Demande notifications manquées depuis ID ${lastNotificationId} pour vendeur ${socket.sellerId}`);
+      
+      const { Op } = require('sequelize');
+      const missedNotifications = await Notification.findAll({
+        where: {
+          seller_id: socket.sellerId,
+          id: { [Op.gt]: lastNotificationId || 0 }
+        },
+        order: [['id', 'ASC']],
+        limit: 50
+      });
+
+      console.log(`📤 Envoi de ${missedNotifications.length} notifications manquées`);
+      callback({ success: true, notifications: missedNotifications });
+    } catch (error) {
+      console.error('❌ Erreur récupération notifications manquées:', error);
+      callback({ success: false, error: error.message });
+    }
+  });
+
   // Déconnexion
   socket.on('disconnect', (reason) => {
     if (socket.sellerId) {
@@ -296,6 +339,7 @@ app.use('/api/credits', creditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/push', pushRoutes);
 
 // Initialiser le middleware de debug après l'enregistrement des routes
 if (debugMiddleware.init) {
@@ -337,8 +381,22 @@ const startServer = async () => {
     await sequelize.sync({ force: false });
     console.log('✅ Base de données synchronisée');
     
-    // Démarrer le processeur de retry des notifications
-    notificationService.startRetryProcessor();
+    // Initialiser Redis adapter pour Socket.IO (mode scalable)
+    try {
+      const redisClients = await redisManager.connect();
+      if (redisClients) {
+        io.adapter(createAdapter(redisClients.pubClient, redisClients.subClient));
+        console.log('✅ Socket.IO Redis Adapter configuré - Mode multi-instances activé');
+      } else {
+        console.warn('⚠️  Socket.IO en mode local - Pas de Redis disponible');
+      }
+    } catch (error) {
+      console.warn('⚠️  Impossible de configurer Redis adapter:', error.message);
+      console.warn('⚠️  Socket.IO fonctionnera en mode local uniquement');
+    }
+    
+    // Démarrer le processeur de retry des notifications (avec BullMQ)
+    await notificationService.startRetryProcessor();
     
     // Nettoyer les anciennes notifications (une fois par jour)
     setInterval(async () => {
@@ -369,6 +427,12 @@ process.on('SIGINT', async () => {
   try {
     // Arrêter le processeur de retry
     notificationService.stopRetryProcessor();
+    
+    // Déconnecter Redis
+    await redisManager.disconnect();
+    
+    // Fermer Socket.IO
+    io.close();
     
     await sequelize.close();
     console.log('✅ Connexion à la base de données fermée');
