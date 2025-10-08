@@ -1,12 +1,31 @@
 const { Notification } = require('../models');
 const { sequelize } = require('../config/database');
+const notificationQueue = require('./notificationQueue');
+const webPushService = require('./webPushService');
 
 class NotificationService {
   constructor() {
-    this.retryQueue = new Map();
+    this.retryQueue = new Map(); // Fallback si BullMQ indisponible
     this.maxRetries = 3;
     this.retryDelay = 5000; // 5 secondes
     this.isProcessing = false;
+    this.useBullMQ = false; // Flag pour savoir si BullMQ est actif
+  }
+
+  // Initialiser avec BullMQ
+  async initializeQueue() {
+    try {
+      await notificationQueue.initialize(this);
+      this.useBullMQ = notificationQueue.isInitialized;
+      if (this.useBullMQ) {
+        console.log('✅ NotificationService utilise BullMQ pour les retries');
+      } else {
+        console.log('⚠️  NotificationService utilise la queue en mémoire (fallback)');
+      }
+    } catch (error) {
+      console.error('❌ Erreur initialisation queue:', error);
+      this.useBullMQ = false;
+    }
   }
 
   // Créer une notification persistante
@@ -57,9 +76,29 @@ class NotificationService {
         });
         console.log(`✅ Notification envoyée en temps réel: ${type} (ID: ${notification.id})`);
       } else {
-        // Ajouter à la queue de retry
-        this.addToRetryQueue(notification);
-        console.log(`⏳ Notification ajoutée à la queue de retry: ${type} (ID: ${notification.id})`);
+        // Vendeur offline - Essayer Web Push en fallback
+        console.log(`📱 Vendeur ${sellerId} offline, tentative Web Push...`);
+        const pushSent = await webPushService.sendPushNotification(sellerId, notification);
+        
+        if (pushSent) {
+          console.log(`✅ Notification envoyée via Web Push: ${type} (ID: ${notification.id})`);
+          await notification.update({ sent: true, sent_at: new Date() });
+        } else {
+          // Ajouter à la queue de retry (BullMQ ou fallback)
+          if (this.useBullMQ) {
+            await notificationQueue.addNotification(
+              notification.id,
+              sellerId,
+              type,
+              data,
+              type === 'new_order' ? 'high' : 'normal'
+            );
+            console.log(`⏳ [BullMQ] Notification ${notification.id} ajoutée à la queue`);
+          } else {
+            this.addToRetryQueue(notification);
+            console.log(`⏳ [Fallback] Notification ${notification.id} ajoutée à la queue mémoire`);
+          }
+        }
       }
 
       // Envoyer des événements de mise à jour spécifiques
@@ -305,30 +344,62 @@ class NotificationService {
   }
 
   // Démarrer le traitement de la queue
-  startRetryProcessor() {
-    this.retryInterval = setInterval(() => {
-      this.processRetryQueue();
-    }, 10000); // Toutes les 10 secondes
+  async startRetryProcessor() {
+    // Initialiser BullMQ
+    await this.initializeQueue();
 
-    console.log('🔄 Processeur de retry démarré (intervalle: 10s)');
+    // Démarrer le processeur fallback (au cas où BullMQ est indisponible)
+    if (!this.useBullMQ) {
+      this.retryInterval = setInterval(() => {
+        this.processRetryQueue();
+      }, 10000); // Toutes les 10 secondes
+      console.log('🔄 Processeur de retry fallback démarré (intervalle: 10s)');
+    }
+
+    // Nettoyage périodique des anciens jobs BullMQ
+    if (this.useBullMQ) {
+      this.cleanupInterval = setInterval(async () => {
+        await notificationQueue.cleanOldJobs();
+        await notificationQueue.logStats();
+      }, 60 * 60 * 1000); // Toutes les heures
+      console.log('🔄 Nettoyage automatique BullMQ activé (intervalle: 1h)');
+    }
   }
 
   // Arrêter le traitement de la queue
-  stopRetryProcessor() {
+  async stopRetryProcessor() {
     if (this.retryInterval) {
       clearInterval(this.retryInterval);
       this.retryInterval = null;
+    }
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    if (this.useBullMQ) {
+      await notificationQueue.close();
     }
     console.log('🛑 Processeur de retry arrêté');
   }
 
   // Obtenir le statut du service
-  getStatus() {
-    return {
+  async getStatus() {
+    const baseStatus = {
       isProcessing: this.isProcessing,
       queueSize: this.retryQueue.size,
-      retryInterval: !!this.retryInterval
+      retryInterval: !!this.retryInterval,
+      useBullMQ: this.useBullMQ
     };
+
+    if (this.useBullMQ) {
+      const bullMQStats = await notificationQueue.getStats();
+      return {
+        ...baseStatus,
+        bullMQ: bullMQStats
+      };
+    }
+
+    return baseStatus;
   }
 }
 
