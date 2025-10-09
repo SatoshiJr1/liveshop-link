@@ -96,9 +96,11 @@ const corsOptions = {
   origin: function (origin, callback) {
     console.log('🌐 CORS - Origine demandée:', origin);
     console.log('🌐 CORS - NODE_ENV:', process.env.NODE_ENV);
+    console.log('🌐 CORS - Origines autorisées:', allowedOrigins);
     
     // Autoriser les requêtes sans origine (Postman, curl, etc.)
     if (!origin) {
+      console.log('✅ CORS - Requête sans origine (autorisée)');
       callback(null, true);
       return;
     }
@@ -109,15 +111,27 @@ const corsOptions = {
       callback(null, true);
     } else {
       console.log('🚫 CORS - Origine refusée:', origin);
-      callback(new Error('CORS non autorisé'));
+      console.log('💡 CORS - Essayez d\'ajouter cette origine à allowedOrigins');
+      // En production, autoriser quand même mais logger
+      if (origin.includes('livelink.store')) {
+        console.log('⚠️  CORS - Origine livelink.store autorisée par fallback');
+        callback(null, true);
+      } else {
+        callback(new Error('CORS non autorisé'));
+      }
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With']
 };
 
+// Appliquer CORS avant toute autre route
 app.use(cors(corsOptions));
+
+// Pre-flight requests
+app.options('*', cors(corsOptions));
 
 // Middleware de debug pour logger les requêtes
 app.use(debugMiddleware.requestLogger());
