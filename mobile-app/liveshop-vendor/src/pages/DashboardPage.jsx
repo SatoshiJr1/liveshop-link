@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import ApiService from '../services/api';
-import webSocketService from '../services/websocket';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +27,7 @@ import {
   // Coins // Désactivé temporairement
 } from 'lucide-react';
 import VoiceControls from '../components/VoiceControls';
+import ApiService from '../services/api';
 import { getPublicLink } from '../config/domains';
 
 
@@ -93,31 +92,36 @@ export default function DashboardPage() {
     // return () => clearInterval(interval);
   }, []);
 
-  // Écouter les nouvelles commandes en temps réel
+  // Écouter les événements globaux pour mise à jour du dashboard
   useEffect(() => {
-    if (seller) {
-      // Écouter les nouvelles commandes
-      webSocketService.onNewOrder(() => {
-        console.log('🔄 Nouvelle commande reçue, mise à jour du dashboard...');
-        setAutoUpdating(true);
-        // Mise à jour intelligente - pas de rafraîchissement complet
-        setTimeout(() => setAutoUpdating(false), 2000);
-      });
+    if (!seller) return;
 
-      // Écouter les mises à jour de statut
-      webSocketService.onOrderStatusUpdate(() => {
-        console.log('🔄 Statut mis à jour, mise à jour du dashboard...');
-        setAutoUpdating(true);
-        // Mise à jour intelligente - pas de rafraîchissement complet
-        setTimeout(() => setAutoUpdating(false), 2000);
-      });
+    console.log('🔧 Configuration des listeners dashboard...');
+    
+    // Écouter les nouvelles commandes pour mise à jour du dashboard
+    const handleNewOrder = () => {
+      console.log('🔄 [DASHBOARD] Nouvelle commande détectée, mise à jour...');
+      setAutoUpdating(true);
+      setTimeout(() => setAutoUpdating(false), 2000);
+    };
 
-      return () => {
-        webSocketService.off('new_order');
-        webSocketService.off('order_status_update');
-      };
-    }
-  }, [seller]);
+    // Écouter les mises à jour de statut
+    const handleOrderStatusUpdate = () => {
+      console.log('🔄 [DASHBOARD] Statut mis à jour, mise à jour...');
+      setAutoUpdating(true);
+      setTimeout(() => setAutoUpdating(false), 2000);
+    };
+
+    // Écouter les événements globaux (pas WebSocket direct)
+    window.addEventListener('newNotifications', handleNewOrder);
+    window.addEventListener('orderStatusUpdated', handleOrderStatusUpdate);
+
+    return () => {
+      console.log('🧹 Nettoyage des listeners dashboard...');
+      window.removeEventListener('newNotifications', handleNewOrder);
+      window.removeEventListener('orderStatusUpdated', handleOrderStatusUpdate);
+    };
+  }, [seller?.id]);
 
   const fetchDashboardData = async () => {
     try {
@@ -155,6 +159,7 @@ export default function DashboardPage() {
     await fetchDashboardData();
     setRefreshing(false);
   };
+
 
   const copyPublicLink = () => {
     const link = getPublicLink(seller.public_link_id);

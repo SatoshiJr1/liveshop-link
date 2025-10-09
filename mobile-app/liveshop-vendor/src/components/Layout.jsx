@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-import { Bell, X, LogOut, Menu, Sun, Moon } from 'lucide-react';
+import { Menu, Sun, Moon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -16,16 +15,19 @@ import {
   Users,
   Lock,
   Wallet,
-  MessageCircle
+  MessageCircle,
+  LogOut
 } from 'lucide-react';
 import NotificationToast from './NotificationToast';
 import ThemeToggle from './ThemeToggle';
 import NotificationIndicator from './NotificationIndicator';
+import NotificationButton from './NotificationButton';
 
 const Layout = ({ children }) => {
 
   // const [sidebarOpen, setSidebarOpen] = useState(false); // réservé pour futures évolutions
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -138,8 +140,8 @@ const Layout = ({ children }) => {
               <span className="text-xs font-medium sm:hidden">{credits.balance}</span>
             </Button>
           )}
-          {/* Indicateur de notifications */}
-          <NotificationIndicator />
+          {/* Bouton notifications */}
+          <NotificationButton onClick={() => setShowNotifications(!showNotifications)} />
           {/* Bouton thème */}
           <ThemeToggle />
           
@@ -327,8 +329,8 @@ const Layout = ({ children }) => {
                 <span className="font-medium">{credits.balance} crédits</span>
               </Button>
             )}
-            {/* Indicateur de notifications pour desktop */}
-            <NotificationIndicator />
+            {/* Bouton notifications pour desktop */}
+            <NotificationButton onClick={() => setShowNotifications(!showNotifications)} />
             {/* Bouton thème pour desktop */}
             <ThemeToggle />
           </div>
@@ -368,7 +370,11 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
-      {/* Les notifications sont maintenant gérées par NotificationIndicator */}
+      {/* Indicateur de notifications global - UNE SEULE INSTANCE */}
+      <NotificationIndicator 
+        showNotifications={showNotifications}
+        setShowNotifications={setShowNotifications}
+      />
     </div>
   );
 };

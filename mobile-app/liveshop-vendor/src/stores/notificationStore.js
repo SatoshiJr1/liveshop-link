@@ -5,6 +5,16 @@ class NotificationStore {
   constructor() {
     this.baseUrl = `${getBackendDomain()}/api`;
     console.log('🔔 NotificationStore initialisé avec:', this.baseUrl);
+    
+    // Initialiser l'état
+    this.state = {
+      notifications: [],
+      unreadCount: 0,
+      lastNotificationId: 0,
+      isConnected: false,
+      isLoading: false
+    };
+    
     this.notifications = [];
     this.token = null;
     this.isConnected = false;
@@ -20,6 +30,50 @@ class NotificationStore {
     window.addEventListener('voiceNotificationToggle', (event) => {
       this.voiceEnabled = event.detail.enabled;
       console.log('🔊 État notifications vocales changé:', this.voiceEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉ');
+    });
+    
+    // Écouter les demandes de force refresh
+    window.addEventListener('forceRefreshNotifications', () => {
+      console.log('🔄 [STORE-FORCE-REFRESH] Force refresh demandé, notification des listeners...');
+      this.notify();
+    });
+    
+    // Écouter les nouvelles notifications pour mettre à jour le store
+    window.addEventListener('updateNotificationStore', (event) => {
+      const { notifications } = event.detail;
+      console.log('🔔 [STORE-UPDATE] Mise à jour store avec nouvelles notifications:', notifications.length);
+      
+      // Éviter les doublons en filtrant par ID
+      const currentNotifications = this.state.notifications || [];
+      const currentIds = new Set(currentNotifications.map(n => parseInt(n.id)));
+      
+      const uniqueNewNotifications = notifications.filter(notif => 
+        !currentIds.has(parseInt(notif.id))
+      );
+      
+      console.log(`🔍 [STORE-FILTER] ${uniqueNewNotifications.length}/${notifications.length} nouvelles notifications (après filtrage doublons)`);
+      
+      if (uniqueNewNotifications.length > 0) {
+        // Ajouter seulement les nouvelles notifications uniques
+        // IMPORTANT : Créer un NOUVEAU tableau pour forcer React à détecter le changement
+        const allNotifications = [...uniqueNewNotifications, ...currentNotifications];
+        const unreadCount = allNotifications.filter(n => !n.read).length;
+        
+        this.setState({
+          notifications: [...allNotifications], // Nouveau tableau pour forcer re-render
+          unreadCount: unreadCount,
+          lastNotificationId: Math.max(...allNotifications.map(n => parseInt(n.id) || 0))
+        });
+        
+        console.log('✅ [STORE-SUCCESS] Store mis à jour - Total:', allNotifications.length, 'Non lues:', unreadCount);
+      } else {
+        // Même si pas de nouvelles notifications, forcer un refresh pour l'UI
+        console.log('⚠️ [STORE-SKIP] Aucune nouvelle notification unique, mais force refresh UI');
+        this.setState({
+          notifications: [...currentNotifications], // Nouveau tableau même si vide
+          unreadCount: currentNotifications.filter(n => !n.read).length
+        });
+      }
     });
   }
 
@@ -280,7 +334,13 @@ class NotificationStore {
   }
 
   setState(newState) {
-    this.state = { ...this.state, ...newState };
+    // Toujours créer un NOUVEL objet avec un timestamp pour forcer React à détecter les changements
+    this.state = { 
+      ...this.state, 
+      ...newState,
+      _timestamp: Date.now() // Force la détection de changement par React
+    };
+    console.log('🔄 [STORE-SET] setState appelé, nouvelles notifications:', this.state.notifications?.length || 0);
     this.notify();
   }
 

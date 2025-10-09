@@ -296,28 +296,17 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
         message: `Nouvelle commande de ${customer_name.trim()} - ${product.name}`
       };
 
-      // Créer la notification directement
-      const notification = await notificationService.createNotification(
+      // Utiliser le nouveau système de notifications
+      console.log(`🔔 Envoi notification pour commande #${order.id} au vendeur ${seller.id}`);
+      
+      const { sent } = await notificationService.sendRealtimeNotification(
         seller.id,
         'new_order',
-        `Nouvelle commande #${order.id}`,
-        `Nouvelle commande de ${customer_name.trim()} - ${product.name}`,
         notificationData
       );
-
-      // Tenter l'envoi en temps réel si global.notifySeller est disponible
-      if (global.notifySeller) {
-        try {
-          global.notifySeller(seller.id, 'new_order', notificationData);
-          await notification.update({ sent: true, sent_at: new Date() });
-          notificationSent = true;
-          console.log('✅ Notification envoyée en temps réel');
-        } catch (wsError) {
-          console.log('⚠️ Erreur WebSocket, notification sauvegardée seulement:', wsError.message);
-        }
-      } else {
-        console.log('⚠️ WebSocket non disponible, notification sauvegardée seulement');
-      }
+      
+      notificationSent = sent;
+      console.log(`${sent ? '✅' : '📱'} Notification ${sent ? 'envoyée en temps réel' : 'stockée pour récupération'} pour commande #${order.id}`);
     } catch (error) {
       console.error('❌ Erreur lors de l\'envoi de la notification:', error);
       notificationSent = false;
