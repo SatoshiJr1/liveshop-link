@@ -127,7 +127,28 @@ const corsOptions = {
   exposedHeaders: ['Content-Length', 'X-Requested-With']
 };
 
-// Appliquer CORS avant toute autre route
+// Headers CORS manuels (avant le middleware cors)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Autoriser tous les domaines livelink.store
+  if (origin && origin.includes('livelink.store')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
+    res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With');
+  }
+  
+  // Répondre immédiatement aux pre-flight
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+// Appliquer CORS middleware
 app.use(cors(corsOptions));
 
 // Pre-flight requests
