@@ -54,9 +54,10 @@ class NotificationService {
   // Envoyer une notification en temps réel
   async sendRealtimeNotification(sellerId, type, data) {
     try {
-      console.log(`🔔 Tentative d'envoi notification: ${type} pour vendeur ${sellerId}`);
+      console.log(`🔔 [NOTIF-START] Tentative d'envoi notification: ${type} pour vendeur ${sellerId}`);
       
-      // Créer la notification persistante
+      // Créer la notification persistante AVANT tout envoi
+      console.log(`💾 [NOTIF-DB] Création notification en base...`);
       const notification = await this.createNotification(
         sellerId,
         type,
@@ -64,9 +65,11 @@ class NotificationService {
         this.getMessage(type, data),
         data
       );
+      console.log(`✅ [NOTIF-DB] Notification créée avec ID: ${notification.id}`);
 
       // Tenter l'envoi en temps réel
-      const sent = await this.attemptRealtimeSend(sellerId, type, data);
+      console.log(`📡 [NOTIF-SEND] Tentative envoi temps réel...`);
+      const sent = await this.attemptRealtimeSend(sellerId, type, data, notification);
       
       if (sent) {
         // Marquer comme envoyée
@@ -74,29 +77,36 @@ class NotificationService {
           sent: true,
           sent_at: new Date()
         });
-        console.log(`✅ Notification envoyée en temps réel: ${type} (ID: ${notification.id})`);
+        console.log(`✅ [NOTIF-SUCCESS] Notification envoyée en temps réel: ${type} (ID: ${notification.id})`);
       } else {
         // Vendeur offline - Essayer Web Push en fallback
-        console.log(`📱 Vendeur ${sellerId} offline, tentative Web Push...`);
+        console.log(`📱 [NOTIF-OFFLINE] Vendeur ${sellerId} offline, tentative Web Push...`);
         const pushSent = await webPushService.sendPushNotification(sellerId, notification);
         
         if (pushSent) {
-          console.log(`✅ Notification envoyée via Web Push: ${type} (ID: ${notification.id})`);
+          console.log(`✅ [NOTIF-PUSH] Notification envoyée via Web Push: ${type} (ID: ${notification.id})`);
           await notification.update({ sent: true, sent_at: new Date() });
         } else {
-          // Ajouter à la queue de retry (BullMQ ou fallback)
-          if (this.useBullMQ) {
-            await notificationQueue.addNotification(
-              notification.id,
-              sellerId,
-              type,
-              data,
-              type === 'new_order' ? 'high' : 'normal'
-            );
-            console.log(`⏳ [BullMQ] Notification ${notification.id} ajoutée à la queue`);
-          } else {
+          // Ajouter à la queue de retry (priorité BullMQ)
+          console.log(`⏳ [NOTIF-QUEUE] Ajout à la queue de retry...`);
+          try {
+            if (this.useBullMQ && notificationQueue?.isInitialized) {
+              await notificationQueue.addNotification(
+                notification.id,
+                sellerId,
+                type,
+                data,
+                type === 'new_order' ? 'high' : 'normal'
+              );
+              console.log(`✅ [NOTIF-BULLMQ] Notification ${notification.id} ajoutée à BullMQ`);
+            } else {
+              console.log(`⚠️ [NOTIF-FALLBACK] BullMQ non disponible, utilisation queue mémoire`);
+              this.addToRetryQueue(notification);
+              console.log(`✅ [NOTIF-MEMORY] Notification ${notification.id} ajoutée à la queue mémoire`);
+            }
+          } catch (queueError) {
+            console.error('❌ [NOTIF-QUEUE-ERROR] Erreur ajout à la queue, fallback mémoire:', queueError);
             this.addToRetryQueue(notification);
-            console.log(`⏳ [Fallback] Notification ${notification.id} ajoutée à la queue mémoire`);
           }
         }
       }
@@ -161,15 +171,38 @@ class NotificationService {
   }
 
   // Tenter l'envoi en temps réel
-  async attemptRealtimeSend(sellerId, type, data) {
+  async attemptRealtimeSend(sellerId, type, data, notification = null) {
     try {
       console.log(`🔍 Vérification global.notifySeller pour vendeur ${sellerId}...`);
       
       if (global.notifySeller) {
-        console.log(`📡 Envoi via WebSocket pour vendeur ${sellerId}...`);
-        global.notifySeller(sellerId, type, data);
-        console.log(`✅ Notification WebSocket envoyée pour vendeur ${sellerId}`);
-        return true;
+        console.log(`📡 [NOTIF-WS] Envoi via WebSocket pour vendeur ${sellerId}...`);
+        
+        // Ajouter l'ID de notification aux données si disponible
+        let dataToSend = data;
+        if (notification) {
+          dataToSend = {
+            ...data,
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              created_at: notification.created_at
+            }
+          };
+        }
+        
+        // Attendre l'ACK du client
+        const ackReceived = await global.notifySeller(sellerId, type, dataToSend);
+        
+        if (ackReceived) {
+          console.log(`✅ [NOTIF-WS] Notification WebSocket confirmée pour vendeur ${sellerId}${notification ? ` (ID: ${notification.id})` : ''}`);
+          return true;
+        } else {
+          console.error(`❌ [NOTIF-WS] Pas d'ACK reçu pour vendeur ${sellerId}${notification ? ` (ID: ${notification.id})` : ''}`);
+          return false;
+        }
       } else {
         console.log(`❌ global.notifySeller non disponible pour vendeur ${sellerId}`);
         return false;

@@ -5,6 +5,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const redisManager = require('./config/redis');
+const { Notification } = require('./models');
 
 // Configuration par défaut pour le déploiement #8
 const defaultConfig = {
@@ -171,6 +172,8 @@ app.get('/api/health', (req, res) => {
 
 // Stockage des connexions WebSocket par vendeur
 const sellerConnections = new Map();
+// Map pour accès direct aux sockets par vendeur (pour notifications)
+const connectedSellers = new Map();
 
 // Gestion des connexions WebSocket
 io.on('connection', (socket) => {
@@ -213,6 +216,9 @@ io.on('connection', (socket) => {
         sellerConnections.set(seller.id, new Set());
       }
       sellerConnections.get(seller.id).add(socket.id);
+      
+      // Ajouter à la map pour notifications (dernière socket connectée)
+      connectedSellers.set(seller.id, socket);
 
       console.log(`Vendeur ${seller.name} (ID: ${seller.id}) connecté via WebSocket`);
       socket.emit('authenticated', { 
@@ -257,20 +263,43 @@ io.on('connection', (socket) => {
   socket.on('request_missed_notifications', async (data, callback) => {
     try {
       const { lastNotificationId } = data;
-      console.log(`🔄 Demande notifications manquées depuis ID ${lastNotificationId} pour vendeur ${socket.sellerId}`);
+      console.log(`🔄 [MISSED-REQ] Demande notifications manquées depuis ID ${lastNotificationId} pour vendeur ${socket.sellerId}`);
+      
+      if (!socket.sellerId) {
+        console.error('❌ [MISSED-AUTH] Pas de sellerId sur la socket');
+        callback({ success: false, error: 'not_ready', message: 'Socket non authentifiée' });
+        return;
+      }
+      
+      // Vérifier que lastNotificationId est un nombre valide
+      const lastId = parseInt(lastNotificationId) || 0;
+      if (isNaN(lastId) || lastId < 0) {
+        console.error('❌ [MISSED-PARAM] lastNotificationId invalide:', lastNotificationId);
+        callback({ success: false, error: 'invalid_param', message: 'lastNotificationId invalide' });
+        return;
+      }
       
       const { Op } = require('sequelize');
+      console.log(`🔍 [MISSED-QUERY] Recherche notifications pour vendeur ${socket.sellerId} avec ID > ${lastId}`);
+      
       const missedNotifications = await Notification.findAll({
         where: {
           seller_id: socket.sellerId,
-          id: { [Op.gt]: lastNotificationId || 0 }
+          id: { [Op.gt]: lastId }
         },
         order: [['id', 'ASC']],
         limit: 50
       });
 
-      console.log(`📤 Envoi de ${missedNotifications.length} notifications manquées`);
-      callback({ success: true, notifications: missedNotifications });
+      console.log(`📤 [MISSED-FOUND] ${missedNotifications.length} notifications trouvées:`, 
+        missedNotifications.map(n => ({ id: n.id, type: n.type, title: n.title, sent: n.sent })));
+      
+      callback({ 
+        success: true, 
+        notifications: missedNotifications,
+        lastId: lastId,
+        count: missedNotifications.length
+      });
     } catch (error) {
       console.error('❌ Erreur récupération notifications manquées:', error);
       callback({ success: false, error: error.message });
@@ -285,6 +314,8 @@ io.on('connection', (socket) => {
         connections.delete(socket.id);
         if (connections.size === 0) {
           sellerConnections.delete(socket.sellerId);
+          // Supprimer aussi de la map de notifications
+          connectedSellers.delete(socket.sellerId);
         }
       }
       console.log(`Vendeur ${socket.sellerId} déconnecté (${reason})`);
@@ -308,24 +339,42 @@ setInterval(() => {
   console.log(`📊 WebSocket Stats: ${activeSellers} vendeurs actifs, ${totalConnections} connexions totales`);
 }, 60000); // Toutes les minutes
 
-// Fonction pour envoyer des notifications aux vendeurs
-const notifySeller = (sellerId, event, data) => {
-  const connections = sellerConnections.get(sellerId);
-  if (connections && connections.size > 0) {
-    io.to(`seller_${sellerId}`).emit(event, data);
-    console.log(`Notification envoyée au vendeur ${sellerId}:`, event);
-  }
-};
+    // Fonction pour notifier un vendeur spécifique avec ACK
+    global.notifySeller = (sellerId, type, data) => {
+      return new Promise((resolve) => {
+        const sellerSocket = connectedSellers.get(sellerId);
+        if (sellerSocket && sellerSocket.connected) {
+          console.log(`📤 [NOTIF-EMIT] Envoi notification ${type} au vendeur ${sellerId} avec ACK`);
+          
+          // Timeout pour ACK
+          const timeout = setTimeout(() => {
+            console.error(`⏰ [NOTIF-ACK] Timeout ACK pour notification ${data.notification?.id} vendeur ${sellerId}`);
+            resolve(false);
+          }, 5000);
+          
+          // Envoi avec callback ACK
+          sellerSocket.emit(type, data, (ackResponse) => {
+            clearTimeout(timeout);
+            if (ackResponse?.ok) {
+              console.log(`✅ [NOTIF-ACK] ACK reçu pour notification ${data.notification?.id} vendeur ${sellerId}`);
+              resolve(true);
+            } else {
+              console.error(`❌ [NOTIF-ACK] ACK invalide pour notification ${data.notification?.id} vendeur ${sellerId}:`, ackResponse);
+              resolve(false);
+            }
+          });
+        } else {
+          console.log(`❌ [NOTIF-EMIT] Vendeur ${sellerId} non connecté ou socket fermée`);
+          resolve(false);
+        }
+      });
+    };
 
-// Fonction pour envoyer des notifications à tous les vendeurs connectés
-const notifyAllSellers = (event, data) => {
-  io.emit(event, data);
-  console.log('Notification envoyée à tous les vendeurs:', event);
-};
-
-// Rendre les fonctions de notification disponibles globalement
-global.notifySeller = notifySeller;
-global.notifyAllSellers = notifyAllSellers;
+    // Fonction pour envoyer des notifications à tous les vendeurs connectés
+    global.notifyAllSellers = (event, data) => {
+      io.emit(event, data);
+      console.log('Notification envoyée à tous les vendeurs:', event);
+    };
 
 // Routes API
 app.use('/api/auth', authRoutes);
@@ -395,8 +444,13 @@ const startServer = async () => {
       console.warn('⚠️  Socket.IO fonctionnera en mode local uniquement');
     }
     
-    // Démarrer le processeur de retry des notifications (avec BullMQ)
-    await notificationService.startRetryProcessor();
+    // Initialiser le service de notifications avec BullMQ
+    console.log('🔔 Initialisation du service de notifications...');
+    await notificationService.initializeQueue();
+    
+    // Démarrer le processeur de retry
+    notificationService.startRetryProcessor();
+    console.log('🔄 Processeur de retry démarré');
     
     // Nettoyer les anciennes notifications (une fois par jour)
     setInterval(async () => {
@@ -407,17 +461,29 @@ const startServer = async () => {
       }
     }, 24 * 60 * 60 * 1000); // 24 heures
     
-    // Démarrage du serveur
-    server.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Serveur LiveShop Link démarré sur le port ${PORT}`);
-      console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
-      console.log(`📱 API disponible sur: http://localhost:${PORT}/api`);
+    // Endpoint de test pour notifications hors ligne
+    app.post('/api/test/create-notification', async (req, res) => {
+      try {
+        const notification = await Notification.create(req.body);
+        console.log('🧪 Notification de test créée:', notification.id);
+        res.json({ success: true, notification });
+      } catch (error) {
+        console.error('❌ Erreur création notification test:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+    
+    // Démarrer le serveur
+    const PORT = process.env.PORT || 3001;
+    server.listen(PORT, () => {
+      console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+      console.log(`📱 URL locale: http://localhost:${PORT}`);
+      console.log(`🌐 CORS autorisé pour: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
       console.log(`🔍 Health check: http://localhost:${PORT}/api/health`);
     });
     
   } catch (error) {
     console.error('❌ Erreur lors du démarrage du serveur:', error);
-    process.exit(1);
   }
 };
 

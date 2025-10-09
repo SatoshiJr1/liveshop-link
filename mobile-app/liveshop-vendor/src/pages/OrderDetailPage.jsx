@@ -15,6 +15,7 @@ const OrderDetailPage = () => {
 
   useEffect(() => {
     const fetchOrder = async () => {
+      console.log('📦 [ORDER-DETAIL] Chargement commande:', orderId, 'token:', token ? 'présent' : 'manquant');
       setLoading(true);
       setError(null);
       try {
@@ -23,19 +24,29 @@ const OrderDetailPage = () => {
             'Authorization': `Bearer ${token}`
           }
         });
+        console.log('📦 [ORDER-DETAIL] Réponse statut:', res.status);
         const data = await res.json();
+        console.log('📦 [ORDER-DETAIL] Données:', data);
         if (res.ok) {
           setOrder(data.order);
         } else {
           setError(data.error || 'Erreur lors du chargement de la commande');
         }
-      } catch {
+      } catch (err) {
+        console.error('❌ [ORDER-DETAIL] Erreur:', err);
         setError('Erreur réseau');
       } finally {
         setLoading(false);
       }
     };
-    if (orderId && token) fetchOrder();
+    
+    console.log('📦 [ORDER-DETAIL] useEffect déclenché, orderId:', orderId, 'token:', token ? 'OK' : 'MANQUANT');
+    if (orderId && token) {
+      fetchOrder();
+    } else {
+      console.warn('⚠️ [ORDER-DETAIL] Pas de orderId ou token, skip fetch');
+      setLoading(false);
+    }
   }, [orderId, token]);
 
   if (loading) {

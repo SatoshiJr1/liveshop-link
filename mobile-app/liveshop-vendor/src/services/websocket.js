@@ -81,19 +81,20 @@ class WebSocketService {
           if (!this.isConnected) {
             console.error('⏰ Timeout de connexion WebSocket');
             this.isConnecting = false;
-            reject(new Error('Timeout de connexion'));
           }
         }, this.connectionTimeout);
 
         // Gestion des événements de connexion
         this.socket.on('connect', () => {
-          clearTimeout(connectionTimeout);
-          console.log('🔗 WebSocket connecté avec succès');
+          console.log('✅ WebSocket connecté avec succès');
           this.isConnected = true;
           this.isConnecting = false;
           this.reconnectAttempts = 0;
+          this.startHeartbeat();
           
-          // Authentification avec le token
+          // Configurer les listeners en attente
+          this.setupPendingListeners();
+          
           if (this.currentToken) {
             console.log('🔐 Authentification WebSocket...');
             this.socket.emit('authenticate', { token: this.currentToken });
@@ -231,14 +232,18 @@ class WebSocketService {
 
   // Écouter les nouvelles commandes
   onNewOrder(callback) {
-    if (!this.socket) {
-      console.warn('⚠️  WebSocket non connecté pour onNewOrder');
+    if (!this.socket || !this.isConnected) {
+      console.warn('⚠️  WebSocket non connecté pour onNewOrder - Listener en attente...');
+      // Stocker le callback pour l'utiliser quand la connexion sera établie
+      this.pendingListeners = this.pendingListeners || {};
+      this.pendingListeners.new_order = callback;
       return;
     }
 
     // Supprimer l'ancien listener s'il existe
     this.socket.off('new_order');
-    
+
+    // Ajouter le listener
     this.socket.on('new_order', (data) => {
       console.log('🛍️ Nouvelle commande reçue:', data);
       try {
@@ -281,6 +286,100 @@ class WebSocketService {
     this.listeners.set('notification', callback);
   }
 
+  // Configurer les listeners en attente
+  setupPendingListeners() {
+    if (!this.pendingListeners || !this.socket || !this.isConnected) return;
+    
+    console.log('🔧 Configuration des listeners en attente...');
+    
+    // Configurer directement sans passer par onNewOrder (éviter la récursion)
+    if (this.pendingListeners.new_order) {
+      console.log('🔧 Configuration directe listener new_order');
+      const callback = this.pendingListeners.new_order;
+      
+      this.socket.off('new_order');
+      this.socket.on('new_order', (data) => {
+        console.log('🛍️ Nouvelle commande reçue:', data);
+        try {
+          if (data.notification?.id) {
+            this.sendNotificationAck(data.notification.id);
+          }
+          callback(data);
+        } catch (error) {
+          console.error('❌ Erreur dans callback new_order:', error);
+        }
+      });
+      this.listeners.set('new_order', callback);
+    }
+    
+    if (this.pendingListeners.order_status_update) {
+      console.log('🔧 Configuration directe listener order_status_update');
+      const callback = this.pendingListeners.order_status_update;
+      
+      this.socket.off('order_status_update');
+      this.socket.on('order_status_update', (data) => {
+        console.log('📦 Statut commande mis à jour:', data);
+        try {
+          if (data.notification?.id) {
+            this.sendNotificationAck(data.notification.id);
+          }
+          callback(data);
+        } catch (error) {
+          console.error('❌ Erreur dans callback order_status_update:', error);
+        }
+      });
+      this.listeners.set('order_status_update', callback);
+    }
+    
+    // Nettoyer les listeners en attente
+    this.pendingListeners = {};
+  }
+
+  // Écouter les mises à jour de statut de commande
+  onOrderStatusUpdate(callback) {
+    if (!this.socket || !this.isConnected) {
+      console.warn('⚠️  WebSocket non connecté pour onOrderStatusUpdate - Listener en attente...');
+      // Stocker le callback pour l'utiliser quand la connexion sera établie
+      this.pendingListeners = this.pendingListeners || {};
+      this.pendingListeners.order_status_update = callback;
+      return;
+    }
+
+    // Supprimer l'ancien listener s'il existe
+    this.socket.off('order_status_update');
+    
+    this.socket.on('order_status_update', (data) => {
+      console.log('📦 Statut commande mis à jour:', data);
+      try {
+        // Envoyer ACK au serveur
+        if (data.notification?.id) {
+          this.sendNotificationAck(data.notification.id);
+        }
+        callback(data);
+      } catch (error) {
+        console.error('❌ Erreur dans callback order_status_update:', error);
+      }
+    });
+
+    this.listeners.set('order_status_update', callback);
+  }
+
+  // Ajouter un listener générique
+  on(event, callback) {
+    if (!this.socket) {
+      console.warn(`⚠️ WebSocket non connecté pour ${event}`);
+      return;
+    }
+    
+    // Supprimer l'ancien listener s'il existe
+    this.socket.off(event);
+    
+    // Ajouter le nouveau listener
+    this.socket.on(event, callback);
+    this.listeners.set(event, callback);
+    console.log(`✅ Listener ajouté: ${event}`);
+  }
+
   // Supprimer un listener
   off(event) {
     if (this.socket && this.listeners.has(event)) {
@@ -302,7 +401,7 @@ class WebSocketService {
   }
 
   // Vérifier si connecté
-  isConnected() {
+  getIsConnected() {
     return this.isConnected;
   }
 
@@ -342,47 +441,49 @@ class WebSocketService {
     }
   }
 
-  // Récupérer les notifications manquées
-  async requestMissedNotifications() {
-    if (!this.socket || !this.isConnected) {
-      console.warn('⚠️  WebSocket non connecté, impossible de récupérer les notifications manquées');
-      return [];
-    }
+  // Demander les notifications manquées
+  async requestMissedNotifications(lastNotificationId = 0) {
+    return new Promise((resolve, reject) => {
+      console.log(`🔄 [DEBUG] requestMissedNotifications appelé avec ID: ${lastNotificationId}`);
+      
+      if (!this.socket || !this.isConnected) {
+        console.warn('⚠️ [DEBUG] WebSocket non connecté, impossible de récupérer les notifications manquées');
+        console.log('🔍 [DEBUG] Socket exists:', !!this.socket);
+        console.log('🔍 [DEBUG] Is connected:', this.isConnected);
+        resolve([]);
+        return;
+      }
 
-    try {
-      const lastNotificationId = localStorage.getItem('lastNotificationId') || 0;
-      console.log(`🔄 Demande notifications manquées depuis ID ${lastNotificationId}`);
-
-      return new Promise((resolve) => {
-        this.socket.emit('request_missed_notifications', 
-          { lastNotificationId: parseInt(lastNotificationId) },
-          (response) => {
-            if (response.success && response.notifications) {
-              console.log(`✅ ${response.notifications.length} notifications manquées récupérées`);
-              
-              // Émettre un événement pour que l'app traite ces notifications
-              if (response.notifications.length > 0) {
-                window.dispatchEvent(new CustomEvent('missedNotifications', {
-                  detail: { notifications: response.notifications }
-                }));
-                
-                // Mettre à jour le dernier ID
-                const maxId = Math.max(...response.notifications.map(n => n.id));
-                localStorage.setItem('lastNotificationId', maxId.toString());
-              }
-              
-              resolve(response.notifications);
-            } else {
-              console.error('❌ Erreur récupération notifications manquées:', response.error);
-              resolve([]);
-            }
+      console.log(`📡 [DEBUG] Émission request_missed_notifications avec ID ${lastNotificationId}`);
+      
+      // Timeout pour éviter les blocages
+      const timeout = setTimeout(() => {
+        console.error('⏰ [DEBUG] Timeout récupération notifications manquées');
+        resolve([]);
+      }, 10000);
+      
+      this.socket.emit('request_missed_notifications', { lastNotificationId }, (response) => {
+        clearTimeout(timeout);
+        console.log('📥 [WS-RESPONSE] Réponse reçue:', response);
+        
+        if (response?.success) {
+          console.log(`✅ [WS-SUCCESS] ${response.notifications?.length || 0} notifications manquées récupérées`);
+          console.log('📋 [WS-DETAIL] Détail notifications:', response.notifications);
+          resolve(response.notifications || []);
+        } else {
+          console.error('❌ [WS-ERROR] Erreur récupération notifications manquées:', response?.error);
+          
+          // Gestion spécifique des erreurs
+          if (response?.error === 'not_ready') {
+            console.warn('⚠️ [WS-NOT-READY] Socket pas encore authentifiée, retry recommandé');
+          } else if (response?.error === 'invalid_param') {
+            console.error('❌ [WS-INVALID-PARAM] Paramètre invalide:', response?.message);
           }
-        );
+          
+          resolve([]);
+        }
       });
-    } catch (error) {
-      console.error('❌ Erreur demande notifications manquées:', error);
-      return [];
-    }
+    });
   }
 }
 

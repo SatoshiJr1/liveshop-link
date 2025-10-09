@@ -71,11 +71,19 @@ const testConnection = async () => {
     console.log('🔍 Test de connexion à la base de données...');
     await sequelize.authenticate();
     
-    if (isDevelopment) {
+    // Debug: afficher le dialecte détecté
+    console.log('🔧 Dialecte détecté:', sequelize.getDialect());
+    
+    // Vérifier le dialecte plutôt que NODE_ENV (plus fiable)
+    if (sequelize.getDialect() === 'sqlite') {
       console.log(`✅ Connexion SQLite établie avec succès.`);
       console.log(`📁 Fichier SQLite: ${sequelize.options.storage}`);
+      
+      // Test simple pour SQLite
+      const [results] = await sequelize.query('SELECT sqlite_version() as version');
+      console.log('🔧 Version SQLite:', results[0].version);
     } else {
-      // Vérifier les informations de la base
+      // Vérifier les informations de la base PostgreSQL
       const [results] = await sequelize.query(
         'SELECT current_database() as db_name, current_user as user, version() as version'
       );

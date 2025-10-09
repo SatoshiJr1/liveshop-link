@@ -366,7 +366,7 @@ const ProductsPage = () => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleDeleteProduct(product.id)}
+              onClick={() => handleDelete(product.id)}
               className="flex-1 h-8 text-xs border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               <Trash2 className="w-3 h-3 sm:mr-1" />

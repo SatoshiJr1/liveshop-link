@@ -22,6 +22,16 @@ const ImageCapture = ({
   const canvasRef = useRef(null);
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Détecter si on est sur mobile
+  React.useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+    };
+    checkMobile();
+  }, []);
 
   // Fonction pour uploader une image vers Cloudinary
   const uploadImage = useCallback(async (file) => {
@@ -140,7 +150,19 @@ const ImageCapture = ({
 
   // Fonction pour démarrer la caméra
   const startCamera = useCallback(async () => {
+    // Sur mobile, utiliser directement l'input file avec capture
+    if (isMobile) {
+      fileInputRef.current?.click();
+      return;
+    }
+
+    // Sur desktop, utiliser getUserMedia
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Caméra non supportée sur ce navigateur. Utilisez le bouton Galerie.');
+        return;
+      }
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
@@ -156,9 +178,18 @@ const ImageCapture = ({
       setShowCamera(true);
     } catch (err) {
       console.error('Erreur accès caméra:', err);
-      setError('Impossible d\'accéder à la caméra');
+      
+      if (err.name === 'NotAllowedError') {
+        setError('Permission caméra refusée. Autorisez l\'accès dans les paramètres.');
+      } else if (err.name === 'NotFoundError') {
+        setError('Aucune caméra trouvée. Utilisez le bouton Galerie.');
+      } else if (err.name === 'NotReadableError') {
+        setError('Caméra déjà utilisée par une autre application.');
+      } else {
+        setError('Impossible d\'accéder à la caméra. Utilisez le bouton Galerie.');
+      }
     }
-  }, []);
+  }, [isMobile]);
 
   // Fonction pour supprimer une image
   const removeImage = useCallback((index) => {
@@ -302,11 +333,12 @@ const ImageCapture = ({
         </Card>
       )}
 
-      {/* Input file caché */}
+      {/* Input file caché - avec capture mobile */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        capture="environment"
         multiple={multiple}
         onChange={handleFileSelect}
         className="hidden"

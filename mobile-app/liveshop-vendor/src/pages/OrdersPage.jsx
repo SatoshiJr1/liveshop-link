@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ApiService from '../services/api';
-import webSocketService from '../services/websocket';
 import QRCodeModal from '../components/QRCodeModal';
 import { 
   AlertDialog,
@@ -66,25 +65,27 @@ const OrdersPage = () => {
     // Les données se mettent à jour automatiquement via WebSocket
   }, []);
 
-  // Écouter les nouvelles commandes en temps réel
+  // Écouter les événements globaux pour mise à jour de la liste
   useEffect(() => {
     // Écouter les nouvelles commandes
-    webSocketService.onNewOrder(() => {
-      console.log('🔄 Nouvelle commande reçue, mise à jour de la liste...');
-      // Rafraîchir immédiatement les données
+    const handleNewOrder = () => {
+      console.log('🔄 [ORDERS] Nouvelle commande détectée, mise à jour de la liste...');
       fetchOrders();
-    });
+    };
 
     // Écouter les mises à jour de statut
-    webSocketService.onOrderStatusUpdate(() => {
-      console.log('🔄 Statut mis à jour, mise à jour de la liste...');
-      // Rafraîchir immédiatement les données
+    const handleOrderStatusUpdate = () => {
+      console.log('🔄 [ORDERS] Statut mis à jour, mise à jour de la liste...');
       fetchOrders();
-    });
+    };
+
+    // Écouter les événements globaux (pas WebSocket direct)
+    window.addEventListener('newNotifications', handleNewOrder);
+    window.addEventListener('orderStatusUpdated', handleOrderStatusUpdate);
 
     return () => {
-      webSocketService.off('new_order');
-      webSocketService.off('order_status_update');
+      window.removeEventListener('newNotifications', handleNewOrder);
+      window.removeEventListener('orderStatusUpdated', handleOrderStatusUpdate);
     };
   }, []);
 
