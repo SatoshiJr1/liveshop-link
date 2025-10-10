@@ -7,8 +7,9 @@ uploads/
 # Environment variables (CRITIQUE - Ne pas commiter)
 .env
 .env.local
-.env.production
 .env.development
+
+# .env.production peut être commité (URLs publiques uniquement, pas de secrets)
 
 # Logs
 *.log
