@@ -8,8 +8,6 @@ services:
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
       - NODE_ENV=production
       - DATABASE_URL=postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop
-    ports:
-      - "3001:3001"
     volumes:
       # Volumes Docker nommés pour une vraie persistance
       - liveshop_database:/app/database
