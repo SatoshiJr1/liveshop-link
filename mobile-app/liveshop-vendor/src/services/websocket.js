@@ -40,6 +40,14 @@ class WebSocketService {
         const envPort = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_PORT) ? import.meta.env.VITE_BACKEND_PORT : null;
         const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
         const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
+        
+        // 🔍 DEBUG COMPLET
+        console.log('🔍 [WS-DEBUG] Variables environnement:');
+        console.log('  - envUrl:', envUrl);
+        console.log('  - envPort:', envPort);
+        console.log('  - hostname:', hostname);
+        console.log('  - protocol:', protocol);
+        console.log('  - import.meta.env:', import.meta?.env);
         const isPrivateIp = (h) => {
           return (
             h === 'localhost' ||
@@ -51,23 +59,27 @@ class WebSocketService {
         };
 
         let wsUrl;
+        console.log('🔍 [WS-DEBUG] Début logique de décision URL...');
+        
         if (envUrl) {
-          // Permettre de forcer l'URL depuis l'environnement (ex: https://api.livelink.store)
+          console.log('🟢 [WS-DEBUG] CAS 1: envUrl détecté →', envUrl);
           wsUrl = envUrl.replace(/\/$/, '').replace(/\/api$/, '');
+          console.log('🟢 [WS-DEBUG] URL nettoyée →', wsUrl);
         } else if (hostname.includes('livelink.store')) {
-          // Production livelink.store : toujours utiliser api.livelink.store
+          console.log('🟢 [WS-DEBUG] CAS 2: hostname contient livelink.store');
           wsUrl = 'https://api.livelink.store';
           console.log('🌐 WebSocket - Forçage production livelink.store');
         } else if (isPrivateIp(hostname)) {
-          // Dev réseau local
+          console.log('🟡 [WS-DEBUG] CAS 3: IP privée détectée');
           const port = envPort || '3001';
           wsUrl = `${protocol}//${hostname}:${port}`;
+          console.log('🟡 [WS-DEBUG] URL locale →', wsUrl);
         } else {
-          // Fallback: utiliser le domaine API public
+          console.log('🟠 [WS-DEBUG] CAS 4: Fallback API publique');
           wsUrl = 'https://api.livelink.store';
         }
         
-        console.log('🔗 Connexion WebSocket vers:', wsUrl);
+        console.log('✅ [WS-DEBUG] URL FINALE:', wsUrl);
         
         // Connexion au serveur WebSocket avec configuration robuste
         this.socket = io(wsUrl, {
