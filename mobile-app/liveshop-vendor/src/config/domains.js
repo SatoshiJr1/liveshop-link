@@ -47,6 +47,12 @@ export const getBackendDomain = () => {
   return currentConfig.backendDomain;
 };
 
+// Helper pour obtenir l'URL complète (sans /api)
+export const getBackendUrl = () => {
+  const isProd = window.location.hostname.includes('livelink.store');
+  return isProd ? 'https://api.livelink.store' : 'http://localhost:3001';
+};
+
 // Fonction pour construire l'URL de l'API
 export const getApiUrl = (endpoint) => {
   const apiUrl = `${getBackendDomain()}/api${endpoint}`;

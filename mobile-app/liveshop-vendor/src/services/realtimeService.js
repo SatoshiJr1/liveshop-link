@@ -102,11 +102,48 @@ class RealtimeService {
 
   // Obtenir l'URL Socket.IO
   getSocketUrl() {
-    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-    const hostname = window.location.hostname;
-    const port = '3001'; // Port du backend
+    // Détecter l'environnement et utiliser la bonne URL
+    const envUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) 
+      ? import.meta.env.VITE_BACKEND_URL 
+      : null;
     
-    return `${protocol}//${hostname}:${port}`;
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    
+    // Helper pour détecter IP privée
+    const isPrivateIp = (h) => {
+      return (
+        h === 'localhost' ||
+        h === '127.0.0.1' ||
+        /^10\./.test(h) ||
+        /^192\.168\./.test(h) ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)
+      );
+    };
+    
+    let socketUrl;
+    
+    if (envUrl) {
+      // Variable d'environnement disponible
+      socketUrl = envUrl.replace(/\/$/, '').replace(/\/api$/, '');
+      console.log('🟢 [REALTIME] envUrl détecté:', socketUrl);
+    } else if (hostname.includes('livelink.store')) {
+      // Production : utiliser api.livelink.store (SANS PORT)
+      socketUrl = 'https://api.livelink.store';
+      console.log('🟢 [REALTIME] Production livelink.store:', socketUrl);
+    } else if (isPrivateIp(hostname)) {
+      // Développement local
+      const port = '3001';
+      socketUrl = `${protocol}//${hostname}:${port}`;
+      console.log('🟡 [REALTIME] Dev local:', socketUrl);
+    } else {
+      // Fallback
+      socketUrl = 'https://api.livelink.store';
+      console.log('🟠 [REALTIME] Fallback API:', socketUrl);
+    }
+    
+    console.log('✅ [REALTIME] Socket URL finale:', socketUrl);
+    return socketUrl;
   }
 
   // Envoyer un message
