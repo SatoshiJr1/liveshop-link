@@ -223,22 +223,23 @@ export const AuthProvider = ({ children }) => {
           setIsAdmin(isAdminUser);
           
           // 🔌 Connecter automatiquement le WebSocket après authentification
-          console.log('🔌 Connexion WebSocket automatique...');
+          console.log('🔌 Configuration WebSocket automatique...');
           try {
-            await webSocketService.connect(token);
-            console.log('✅ WebSocket connecté automatiquement');
-            // Attendre un peu que la connexion soit stable
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // 🎯 Configurer les listeners WebSocket
+            // 🎯 IMPORTANT : Configurer les listeners AVANT la connexion
+            console.log('📡 [AUTH] Configuration des listeners...');
             setupWebSocketListeners();
             
-            console.log('⏳ [AUTH] Attente 2s pour que les composants soient montés...');
+            // Connexion WebSocket
+            console.log('🔌 [AUTH] Connexion WebSocket...');
+            await webSocketService.connect(token);
+            console.log('✅ WebSocket connecté automatiquement');
+            
             // Attendre que les composants UI soient montés
+            console.log('⏳ [AUTH] Attente 2s pour que les composants soient montés...');
             await new Promise(resolve => setTimeout(resolve, 2000));
             
-            console.log('📥 [AUTH] Récupération des notifications manquées...');
             // Récupérer les notifications manquées
+            console.log('📥 [AUTH] Récupération des notifications manquées...');
             await requestMissedNotifications();
           } catch (wsError) {
             console.error('❌ Erreur connexion WebSocket:', wsError);
@@ -316,10 +317,14 @@ export const AuthProvider = ({ children }) => {
       
       // 🔌 Connecter WebSocket et récupérer notifications après login
       try {
+        // 🎯 IMPORTANT : Configurer les listeners AVANT la connexion
+        console.log('📡 [LOGIN] Configuration des listeners...');
+        setupWebSocketListeners();
+        
         console.log('🔌 [LOGIN] Connexion WebSocket...');
         await webSocketService.connect(token);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setupWebSocketListeners();
+        console.log('✅ [LOGIN] WebSocket connecté');
+        
         await new Promise(resolve => setTimeout(resolve, 2000));
         console.log('📥 [LOGIN] Récupération notifications...');
         await requestMissedNotifications();

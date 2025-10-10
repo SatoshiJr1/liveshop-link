@@ -109,8 +109,8 @@ class WebSocketService {
         this.socket.on('authenticated', async (data) => {
           console.log('✅ WebSocket authentifié:', data.message);
           
-          // Récupérer les notifications manquées au reconnect
-          await this.requestMissedNotifications();
+          // Note: Les notifications manquées seront récupérées par AuthContext
+          // pour éviter les appels en double
           
           resolve(data);
         });
