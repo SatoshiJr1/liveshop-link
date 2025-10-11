@@ -304,48 +304,49 @@ class WebSocketService {
 
   // Configurer les listeners en attente
   setupPendingListeners() {
-    if (!this.pendingListeners || !this.socket || !this.isConnected) return;
+    if (!this.pendingListeners || !this.socket || !this.isConnected) {
+      console.log('⚠️ [setupPendingListeners] Impossible de configurer:', {
+        hasPending: !!this.pendingListeners,
+        hasSocket: !!this.socket,
+        isConnected: this.isConnected
+      });
+      return;
+    }
     
-    console.log('🔧 Configuration des listeners en attente...');
+    const eventNames = Object.keys(this.pendingListeners);
+    if (eventNames.length === 0) {
+      console.log('✅ [setupPendingListeners] Aucun listener en attente');
+      return;
+    }
     
-    // Configurer directement sans passer par onNewOrder (éviter la récursion)
-    if (this.pendingListeners.new_order) {
-      console.log('🔧 Configuration directe listener new_order');
-      const callback = this.pendingListeners.new_order;
+    console.log(`🔧 [setupPendingListeners] Configuration de ${eventNames.length} listener(s) en attente:`, eventNames);
+    
+    // Configurer TOUS les listeners en attente
+    eventNames.forEach(event => {
+      const callback = this.pendingListeners[event];
+      console.log(`🔧 Configuration listener: ${event}`);
       
-      this.socket.off('new_order');
-      this.socket.on('new_order', (data) => {
-        console.log('🛍️ Nouvelle commande reçue:', data);
+      // Supprimer l'ancien listener
+      this.socket.off(event);
+      
+      // Ajouter le nouveau listener avec wrapper pour ACK
+      this.socket.on(event, (data) => {
+        console.log(`📥 Événement ${event} reçu:`, data);
         try {
+          // Envoyer ACK si notification
           if (data.notification?.id) {
             this.sendNotificationAck(data.notification.id);
           }
           callback(data);
         } catch (error) {
-          console.error('❌ Erreur dans callback new_order:', error);
+          console.error(`❌ Erreur dans callback ${event}:`, error);
         }
       });
-      this.listeners.set('new_order', callback);
-    }
-    
-    if (this.pendingListeners.order_status_update) {
-      console.log('🔧 Configuration directe listener order_status_update');
-      const callback = this.pendingListeners.order_status_update;
       
-      this.socket.off('order_status_update');
-      this.socket.on('order_status_update', (data) => {
-        console.log('📦 Statut commande mis à jour:', data);
-        try {
-          if (data.notification?.id) {
-            this.sendNotificationAck(data.notification.id);
-          }
-          callback(data);
-        } catch (error) {
-          console.error('❌ Erreur dans callback order_status_update:', error);
-        }
-      });
-      this.listeners.set('order_status_update', callback);
-    }
+      this.listeners.set(event, callback);
+    });
+    
+    console.log(`✅ [setupPendingListeners] ${eventNames.length} listener(s) configuré(s)`);
     
     // Nettoyer les listeners en attente
     this.pendingListeners = {};
@@ -382,18 +383,25 @@ class WebSocketService {
 
   // Ajouter un listener générique
   on(event, callback) {
+    // Stocker le callback dans tous les cas
+    this.listeners.set(event, callback);
+    
     if (!this.socket) {
-      console.warn(`⚠️ WebSocket non connecté pour ${event}`);
+      console.warn(`⚠️ [on] WebSocket non connecté pour ${event} - Listener stocké en attente`);
+      // Stocker dans pendingListeners pour configuration ultérieure
+      this.pendingListeners = this.pendingListeners || {};
+      this.pendingListeners[event] = callback;
       return;
     }
+    
+    // Socket existe, configurer le listener immédiatement
+    console.log(`✅ [on] Configuration listener: ${event}`);
     
     // Supprimer l'ancien listener s'il existe
     this.socket.off(event);
     
     // Ajouter le nouveau listener
     this.socket.on(event, callback);
-    this.listeners.set(event, callback);
-    console.log(`✅ Listener ajouté: ${event}`);
   }
 
   // Supprimer un listener
