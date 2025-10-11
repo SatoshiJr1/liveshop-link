@@ -22,11 +22,13 @@ export const AuthProvider = ({ children }) => {
 
   // 🎯 Configuration simple des listeners WebSocket
   const setupWebSocketListeners = () => {
-    if (listenersConfigured || !webSocketService.isConnected) {
+    // Permettre la configuration AVANT la connexion (listeners en attente)
+    if (listenersConfigured) {
+      console.log('⚠️ Listeners déjà configurés, skip');
       return;
     }
     
-    console.log('🎯 Configuration des listeners WebSocket...');
+    console.log('🎯 Configuration des listeners WebSocket (même si pas encore connecté)...');
     
     // Écouter les nouvelles commandes avec ACK
     webSocketService.on('new_order', (data, ackCallback) => {
