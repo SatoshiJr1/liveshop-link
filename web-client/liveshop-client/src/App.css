@@ -303,4 +303,41 @@
     border-color: #36CFC9;
     outline: none;
   }
+
+  /* Animations pour les éléments flottants */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+  
+  @keyframes float-delayed {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(5deg); }
+  }
+  
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0px) scale(1); }
+    50% { transform: translateY(-10px) scale(1.05); }
+  }
+  
+  @keyframes bounce-delayed {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-float-delayed {
+    animation: float-delayed 8s ease-in-out infinite;
+  }
+  
+  .animate-float-slow {
+    animation: float-slow 10s ease-in-out infinite;
+  }
+  
+  .animate-bounce-delayed {
+    animation: bounce-delayed 3s ease-in-out infinite;
+  }
 }

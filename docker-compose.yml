@@ -1,4 +1,4 @@
-version: "3.8"
+# Docker Compose v2 - version obsolète supprimée
 services:
   backend:
     build: ./liveshop-backend
@@ -6,10 +6,18 @@ services:
       - VIRTUAL_HOST=api.livelink.store
       - LETSENCRYPT_HOST=api.livelink.store
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
-    ports:
-      - "3001:3001"
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop
+    volumes:
+      # Volumes Docker nommés pour une vraie persistance
+      - liveshop_database:/app/database
+      - liveshop_uploads:/app/uploads
+      - liveshop_logs:/app/logs
+      # Volume pour les données utilisateur
+      - liveshop_userdata:/app/userdata
     networks:
       - nginx-proxy
+      - fitsen-backend_fitsen-network
     restart: unless-stopped
 
   dashboard:
@@ -34,6 +42,19 @@ services:
       - nginx-proxy
     restart: unless-stopped
 
+# Volumes Docker nommés pour la persistance
+volumes:
+  liveshop_database:
+    driver: local
+  liveshop_uploads:
+    driver: local
+  liveshop_logs:
+    driver: local
+  liveshop_userdata:
+    driver: local
+
 networks:
   nginx-proxy:
+    external: true
+  fitsen-backend_fitsen-network:
     external: true
