@@ -16,13 +16,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Camera,
-  Tag
+  Tag,
+  Maximize2
 } from 'lucide-react';
 import ProductForm from '../components/ProductForm';
+import ImageLightbox from '../components/ImageLightbox';
 
 const ProductsPage = () => {
   const { refreshCredits } = useAuth();
   const [products, setProducts] = useState([]);
+  const [lightboxImage, setLightboxImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -264,19 +267,25 @@ const ProductsPage = () => {
       <Card key={product.id} className="relative group hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <div className="relative">
           {mainImageUrl ? (
-            <img
-              src={mainImageUrl}
-              alt={product.name}
-              className="w-full h-32 sm:h-48 object-cover rounded-t-lg"
-              onError={(e) => {
-                console.error('❌ Erreur chargement image produit:', {
-                  productName: product.name,
-                  imageUrl: mainImageUrl
-                });
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
+            <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: mainImageUrl, name: product.name })}>
+              <img
+                src={mainImageUrl}
+                alt={product.name}
+                className="w-full h-32 sm:h-48 object-cover rounded-t-lg transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  console.error('❌ Erreur chargement image produit:', {
+                    productName: product.name,
+                    imageUrl: mainImageUrl
+                  });
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              {/* Overlay hover avec icône zoom */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center rounded-t-lg">
+                <Maximize2 className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
+            </div>
           ) : null}
           
           {/* Placeholder si pas d'image ou erreur */}
@@ -385,15 +394,44 @@ const ProductsPage = () => {
               }
             }
             if (attributes && Object.keys(attributes).length > 0) {
+              // Helper pour les couleurs d'attributs
+              const getAttributeColor = (key) => {
+                const colorMap = {
+                  size: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                  taille: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                  color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                  couleur: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                  material: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                  matériel: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                  material: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                  weight: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+                  poids: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                };
+                return colorMap[key.toLowerCase()] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+              };
+
+              const formatKey = (key) => {
+                const keyMap = {
+                  size: 'Taille',
+                  color: 'Couleur',
+                  material: 'Matériel',
+                  weight: 'Poids'
+                };
+                return keyMap[key.toLowerCase()] || key.charAt(0).toUpperCase() + key.slice(1);
+              };
+
               return (
-                <div className="flex flex-wrap gap-1 mb-3 ">
+                <div className="flex flex-wrap gap-1 mb-3">
                   {Object.entries(attributes).slice(0, 3).map(([key, value]) => (
-                    <Badge key={key} variant="outline" className="text-xs ">
-                      {key}: {value}
+                    <Badge 
+                      key={key} 
+                      className={`${getAttributeColor(key)} text-xs font-medium border-0`}
+                    >
+                      <span className="font-bold">{formatKey(key)}:</span> {value}
                     </Badge>
                   ))}
                   {Object.keys(attributes).length > 3 && (
-                    <Badge variant="outline" className="text-xs ">
+                    <Badge className="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 text-xs border-0">
                       +{Object.keys(attributes).length - 3} autres
                     </Badge>
                   )}
@@ -740,6 +778,14 @@ const ProductsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Lightbox pour visualiser les images */}
+      <ImageLightbox
+        imageUrl={lightboxImage?.url}
+        productName={lightboxImage?.name}
+        isOpen={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+      />
     </div>
   );
 };

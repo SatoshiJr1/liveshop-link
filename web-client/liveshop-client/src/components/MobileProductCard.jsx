@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,12 +7,17 @@ import {
   Star, 
   Package,
   Plus,
-  Minus
+  Minus,
+  Maximize2,
+  Info
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import ImageLightbox from './ImageLightbox';
 
 const MobileProductCard = ({ product, onOrder }) => {
   const { addToCart, items, updateQuantity } = useCart();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showAttributes, setShowAttributes] = useState(false);
   
   // Vérifier si le produit est dans le panier
   const cartItem = items.find(item => item.id === product.id);
@@ -26,18 +31,65 @@ const MobileProductCard = ({ product, onOrder }) => {
     updateQuantity(product.id, newQuantity);
   };
 
+  // Extraire et formater les attributs
+  const getProductAttributes = () => {
+    if (!product.attributes) return [];
+    
+    const attrs = typeof product.attributes === 'string' 
+      ? JSON.parse(product.attributes) 
+      : product.attributes;
+    
+    return Object.entries(attrs).filter(([key, value]) => value);
+  };
+
+  const attributes = getProductAttributes();
+  const hasAttributes = attributes.length > 0;
+
+  // Helper pour les couleurs d'attributs
+  const getAttributeColor = (key) => {
+    const colorMap = {
+      size: 'bg-blue-100 text-blue-700',
+      taille: 'bg-blue-100 text-blue-700',
+      color: 'bg-purple-100 text-purple-700',
+      couleur: 'bg-purple-100 text-purple-700',
+      material: 'bg-green-100 text-green-700',
+      matériel: 'bg-green-100 text-green-700',
+      weight: 'bg-orange-100 text-orange-700',
+      poids: 'bg-orange-100 text-orange-700'
+    };
+    return colorMap[key.toLowerCase()] || 'bg-gray-100 text-gray-700';
+  };
+
+  const formatAttributeKey = (key) => {
+    const keyMap = {
+      size: 'Taille',
+      color: 'Couleur',
+      material: 'Matériel',
+      weight: 'Poids'
+    };
+    return keyMap[key.toLowerCase()] || key.charAt(0).toUpperCase() + key.slice(1);
+  };
+
   return (
+    <>
     <Card className="bg-white border-0 shadow-sm rounded-2xl overflow-hidden">
       <CardContent className="p-0">
         {/* Image du produit */}
-        <div className="relative">
+        <div className="relative group">
           {product.image_url ? (
-            <div className="aspect-square bg-gray-100">
+            <div 
+              className="aspect-square bg-gray-100 cursor-pointer relative overflow-hidden"
+              onClick={() => setLightboxOpen(true)}
+            >
               <img
                 src={product.image_url}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
+              {/* Overlay hover avec icône zoom */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                <Maximize2 className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
             </div>
           ) : (
             <div className="aspect-square bg-gray-100 flex items-center justify-center">
@@ -88,6 +140,33 @@ const MobileProductCard = ({ product, onOrder }) => {
             <p className="text-sm text-gray-600 line-clamp-2 mb-3">
               {product.description}
             </p>
+          )}
+
+          {/* Attributs du produit */}
+          {hasAttributes && (
+            <div className="mb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {attributes.slice(0, showAttributes ? attributes.length : 2).map(([key, value]) => (
+                  <Badge 
+                    key={key}
+                    variant="secondary"
+                    className={`${getAttributeColor(key)} text-xs font-medium px-2 py-1 rounded-md`}
+                  >
+                    <span className="font-semibold">{formatAttributeKey(key)}:</span> {value}
+                  </Badge>
+                ))}
+                
+                {attributes.length > 2 && (
+                  <button
+                    onClick={() => setShowAttributes(!showAttributes)}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    <Info className="w-3 h-3" />
+                    {showAttributes ? 'Moins' : `+${attributes.length - 2} autres`}
+                  </button>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Actions */}
@@ -154,6 +233,15 @@ const MobileProductCard = ({ product, onOrder }) => {
         </div>
       </CardContent>
     </Card>
+
+    {/* Lightbox pour visualiser l'image */}
+    <ImageLightbox
+      imageUrl={product.image_url}
+      productName={product.name}
+      isOpen={lightboxOpen}
+      onClose={() => setLightboxOpen(false)}
+    />
+    </>
   );
 };
 
