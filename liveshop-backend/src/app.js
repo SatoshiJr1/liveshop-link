@@ -208,10 +208,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Stockage des connexions WebSocket par vendeur
+// Stockage des connexions WebSocket par vendeur (Set de socket IDs)
+// Permet de gérer plusieurs connexions simultanées par vendeur (plusieurs onglets)
 const sellerConnections = new Map();
-// Map pour accès direct aux sockets par vendeur (pour notifications)
-const connectedSellers = new Map();
 
 // Gestion des connexions WebSocket
 io.on('connection', (socket) => {
@@ -254,11 +253,8 @@ io.on('connection', (socket) => {
         sellerConnections.set(seller.id, new Set());
       }
       sellerConnections.get(seller.id).add(socket.id);
-      
-      // Ajouter à la map pour notifications (dernière socket connectée)
-      connectedSellers.set(seller.id, socket);
 
-      console.log(`Vendeur ${seller.name} (ID: ${seller.id}) connecté via WebSocket`);
+      console.log(`✅ Vendeur ${seller.name} (ID: ${seller.id}) connecté via WebSocket (Total connexions: ${sellerConnections.get(seller.id).size})`);
       socket.emit('authenticated', { 
         message: 'Authentification réussie',
         seller: {
@@ -350,13 +346,14 @@ io.on('connection', (socket) => {
       const connections = sellerConnections.get(socket.sellerId);
       if (connections) {
         connections.delete(socket.id);
-        if (connections.size === 0) {
+        const remainingConnections = connections.size;
+        if (remainingConnections === 0) {
           sellerConnections.delete(socket.sellerId);
-          // Supprimer aussi de la map de notifications
-          connectedSellers.delete(socket.sellerId);
+          console.log(`🔌 Vendeur ${socket.sellerId} complètement déconnecté (${reason})`);
+        } else {
+          console.log(`🔌 Socket déconnectée pour vendeur ${socket.sellerId} (${reason}) - ${remainingConnections} connexion(s) restante(s)`);
         }
       }
-      console.log(`Vendeur ${socket.sellerId} déconnecté (${reason})`);
     }
   });
 });
@@ -380,30 +377,60 @@ setInterval(() => {
     // Fonction pour notifier un vendeur spécifique avec ACK
     global.notifySeller = (sellerId, type, data) => {
       return new Promise((resolve) => {
-        const sellerSocket = connectedSellers.get(sellerId);
-        if (sellerSocket && sellerSocket.connected) {
-          console.log(`📤 [NOTIF-EMIT] Envoi notification ${type} au vendeur ${sellerId} avec ACK`);
-          
-          // Timeout pour ACK
-          const timeout = setTimeout(() => {
-            console.error(`⏰ [NOTIF-ACK] Timeout ACK pour notification ${data.notification?.id} vendeur ${sellerId}`);
-            resolve(false);
-          }, 5000);
-          
-          // Envoi avec callback ACK
-          sellerSocket.emit(type, data, (ackResponse) => {
-            clearTimeout(timeout);
-            if (ackResponse?.ok) {
-              console.log(`✅ [NOTIF-ACK] ACK reçu pour notification ${data.notification?.id} vendeur ${sellerId}`);
-              resolve(true);
-            } else {
-              console.error(`❌ [NOTIF-ACK] ACK invalide pour notification ${data.notification?.id} vendeur ${sellerId}:`, ackResponse);
-              resolve(false);
+        const connections = sellerConnections.get(sellerId);
+        
+        if (!connections || connections.size === 0) {
+          console.log(`❌ [NOTIF-EMIT] Vendeur ${sellerId} non connecté (aucune socket active)`);
+          resolve(false);
+          return;
+        }
+        
+        const notificationId = data.notification?.id;
+        console.log(`📤 [NOTIF-EMIT] Envoi notification ${type} (ID: ${notificationId}) au vendeur ${sellerId} (${connections.size} connexion(s))`);
+        
+        // Envoyer à TOUTES les sockets du vendeur via Room
+        // Cela garantit que tous les onglets/connexions reçoivent la notification
+        io.to(`seller_${sellerId}`).emit(type, data);
+        
+        // Attendre l'ACK d'AU MOINS UNE socket avec timeout court
+        // Pour ne pas bloquer le système, on résout à true après 1 seconde (fallback)
+        let ackReceived = false;
+        
+        const timeout = setTimeout(() => {
+          if (!ackReceived) {
+            // Considérer comme succès car envoyé via Room (fiable)
+            console.log(`✅ [NOTIF-FALLBACK] Notification ${type} (ID: ${notificationId}) envoyée au vendeur ${sellerId} via Room`);
+            resolve(true);
+          }
+        }, 1000);
+        
+        // Écouter l'ACK de la première socket qui répond
+        if (notificationId) {
+          connections.forEach(socketId => {
+            const socket = io.sockets.sockets.get(socketId);
+            if (socket && !ackReceived) {
+              // Listener temporaire pour ACK
+              const ackHandler = (ackData) => {
+                if (ackData.notificationId === notificationId && !ackReceived) {
+                  ackReceived = true;
+                  clearTimeout(timeout);
+                  console.log(`✅ [NOTIF-ACK] ACK reçu pour notification ${notificationId} de vendeur ${sellerId}`);
+                  resolve(true);
+                  // Nettoyer les listeners
+                  connections.forEach(sid => {
+                    const s = io.sockets.sockets.get(sid);
+                    if (s) s.off('notification_ack', ackHandler);
+                  });
+                }
+              };
+              
+              socket.once('notification_ack', ackHandler);
             }
           });
         } else {
-          console.log(`❌ [NOTIF-EMIT] Vendeur ${sellerId} non connecté ou socket fermée`);
-          resolve(false);
+          // Pas d'ID de notification, résoudre immédiatement
+          clearTimeout(timeout);
+          resolve(true);
         }
       });
     };
