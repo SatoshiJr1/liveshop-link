@@ -18,6 +18,7 @@ const ImageCapture = ({
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -52,8 +53,18 @@ const ImageCapture = ({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors de l\'upload');
+        // Lire la réponse brute pour un meilleur debug (peut ne pas être du JSON)
+        const text = await response.text();
+        console.error('Upload response not ok:', response.status, text);
+        let errorMsg = 'Erreur lors de l\'upload';
+        try {
+          const errorData = JSON.parse(text);
+          errorMsg = errorData.error || errorData.message || errorMsg;
+        } catch (e) {
+          // response wasn't JSON
+          errorMsg = text || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();
@@ -150,9 +161,10 @@ const ImageCapture = ({
 
   // Fonction pour démarrer la caméra
   const startCamera = useCallback(async () => {
-    // Sur mobile, utiliser directement l'input file avec capture
+    // Sur mobile, utiliser directement l'input file avec capture (camera)
     if (isMobile) {
-      fileInputRef.current?.click();
+      // Ouvrir l'input spécifique caméra (avec capture)
+      cameraInputRef.current?.click();
       return;
     }
 
@@ -199,11 +211,21 @@ const ImageCapture = ({
   }, [images, onImageRemove]);
 
   // Fonction pour gérer la sélection de fichier
-  const handleFileSelect = useCallback((event) => {
+  const handleGallerySelect = useCallback((event) => {
     const files = Array.from(event.target.files || []);
     if (files.length > 0) {
       handleImageUpload(files[0]);
     }
+    // Reset value so selecting same file again triggers change
+    event.target.value = '';
+  }, [handleImageUpload]);
+
+  const handleCameraSelect = useCallback((event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      handleImageUpload(files[0]);
+    }
+    event.target.value = '';
   }, [handleImageUpload]);
 
   // Fonction pour gérer le drag & drop
@@ -300,7 +322,12 @@ const ImageCapture = ({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    startCamera();
+                    // Sur mobile, ouvrir l'input caméra (capture), sinon démarrer getUserMedia
+                    if (isMobile) {
+                      cameraInputRef.current?.click();
+                    } else {
+                      startCamera();
+                    }
                   }}
                   disabled={disabled}
                 >
@@ -314,6 +341,7 @@ const ImageCapture = ({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
+                    // Ouvrir la galerie (input sans capture)
                     fileInputRef.current?.click();
                   }}
                   disabled={disabled}
@@ -334,13 +362,24 @@ const ImageCapture = ({
       )}
 
       {/* Input file caché - avec capture mobile */}
+      {/* Input galerie (sans capture) */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         multiple={multiple}
-        onChange={handleFileSelect}
+        onChange={handleGallerySelect}
+        className="hidden"
+      />
+
+      {/* Input caméra (avec capture) - mobile only: opens camera */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        multiple={false}
+        onChange={handleCameraSelect}
         className="hidden"
       />
 

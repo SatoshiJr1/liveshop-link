@@ -135,19 +135,26 @@ app.use((req, res, next) => {
   const origin = req.headers.origin;
   
   // Autoriser tous les domaines livelink.store
-  if (origin && origin.includes('livelink.store')) {
+  const isLocalhost = origin && origin.startsWith('http://localhost');
+  const isAllowedOrigin = origin && (origin.includes('livelink.store') || (process.env.NODE_ENV === 'development' && isLocalhost));
+
+  if (isAllowedOrigin) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
     res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With');
   }
-  
-  // Répondre immédiatement aux pre-flight
+
+  // Répondre correctement aux pre-flight (OPTIONS)
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    if (isAllowedOrigin) {
+      return res.sendStatus(200);
+    }
+    // Si origine non explicitement autorisée ici, déléguer au middleware `cors`
+    return cors(corsOptions)(req, res, next);
   }
-  
+
   next();
 });
 
