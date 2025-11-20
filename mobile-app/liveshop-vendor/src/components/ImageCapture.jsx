@@ -99,20 +99,60 @@ const ImageCapture = ({
   const handleImageUpload = useCallback(async (file) => {
     if (disabled || uploading) return;
 
-    // Vérifier la taille du fichier (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('L\'image est trop volumineuse (max 5MB)');
-      return;
-    }
+    // Debug: log file meta pour diagnostiquer les échecs depuis la galerie
+    console.debug('Selected file for upload:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
 
-    // Vérifier le type de fichier
-    if (!file.type.startsWith('image/')) {
+    // Vérifier le type de fichier. Sur certains appareils (ex: iOS Photos depuis la galerie)
+    // le `file.type` peut être vide ou non-standard (HEIC). On autorise alors par extension.
+    const isImageType = file.type && file.type.startsWith('image/');
+    const imageExtensionMatch = /\.(jpe?g|png|gif|webp|heic|heif|tiff)$/i.test(file.name || '');
+    if (!isImageType && !imageExtensionMatch) {
       setError('Veuillez sélectionner une image valide');
       return;
     }
 
+    // Si le type n'est pas reconnu (souvent galerie iOS HEIC) ou si l'extension est HEIC/HEIF,
+    // essayer de convertir côté client en JPEG via canvas (createImageBitmap).
+    const ext = (file.name || '').split('.').pop()?.toLowerCase() || '';
+    const needsConversion = !isImageType || ['heic', 'heif', 'tiff'].includes(ext);
+    let fileToUpload = file;
+
+    if (needsConversion) {
+      try {
+        console.debug('Tentative de conversion client-side en JPEG pour:', file.name);
+        // createImageBitmap gère plusieurs formats si le navigateur les supporte
+        const imageBitmap = await createImageBitmap(file);
+        const canvas = document.createElement('canvas');
+        canvas.width = imageBitmap.width;
+        canvas.height = imageBitmap.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imageBitmap, 0, 0);
+
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+        if (blob) {
+          fileToUpload = new File([blob], (file.name || 'image').replace(/\.[^/.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+          console.debug('Conversion OK — nouveau fichier:', fileToUpload);
+        } else {
+          console.debug('Conversion canvas a retourné null blob pour', file.name);
+        }
+      } catch (convErr) {
+        console.debug('Conversion client-side impossible pour', file.name, convErr);
+        // On continue avec le fichier d'origine si la conversion échoue
+      }
+    }
+
+    // Vérifier la taille après conversion (10MB max côté client) — si trop grand, refuser avant upload
+    if (fileToUpload.size > 10 * 1024 * 1024) {
+      setError('L\'image est trop volumineuse (max 10MB)');
+      return;
+    }
+
     try {
-      const uploadedImage = await uploadImage(file);
+      const uploadedImage = await uploadImage(fileToUpload);
       
       if (multiple) {
         if (images.length >= maxImages) {
@@ -213,8 +253,17 @@ const ImageCapture = ({
   // Fonction pour gérer la sélection de fichier
   const handleGallerySelect = useCallback((event) => {
     const files = Array.from(event.target.files || []);
+    console.debug('Gallery select files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
     if (files.length > 0) {
-      handleImageUpload(files[0]);
+      try {
+        handleImageUpload(files[0]).catch(err => {
+          console.error('handleImageUpload error (gallery):', err);
+          setError(err.message || 'Erreur lors de l\'upload depuis la galerie');
+        });
+      } catch (err) {
+        console.error('Unexpected error handling gallery file:', err);
+        setError('Erreur inattendue lors de la sélection de la galerie');
+      }
     }
     // Reset value so selecting same file again triggers change
     event.target.value = '';
@@ -222,9 +271,29 @@ const ImageCapture = ({
 
   const handleCameraSelect = useCallback((event) => {
     const files = Array.from(event.target.files || []);
-    if (files.length > 0) {
-      handleImageUpload(files[0]);
+    console.debug('Camera select files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+
+    if (files.length === 0) {
+      console.warn('Aucun fichier reçu depuis l\'input camera (files length 0)');
+      setError('Aucune image capturée — réessayez ou utilisez la Galerie');
+      // Reset value and exit
+      event.target.value = '';
+      return;
     }
+
+    const file = files[0];
+
+    try {
+      handleImageUpload(file).catch(err => {
+        console.error('handleImageUpload error (camera):', err);
+        setError(err.message || 'Erreur lors de l\'upload depuis la caméra');
+      });
+    } catch (err) {
+      console.error('Unexpected error handling camera file:', err);
+      setError('Erreur inattendue lors de la capture');
+    }
+
+    // Reset input to allow selecting the same resource again later
     event.target.value = '';
   }, [handleImageUpload]);
 
