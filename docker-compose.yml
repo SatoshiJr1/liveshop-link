@@ -4,6 +4,9 @@ services:
     build: ./liveshop-backend
     environment:
       - VIRTUAL_HOST=api.livelink.store
+      - NGINX_PROXY_CONTAINER=1
+      - VIRTUAL_PORT=3001
+      - VIRTUAL_PROTO=http
       - LETSENCRYPT_HOST=api.livelink.store
       - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
       - NODE_ENV=production
