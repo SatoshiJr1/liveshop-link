@@ -22,14 +22,64 @@ const ImageCapture = ({
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
 
+  // Fonction pour compresser l'image
+  const compressImage = useCallback(async (file) => {
+    // Si l'image fait moins de 1MB, on ne la touche pas
+    if (file.size < 1024 * 1024) return file;
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Redimensionner si plus grand que 1920px
+        const maxSize = 1920;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const newFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            console.log(`Image compressée: ${file.size} -> ${newFile.size} bytes`);
+            resolve(newFile);
+          } else {
+            reject(new Error('Erreur lors de la compression'));
+          }
+        }, 'image/jpeg', 0.8); // Qualité 0.8
+      };
+      img.onerror = (err) => reject(err);
+    });
+  }, []);
+
   // Fonction pour uploader une image vers Cloudinary
   const uploadImage = useCallback(async (file) => {
     setUploading(true);
     setError(null);
 
     try {
+      // Compresser l'image avant upload
+      const compressedFile = await compressImage(file);
+      
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', compressedFile);
 
       const response = await fetch(`${getBackendDomain()}/api/upload/${uploadType}`, {
         method: 'POST',
@@ -114,9 +164,9 @@ const ImageCapture = ({
   const handleImageUpload = useCallback(async (file) => {
     if (disabled || uploading) return;
 
-    // Vérifier la taille du fichier (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('L\'image est trop volumineuse (max 5MB)');
+    // Vérifier la taille du fichier (20MB max avant compression)
+    if (file.size > 20 * 1024 * 1024) {
+      setError('L\'image est trop volumineuse (max 20MB)');
       return;
     }
 
