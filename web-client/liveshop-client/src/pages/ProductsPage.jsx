@@ -1,15 +1,20 @@
-  import React, { useEffect, useState } from 'react';
+  import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock, X } from 'lucide-react';
+import { ShoppingCart, Star, MessageCircle, Heart, Share2, Eye, Package, Clock, X, Zap } from 'lucide-react';
 import { getPublicLink } from '../config/domains';
 import realtimeService from '../services/realtimeService';
+import CartModal from '../components/CartModal';
+import MobileHeader from '../components/MobileHeader';
+import MobileProductCard from '../components/MobileProductCard';
+import { useCart } from '../contexts/CartContext';
 
-const ProductsPage = () => {
+const ProductsPageContent = () => {
   const { linkId } = useParams();
   const navigate = useNavigate();
+  const { addToCart, items } = useCart();
   const [products, setProducts] = useState([]);
   const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,20 +23,11 @@ const ProductsPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState('connecting');
-
-  useEffect(() => {
-    console.log('🚀 ProductsPage monté - linkId:', linkId);
-    fetchProducts();
-    setupRealtime();
-    
-    return () => {
-      // Nettoyer les écouteurs WebSocket
-      realtimeService.removeAllListeners();
-    };
-  }, [linkId]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Configuration du WebSocket en temps réel
-  const setupRealtime = () => {
+  const setupRealtime = useCallback(() => {
     try {
       // Se connecter au WebSocket
       realtimeService.connect();
@@ -129,7 +125,41 @@ const ProductsPage = () => {
       console.error('❌ Erreur configuration WebSocket:', error);
       setRealtimeStatus('error');
     }
-  };
+  }, [linkId]);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/products`
+        : `http://localhost:3001/api/public/${linkId}/products`;
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error('Vendeur non trouvé');
+      }
+      
+      const data = await response.json();
+      setProducts(data.products);
+      setSeller(data.seller);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [linkId]);
+
+  useEffect(() => {
+    console.log('🚀 ProductsPage monté - linkId:', linkId);
+    fetchProducts();
+    setupRealtime();
+    
+    return () => {
+      // Nettoyer les écouteurs WebSocket
+      realtimeService.removeAllListeners();
+    };
+  }, [linkId, fetchProducts, setupRealtime]);
 
   // Afficher une notification en temps réel
   const showRealtimeNotification = (message, type = 'info') => {
@@ -162,31 +192,14 @@ const ProductsPage = () => {
     }, 3000);
   };
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const apiUrl = window.location.hostname.includes('livelink.store') 
-        ? `https://api.livelink.store/api/public/${linkId}/products`
-        : `http://localhost:3001/api/public/${linkId}/products`;
-      
-      const response = await fetch(apiUrl);
-      
-      if (!response.ok) {
-        throw new Error('Vendeur non trouvé');
-      }
-      
-      const data = await response.json();
-      setProducts(data.products);
-      setSeller(data.seller);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleOrderProduct = (productId) => {
     navigate(`/${linkId}/order/${productId}`);
+  };
+
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    // Notification visuelle
+    showRealtimeNotification(`${product.name} ajouté au panier !`, 'success');
   };
 
   const handleViewProduct = (product) => {
@@ -210,6 +223,16 @@ const ProductsPage = () => {
     } else {
       navigator.clipboard.writeText(shopUrl);
     }
+  };
+
+  const handleToggleCart = () => {
+    setIsCartOpen(!isCartOpen);
+  };
+
+  const handleCheckout = () => {
+    setIsCartOpen(false);
+    // Rediriger vers la page de commande avec les produits du panier
+    navigate(`/${linkId}/checkout`);
   };
 
   const filteredProducts = selectedCategory === 'all' 
@@ -259,51 +282,64 @@ const ProductsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header moderne et épuré */}
-      <header className="header">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Espace pour le header fixe sur desktop */}
+      <div className="hidden md:block h-24"></div>
+      {/* Header mobile - visible seulement sur mobile */}
+      <div className="md:hidden">
+        <MobileHeader
+          seller={seller}
+          onShare={shareShop}
+          onToggleMenu={() => setIsMenuOpen(!isMenuOpen)}
+          isMenuOpen={isMenuOpen}
+          realtimeStatus={realtimeStatus}
+          onToggleCart={handleToggleCart}
+        />
+      </div>
+
+      {/* Header desktop - visible seulement sur desktop */}
+      <header className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
-              <div className="flex items-center justify-center space-x-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="header-title flex items-center gap-2">
+            {/* Logo et nom de la boutique */}
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <ShoppingCart className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <span role="img" aria-label="shopping">🛍️</span>
                   {seller?.name}
                 </h1>
+                <p className="text-sm text-gray-600">
+                  Découvrez nos produits et commandez en toute simplicité
+                </p>
               </div>
-              <p className="header-desc">
-                Découvrez nos produits et commandez en toute simplicité
-              </p>
             </div>
-            <div className="flex items-center space-x-3">
-              {/* Indicateur de temps réel */}
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm ${
-                realtimeStatus === 'active' ? 'bg-green-100 text-green-700' :
-                realtimeStatus === 'connecting' ? 'bg-yellow-100 text-yellow-700' :
-                realtimeStatus === 'disconnected' ? 'bg-red-100 text-red-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${
-                  realtimeStatus === 'active' ? 'bg-green-500 animate-pulse' :
-                  realtimeStatus === 'connecting' ? 'bg-yellow-500 animate-spin' :
-                  realtimeStatus === 'disconnected' ? 'bg-red-500' :
-                  'bg-gray-500'
-                }`}></div>
-                <span>
-                  {realtimeStatus === 'active' ? 'Temps réel actif' :
-                   realtimeStatus === 'connecting' ? 'Connexion...' :
-                   realtimeStatus === 'disconnected' ? 'Déconnecté' :
-                   'Erreur'}
-                </span>
-              </div>
+            
+            {/* Actions à droite */}
+            <div className="flex items-center space-x-4">
+              {/* Bouton panier */}
+              <Button 
+                onClick={handleToggleCart}
+                variant="outline" 
+                size="sm"
+                className="relative bg-blue-50/80 hover:bg-blue-100/80 border-blue-200/50 text-blue-700 hover:text-blue-800 px-4 py-2.5 backdrop-blur-sm"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Panier
+                {items.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-lg">
+                    {items.length}
+                  </span>
+                )}
+              </Button>
               
+              {/* Bouton partager */}
               <Button 
                 onClick={shareShop}
                 variant="outline" 
                 size="sm"
-                className="header-share"
+                className="bg-purple-50/80 hover:bg-purple-100/80 border-purple-200/50 text-purple-700 hover:text-purple-800 px-4 py-2.5 backdrop-blur-sm"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Partager
@@ -313,8 +349,39 @@ const ProductsPage = () => {
         </div>
       </header>
 
-      {/* Filtres avec design moderne */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Filtres mobile - visible seulement sur mobile */}
+      <div className="md:hidden px-4 py-3 bg-white border-b border-gray-100">
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setSelectedCategory('all')}
+            variant={selectedCategory === 'all' ? 'default' : 'outline'}
+            size="sm"
+            className={`flex-1 ${
+              selectedCategory === 'all' 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+            }`}
+          >
+            Tous ({products.length})
+          </Button>
+          <Button
+            onClick={() => setSelectedCategory('live')}
+            variant={selectedCategory === 'live' ? 'default' : 'outline'}
+            size="sm"
+            className={`flex-1 ${
+              selectedCategory === 'live' 
+                ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                : 'bg-white hover:bg-orange-50 border-orange-200 text-gray-700'
+            }`}
+          >
+            <Star className="w-3 h-3 mr-1" />
+            Épinglés ({products.filter(p => p.is_pinned).length})
+          </Button>
+        </div>
+      </div>
+
+      {/* Filtres desktop - visible seulement sur desktop */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 py-8">
         <div className="flex justify-center space-x-3">
           <Button
             onClick={() => setSelectedCategory('all')}
@@ -342,8 +409,39 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Grille de produits */}
-      <div className="max-w-7xl mx-auto px-6 pb-24">
+      {/* Liste de produits mobile - visible seulement sur mobile */}
+      <div className="md:hidden px-4 py-4 pb-24">
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Package className="w-10 h-10 text-gray-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              {selectedCategory === 'live' ? 'Aucun produit épinglé' : 'Aucun produit disponible'}
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {selectedCategory === 'live' 
+                ? 'Aucun produit n\'est actuellement mis en avant.'
+                : 'Le vendeur n\'a pas encore ajouté de produits.'
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredProducts.map((product) => (
+              <MobileProductCard
+                key={product.id}
+                product={product}
+                onOrder={handleOrderProduct}
+                onView={handleViewProduct}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Grille de produits desktop - visible seulement sur desktop */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 pb-24">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-24 h-24 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
@@ -360,11 +458,11 @@ const ProductsPage = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product, index) => (
               <Card 
                 key={product.id} 
-                className="card group overflow-hidden"
+                className="card group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white border-0 shadow-lg rounded-2xl"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Badge Épinglé */}
@@ -400,15 +498,15 @@ const ProductsPage = () => {
                   </CardTitle>
                   
                   <div className="flex items-center justify-between mt-4">
-                    <span className="card-price">
+                    <span className="text-2xl font-bold text-blue-600">
                       {product.price.toLocaleString()} FCFA
                     </span>
                     {product.stock_quantity > 0 ? (
-                      <Badge className="card-stock">
+                      <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1 rounded-full text-sm font-medium">
                         <span role="img" aria-label="stock">✅</span> Stock: {product.stock_quantity}
                       </Badge>
                     ) : (
-                      <Badge className="card-rupture">
+                      <Badge className="bg-red-100 text-red-700 border-red-200 px-3 py-1 rounded-full text-sm font-medium">
                         <span role="img" aria-label="rupture">❌</span> Rupture
                       </Badge>
                     )}
@@ -425,21 +523,40 @@ const ProductsPage = () => {
                 )}
                 
                 {/* Actions */}
-                <CardFooter className="pt-4 space-x-3">
+                <CardFooter className="pt-4 space-x-2">
                   <Button 
                     onClick={() => handleOrderProduct(product.id)}
-                    className={`btn-primary flex-1 ${product.stock_quantity === 0 ? 'bg-gray-400 cursor-not-allowed' : ''}`}
+                    className={`flex-1 h-11 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                      product.stock_quantity === 0 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'
+                    }`}
                     disabled={product.stock_quantity === 0}
                   >
-                    <ShoppingCart className="w-4 h-4 mr-2 animate-bounce" />
+                    <Zap className="w-4 h-4 mr-2" />
                     {product.stock_quantity === 0 ? 'Rupture' : 'Commander'}
                   </Button>
                   
                   <Button 
                     variant="outline" 
                     size="sm"
+                    onClick={() => handleAddToCart(product)}
+                    disabled={product.stock_quantity === 0}
+                    className={`${
+                      product.stock_quantity === 0 
+                        ? 'border-gray-300 text-gray-300 cursor-not-allowed' 
+                        : 'border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600 hover:shadow-md'
+                    } rounded-xl p-3 transition-all duration-300`}
+                    aria-label="Ajouter au panier"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={() => handleViewProduct(product)}
-                    className="bg-white hover:bg-gray-50 border-gray-200 text-gray-600 hover:text-gray-700 rounded-xl p-3 transition-all duration-300"
+                    className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 hover:shadow-md rounded-xl p-3 transition-all duration-300"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -450,8 +567,8 @@ const ProductsPage = () => {
         )}
       </div>
       
-      {/* Widget de commentaires flottant */}
-      <div className="fixed bottom-8 right-8 z-20">
+      {/* Widget de commentaires flottant - visible seulement sur desktop */}
+      <div className="hidden md:block fixed bottom-8 right-8 z-20">
         <Button 
           onClick={() => navigate(`/${linkId}/comments`)}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl p-4 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
@@ -459,6 +576,13 @@ const ProductsPage = () => {
           <MessageCircle className="w-6 h-6" />
         </Button>
       </div>
+
+      {/* Modal panier */}
+      <CartModal
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onCheckout={handleCheckout}
+      />
 
       {/* Modal de visualisation des photos */}
       {showImageModal && selectedProduct && (
@@ -557,6 +681,10 @@ const ProductsPage = () => {
       </div>
     </div>
   );
+};
+
+const ProductsPage = () => {
+  return <ProductsPageContent />;
 };
 
 export default ProductsPage; 

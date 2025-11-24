@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import ApiService from '../services/api';
-import webSocketService from '../services/websocket';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,9 +24,10 @@ import {
   Activity,
   Mic,
   TestTube,
-  Coins
+  // Coins // Désactivé temporairement
 } from 'lucide-react';
 import VoiceControls from '../components/VoiceControls';
+import ApiService from '../services/api';
 import { getPublicLink } from '../config/domains';
 
 
@@ -44,10 +43,11 @@ export default function DashboardPage() {
     pending_orders: 0,
     paid_orders: 0
   });
-  const [credits, setCredits] = useState(null);
+  // const [credits, setCredits] = useState(null); // Désactivé temporairement
   const [recentOrders, setRecentOrders] = useState([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [autoUpdating, setAutoUpdating] = useState(false);
 
   useEffect(() => {
@@ -92,44 +92,48 @@ export default function DashboardPage() {
     // return () => clearInterval(interval);
   }, []);
 
-  // Écouter les nouvelles commandes en temps réel
+  // Écouter les événements globaux pour mise à jour du dashboard
   useEffect(() => {
-    if (seller) {
-      // Écouter les nouvelles commandes
-      webSocketService.onNewOrder((data) => {
-        console.log('🔄 Nouvelle commande reçue, mise à jour du dashboard...');
-        setAutoUpdating(true);
-        // Rafraîchir immédiatement les données
-        fetchDashboardData();
-        setTimeout(() => setAutoUpdating(false), 2000);
-      });
+    if (!seller) return;
 
-      // Écouter les mises à jour de statut
-      webSocketService.onOrderStatusUpdate((data) => {
-        console.log('🔄 Statut mis à jour, mise à jour du dashboard...');
-        setAutoUpdating(true);
-        // Rafraîchir immédiatement les données
-        fetchDashboardData();
-        setTimeout(() => setAutoUpdating(false), 2000);
-      });
+    console.log('🔧 Configuration des listeners dashboard...');
+    
+    // Écouter les nouvelles commandes pour mise à jour du dashboard
+    const handleNewOrder = () => {
+      console.log('🔄 [DASHBOARD] Nouvelle commande détectée, mise à jour...');
+      setAutoUpdating(true);
+      setTimeout(() => setAutoUpdating(false), 2000);
+    };
 
-      return () => {
-        webSocketService.off('new_order');
-        webSocketService.off('order_status_update');
-      };
-    }
-  }, [seller]);
+    // Écouter les mises à jour de statut
+    const handleOrderStatusUpdate = () => {
+      console.log('🔄 [DASHBOARD] Statut mis à jour, mise à jour...');
+      setAutoUpdating(true);
+      setTimeout(() => setAutoUpdating(false), 2000);
+    };
+
+    // Écouter les événements globaux (pas WebSocket direct)
+    window.addEventListener('newNotifications', handleNewOrder);
+    window.addEventListener('orderStatusUpdated', handleOrderStatusUpdate);
+
+    return () => {
+      console.log('🧹 Nettoyage des listeners dashboard...');
+      window.removeEventListener('newNotifications', handleNewOrder);
+      window.removeEventListener('orderStatusUpdated', handleOrderStatusUpdate);
+    };
+  }, [seller?.id]);
 
   const fetchDashboardData = async () => {
     try {
       setDashboardLoading(true);
       
       // 🔧 OPTIMISATION : Appels API intelligents
-      const [statsData, ordersData, creditsData] = await Promise.all([
+      const [statsData, ordersData] = await Promise.all([
         ApiService.getOrderStats(),
-        ApiService.getOrders(),
-        ApiService.getCredits().catch(() => null) // Ignorer les erreurs de crédits
+        ApiService.getOrders()
       ]);
+      
+      // Crédits déjà chargés dans AuthContext, pas besoin de recharger
 
       // 🔧 OPTIMISATION : Mise à jour conditionnelle
       setStats(prev => {
@@ -140,9 +144,7 @@ export default function DashboardPage() {
       
       setRecentOrders(ordersData.orders.slice(0, 5)); // 5 dernières commandes
       
-      if (creditsData) {
-        setCredits(creditsData.data);
-      }
+      // Crédits déjà gérés par AuthContext
       
       console.log('✅ Dashboard mis à jour via WebSocket/manuel');
     } catch (error) {
@@ -158,9 +160,13 @@ export default function DashboardPage() {
     setRefreshing(false);
   };
 
+
   const copyPublicLink = () => {
     const link = getPublicLink(seller.public_link_id);
     navigator.clipboard.writeText(link).then(() => {
+      // Effet visuel du bouton
+      setCopied(true);
+      
       // Notification de succès
       const event = new CustomEvent('showToast', {
         detail: {
@@ -169,6 +175,11 @@ export default function DashboardPage() {
         }
       });
       window.dispatchEvent(event);
+      
+      // Remettre l'état normal après 2 secondes
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
     }).catch(() => {
       // Notification d'erreur
       const event = new CustomEvent('showToast', {
@@ -212,13 +223,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="w-full px-4 py-6 lg:py-8">
+      <div className="w-full px-4 py-2 lg:py-8">
         {/* Header avec salutation et actions */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-4 lg:p-6 text-white mb-6 lg:mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 lg:mb-6">
-            <div className="mb-4 lg:mb-0">
-              <h1 className="text-2xl lg:text-3xl font-bold">Bonjour, {seller.name} 👋</h1>
-              <p className="text-purple-100 text-base lg:text-lg">Voici un aperçu de votre boutique</p>
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-3 lg:p-6 text-white mb-4 lg:mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-3 lg:mb-6">
+            <div className="mb-3 lg:mb-0">
+              <h1 className="text-xl lg:text-3xl font-bold">Bonjour, {seller.name} 👋</h1>
+              <p className="text-purple-100 text-sm lg:text-lg">Voici un aperçu de votre boutique</p>
             </div>
             <div className="flex items-center gap-2">
               {autoUpdating && (
@@ -240,8 +251,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Lien public - Design amélioré */}
-          <div className="bg-white/10 rounded-xl p-3 lg:p-4">
-            <h3 className="font-semibold mb-3 flex items-center text-sm lg:text-base">
+          <div className="bg-white/10 rounded-xl p-2 lg:p-4">
+            <h3 className="font-semibold mb-2 lg:mb-3 flex items-center text-sm lg:text-base">
               <ExternalLink className="w-4 h-4 mr-2" />
               Votre lien de boutique
             </h3>
@@ -255,10 +266,18 @@ export default function DashboardPage() {
                   onClick={copyPublicLink} 
                   size="sm" 
                   variant="secondary" 
-                  className="bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-105"
-                  title="Copier le lien"
+                  className={`transition-all duration-300 ${
+                    copied 
+                      ? 'bg-green-500/80 hover:bg-green-600/80 text-white scale-110' 
+                      : 'bg-white/20 hover:bg-white/30 hover:scale-105'
+                  }`}
+                  title={copied ? "Lien copié !" : "Copier le lien"}
                 >
-                  <Copy className="w-4 h-4" />
+                  {copied ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
                 </Button>
                 <Button 
                   onClick={openPublicLink} 

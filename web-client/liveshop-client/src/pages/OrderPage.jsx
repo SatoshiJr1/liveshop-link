@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ShoppingCart, Upload, Star, Shield, Truck, CreditCard } from 'lucide-react';
+import { ArrowLeft, Star, Shield, Truck, CreditCard, Check, User, Package, Copy } from 'lucide-react';
 import ImageCapture from '@/components/ImageCapture';
 
 const OrderPage = () => {
@@ -30,8 +29,6 @@ const OrderPage = () => {
     comment: ''
   });
 
-  const [capturedImageUrl, setCapturedImageUrl] = useState('');
-
   const [paymentMethods, setPaymentMethods] = useState({
     wave: { available: false },
     orange_money: { available: false },
@@ -40,13 +37,9 @@ const OrderPage = () => {
 
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [paymentReference, setPaymentReference] = useState('');
 
-  useEffect(() => {
-    fetchProduct();
-    fetchPaymentMethods();
-  }, [linkId, productId]);
-
-  const fetchPaymentMethods = async () => {
+  const fetchPaymentMethods = useCallback(async () => {
     try {
       const apiUrl = window.location.hostname.includes('livelink.store') 
         ? `https://api.livelink.store/api/public/${linkId}/payment-methods`
@@ -60,9 +53,9 @@ const OrderPage = () => {
     } catch (error) {
       console.error('Erreur récupération méthodes paiement:', error);
     }
-  };
+  }, [linkId]);
 
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
       const apiUrl = window.location.hostname.includes('livelink.store') 
@@ -83,7 +76,12 @@ const OrderPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [linkId, productId]);
+
+  useEffect(() => {
+    fetchProduct();
+    fetchPaymentMethods();
+  }, [fetchProduct, fetchPaymentMethods]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -97,19 +95,13 @@ const OrderPage = () => {
       ...prev,
       payment_method: method
     }));
-
-    // Si c'est Wave ou Orange Money et que le QR code est disponible, afficher le modal
-    if ((method === 'wave' || method === 'orange_money') && paymentMethods[method]?.available) {
       setSelectedPaymentMethod(method);
-      setShowQRModal(true);
-    }
   };
 
   const handleQRCodePayment = () => {
-    // Le client a scanné le QR code, on peut continuer
     setShowQRModal(false);
-    // Ici on pourrait ajouter une logique pour marquer que le paiement est en cours
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -123,8 +115,11 @@ const OrderPage = () => {
       setSubmitting(true);
       setError(null);
       
+      const combinedComment = `${formData.comment || ''}${paymentReference ? (formData.comment ? ' | ' : '') + 'Réf: ' + paymentReference : ''}`;
+      
       const orderData = {
         ...formData,
+        comment: combinedComment,
         product_id: parseInt(productId),
         quantity: parseInt(formData.quantity)
       };
@@ -198,128 +193,34 @@ const OrderPage = () => {
   const totalPrice = product ? product.price * formData.quantity : 0;
 
   return (
-    <div className="min-h-screen" style={{ background: '#F8FAFC' }}>
-      {/* Header moderne */}
-      <div className="header sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(`/${linkId}`)}
-            className="mb-4 hover:bg-gray-50"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour aux produits
-          </Button>
-          <div className="text-center">
-            <h1 className="header-title mb-2">
-              🛒 Passer commande
-            </h1>
-            <p className="header-desc">
-              Boutique de {seller?.name}
-            </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header mobile */}
+      <div className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate(`/${linkId}`)}
+              className="p-2 hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="text-center flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Finaliser la commande</h1>
+              <p className="text-sm text-gray-500">{seller?.name}</p>
+            </div>
+            <div className="w-9"></div> {/* Spacer pour centrer */}
           </div>
         </div>
       </div>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Summary */}
-          <Card className="card">
-            <CardHeader>
-              <CardTitle className="card-title flex items-center text-xl">
-                <ShoppingCart className="w-5 h-5 mr-2 text-blue-600" />
-                Résumé du produit
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Image du produit */}
-              {product?.image_url ? (
-                <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100 relative group">
-                  <img 
-                    src={product.image_url} 
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  {product.is_pinned && (
-                    <div className="absolute top-3 right-3">
-                      <Badge className="badge bg-gradient-to-r from-orange-500 to-pink-500 text-white animate-pulse">
-                        <Star className="w-3 h-3 mr-1" />
-                        En Live
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="aspect-square rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
-                  <div className="text-8xl">📦</div>
-                </div>
-              )}
-              
-              {/* Informations produit */}
-              <div>
-                <h3 className="card-title text-2xl mb-3">
-                  {product?.name}
-                </h3>
-                
-                {product?.description && (
-                  <p className="text-gray-600 mb-4 leading-relaxed">
-                    {product.description}
-                  </p>
-                )}
-                
-                {/* Détails prix */}
-                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Prix unitaire:</span>
-                    <span className="font-semibold text-lg">{product?.price.toLocaleString()} FCFA</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Quantité:</span>
-                    <span className="font-semibold text-lg">{formData.quantity}</span>
-                  </div>
-                  <div className="border-t border-blue-200 pt-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold text-gray-800">Total:</span>
-                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                        {totalPrice.toLocaleString()} FCFA
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Garanties */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-                  <Shield className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                  <p className="text-xs text-green-700 font-medium">Paiement sécurisé</p>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <Truck className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                  <p className="text-xs text-blue-700 font-medium">Livraison rapide</p>
-                </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
-                  <CreditCard className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                  <p className="text-xs text-purple-700 font-medium">Support client</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Order Form */}
-          <Card className="card">
-            <CardHeader>
-              <CardTitle className="card-title flex items-center text-xl">
-                <Upload className="w-5 h-5 mr-2 text-blue-600" />
-                Informations de commande
-              </CardTitle>
-              <CardDescription>
-                Remplissez vos informations pour finaliser la commande
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Formulaire principal - Design comme checkout */}
+          <div className="lg:col-span-2">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm animate-pulse">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                       {error}
@@ -327,114 +228,94 @@ const OrderPage = () => {
                   </div>
                 )}
 
-                {/* Informations personnelles */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-800 flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                    Informations personnelles
-                  </h4>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="customer_name" className="text-sm font-medium text-gray-700">
-                        Nom complet *
-                      </Label>
-                      <Input
-                        id="customer_name"
-                        type="text"
-                        value={formData.customer_name}
-                        onChange={(e) => handleInputChange('customer_name', e.target.value)}
-                        placeholder="Votre nom complet"
-                        className="mt-1"
-                        required
-                      />
-                    </div>
+              {/* Vos informations */}
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <User className="w-5 h-5 mr-2 text-gray-600" />
+                    Vos informations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                    <Label htmlFor="customer_name" className="text-sm font-medium text-gray-700">
+                            Nom complet *
+                          </Label>
+                          <Input
+                            id="customer_name"
+                            type="text"
+                            value={formData.customer_name}
+                            onChange={(e) => handleInputChange('customer_name', e.target.value)}
+                            placeholder="Votre nom complet"
+                      className="w-full"
+                            required
+                          />
+                        </div>
 
-                    <div>
-                      <Label htmlFor="customer_phone" className="text-sm font-medium text-gray-700">
-                        Numéro de téléphone *
-                      </Label>
-                      <Input
-                        id="customer_phone"
-                        type="tel"
-                        value={formData.customer_phone}
-                        onChange={(e) => handleInputChange('customer_phone', e.target.value)}
-                        placeholder="+221 XX XXX XX XX"
-                        className="mt-1"
-                        required
-                      />
-                    </div>
+                        <div className="space-y-2">
+                    <Label htmlFor="customer_phone" className="text-sm font-medium text-gray-700">
+                            Numéro de téléphone *
+                          </Label>
+                          <Input
+                            id="customer_phone"
+                            type="tel"
+                            value={formData.customer_phone}
+                            onChange={(e) => handleInputChange('customer_phone', e.target.value)}
+                      placeholder="+221 7X XXX XX XX"
+                      className="w-full"
+                            required
+                          />
+                    <p className="text-xs text-gray-500">Format attendu : +221 7X XXX XX XX</p>
+                      </div>
 
-                    <div>
-                      <Label htmlFor="customer_address" className="text-sm font-medium text-gray-700">
-                        Adresse de livraison *
-                      </Label>
-                      <Textarea
-                        id="customer_address"
-                        value={formData.customer_address}
-                        onChange={(e) => handleInputChange('customer_address', e.target.value)}
-                        placeholder="Votre adresse complète de livraison"
-                        rows={3}
-                        className="mt-1"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
+                      <div className="space-y-2">
+                    <Label htmlFor="customer_address" className="text-sm font-medium text-gray-700">
+                      Adresse de livraison
+                        </Label>
+                        <Textarea
+                          id="customer_address"
+                          value={formData.customer_address}
+                          onChange={(e) => handleInputChange('customer_address', e.target.value)}
+                      placeholder="Instructions spéciales, adresse de livraison, etc."
+                      rows={3}
+                      className="w-full resize-none"
+                        />
+                      </div>
+                </CardContent>
+              </Card>
 
-                {/* Détails commande */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-800 flex items-center">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full mr-2"></div>
-                    Détails de la commande
-                  </h4>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
-                        Quantité *
-                      </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min="1"
-                        max={product?.stock_quantity || 999}
-                        value={formData.quantity}
-                        onChange={(e) => handleInputChange('quantity', e.target.value)}
-                        className="mt-1"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="payment_method" className="text-sm font-medium text-gray-700">
-                        Moyen de paiement *
-                      </Label>
-                      <div className="mt-1 space-y-2">
+              {/* Moyens de paiement */}
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <CreditCard className="w-5 h-5 mr-2 text-gray-600" />
+                    Moyen de paiement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3">
                         {/* Wave */}
                         <button
                           type="button"
                           onClick={() => handlePaymentMethodSelect('wave')}
-                          className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
+                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                             formData.payment_method === 'wave'
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-blue-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                                <span className="text-white font-bold text-sm">W</span>
+                          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-white font-bold">W</span>
                               </div>
                               <div>
-                                <div className="font-medium text-gray-900">Wave</div>
+                            <div className="font-medium text-gray-900">Wave</div>
                                 <div className="text-sm text-gray-500">Paiement par preuve</div>
                               </div>
                             </div>
                             {formData.payment_method === 'wave' && (
-                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                <div className="w-2 h-2 bg-white rounded-full"></div>
-                              </div>
+                          <Check className="w-5 h-5 text-blue-600" />
                             )}
                           </div>
                         </button>
@@ -443,154 +324,189 @@ const OrderPage = () => {
                         <button
                           type="button"
                           onClick={() => handlePaymentMethodSelect('orange_money')}
-                          className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
+                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                             formData.payment_method === 'orange_money'
-                              ? 'border-orange-500 bg-orange-50'
-                              : 'border-gray-200 hover:border-orange-300'
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center mr-3">
-                                <span className="text-white font-bold text-sm">OM</span>
+                          <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-white font-bold">OM</span>
                               </div>
                               <div>
-                                <div className="font-medium text-gray-900">Orange Money</div>
+                            <div className="font-medium text-gray-900">Orange Money</div>
                                 <div className="text-sm text-gray-500">Paiement par preuve</div>
                               </div>
                             </div>
                             {formData.payment_method === 'orange_money' && (
-                              <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                                <div className="w-2 h-2 bg-white rounded-full"></div>
-                              </div>
+                          <Check className="w-5 h-5 text-orange-600" />
                             )}
                           </div>
                         </button>
 
-                        {/* Méthodes traditionnelles */}
-                        <div className="space-y-2">
-                          <button
-                            type="button"
-                            onClick={() => handlePaymentMethodSelect('free_money')}
-                            className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
-                              formData.payment_method === 'free_money'
-                                ? 'border-green-500 bg-green-50'
-                                : 'border-gray-200 hover:border-green-300'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
-                                  <span className="text-white font-bold text-sm">F</span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">Free Money</div>
-                                  <div className="text-sm text-gray-500">Paiement par preuve</div>
-                                </div>
+                        {/* Espèces */}
+                        <button
+                          type="button"
+                          onClick={() => handlePaymentMethodSelect('cash')}
+                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                            formData.payment_method === 'cash'
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-gray-200 hover:border-green-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-white font-bold">€</span>
                               </div>
-                              {formData.payment_method === 'free_money' && (
-                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                </div>
-                              )}
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handlePaymentMethodSelect('cash')}
-                            className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
-                              formData.payment_method === 'cash'
-                                ? 'border-purple-500 bg-purple-50'
-                                : 'border-gray-200 hover:border-purple-300'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
-                                  <span className="text-white font-bold text-sm">€</span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">Espèces à la livraison</div>
-                                  <div className="text-sm text-gray-500">Paiement à la réception</div>
-                                </div>
+                              <div>
+                            <div className="font-medium text-gray-900">Espèces à la livraison</div>
+                                <div className="text-sm text-gray-500">Paiement à la réception</div>
                               </div>
-                              {formData.payment_method === 'cash' && (
-                                <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                </div>
-                              )}
                             </div>
-                          </button>
-                        </div>
+                            {formData.payment_method === 'cash' && (
+                          <Check className="w-5 h-5 text-green-600" />
+                            )}
+                          </div>
+                        </button>
                       </div>
-                    </div>
 
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Preuve de paiement (optionnel)
-                      </Label>
-                      <div className="mt-1">
-                        <ImageCapture 
-                          onImageCaptured={(imageUrl) => {
-                            setCapturedImageUrl(imageUrl);
-                            handleInputChange('payment_proof_url', imageUrl);
-                          }}
-                          onImageRemoved={() => {
-                            setCapturedImageUrl('');
-                            handleInputChange('payment_proof_url', '');
-                          }}
+                      {/* Instructions pour paiement mobiles (Wave/OM) */}
+                      {(formData.payment_method === 'wave' || formData.payment_method === 'orange_money') && (
+                        <div className="mt-2 space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-700">Montant à payer</div>
+                            <div className="text-base font-semibold text-gray-900">{totalPrice.toLocaleString()} FCFA</div>
+                          </div>
+
+                          {paymentMethods?.[formData.payment_method]?.phone ? (
+                            <div className="flex items-center justify-between rounded-md bg-white border border-blue-200 px-3 py-2">
+                              <div className="text-sm font-medium text-gray-900">
+                                {paymentMethods[formData.payment_method].phone}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigator.clipboard.writeText(paymentMethods[formData.payment_method].phone)}
+                                className="h-8 px-2"
+                              >
+                                <Copy className="w-3 h-3 mr-1" /> Copier
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-600">
+                              Le vendeur n'a pas encore renseigné de numéro public pour ce moyen. Suivez les instructions ci-dessous ou choisissez un autre moyen.
+                            </div>
+                          )}
+
+                          <div>
+                            <Label htmlFor="payment_ref" className="text-sm font-medium text-gray-700">Référence de transaction (optionnel)</Label>
+                            <Input
+                              id="payment_ref"
+                              value={paymentReference}
+                              onChange={(e) => setPaymentReference(e.target.value)}
+                              placeholder="Saisissez la référence après paiement"
+                              className="mt-1"
+                            />
+                          </div>
+
+                          <p className="text-xs text-gray-600">Après avoir payé, appuyez sur « Commander » pour envoyer la commande avec votre référence.</p>
+                          {/* Preuve de paiement (optionnel) */}
+                          <div className="pt-2">
+                            <Label className="text-sm font-medium text-gray-700">Preuve de paiement (optionnel)</Label>
+                          <div className="mt-2">
+                            <ImageCapture 
+                              onImageCaptured={(imageUrl) => {
+                                handleInputChange('payment_proof_url', imageUrl);
+                              }}
+                              onImageRemoved={() => {
+                                handleInputChange('payment_proof_url', '');
+                              }}
+                            />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Commentaire */}
+                      <div>
+                        <Label htmlFor="comment" className="text-sm font-medium text-gray-700">
+                          Commentaire (optionnel)
+                        </Label>
+                        <Textarea
+                          id="comment"
+                          value={formData.comment}
+                          onChange={(e) => handleInputChange('comment', e.target.value)}
+                          placeholder="Instructions spéciales ou commentaires"
+                          rows={3}
+                          className="mt-1"
                         />
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Capturez une photo de votre écran de paiement ou choisissez une image depuis votre galerie
-                      </p>
+                </CardContent>
+              </Card>
+
+              {/* Bouton de soumission */}
+                      <Button
+                        type="submit"
+                disabled={submitting || !formData.customer_name || !formData.customer_phone || !formData.payment_method}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                      >
+                        {submitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                            Traitement...
+                          </>
+                        ) : (
+                  `Commander • ${totalPrice.toLocaleString()} FCFA`
+                        )}
+                      </Button>
+                </form>
+          </div>
+
+          {/* Résumé de commande - Design comme checkout */}
+          <div className="lg:col-span-1">
+            <Card className="bg-white border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <Package className="w-5 h-5 mr-2 text-gray-600" />
+                  Résumé de la commande
+                  </CardTitle>
+                </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Produit */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                    {product?.image_url ? (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <Package className="w-8 h-8 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">{product?.name}</h3>
+                    <p className="text-sm text-gray-500">{product?.price.toLocaleString()} FCFA</p>
+                    <p className="text-sm text-gray-500">Quantité: {formData.quantity}</p>
+                  </div>
                     </div>
 
-                    <div>
-                      <Label htmlFor="comment" className="text-sm font-medium text-gray-700">
-                        Commentaire (optionnel)
-                      </Label>
-                      <Textarea
-                        id="comment"
-                        value={formData.comment}
-                        onChange={(e) => handleInputChange('comment', e.target.value)}
-                        placeholder="Commentaire ou instructions spéciales"
-                        rows={2}
-                        className="mt-1"
-                      />
+                {/* Total */}
+                <div className="border-t pt-4">
+                      <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-900">Total</span>
+                    <span className="text-xl font-bold text-gray-900">{totalPrice.toLocaleString()} FCFA</span>
                     </div>
                   </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="btn-primary py-4 text-lg font-bold"
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                      Traitement de votre commande...
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-5 h-5 mr-2" />
-                      Confirmer la commande
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+          </div>
         </div>
-      </div>
-
-      {/* Effet de particules en arrière-plan */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-purple-300 rounded-full animate-pulse opacity-30"></div>
-        <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-blue-300 rounded-full animate-ping opacity-40"></div>
-        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-pink-300 rounded-full animate-bounce opacity-30"></div>
       </div>
 
       {/* Modal QR Code */}
@@ -647,4 +563,3 @@ const OrderPage = () => {
 };
 
 export default OrderPage;
-

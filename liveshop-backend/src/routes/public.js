@@ -4,6 +4,7 @@ const { Seller, Product, Order, Comment } = require('../models');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const notificationService = require('../services/notificationService');
+const { uploadPaymentProof } = require('../config/cloudinary');
 
 const router = express.Router();
 
@@ -86,16 +87,32 @@ router.get('/:linkId/payment-methods', validatePublicLink, async (req, res) => {
       });
     }
 
+    // Normaliser payment_methods_enabled (peut être JSON ou string JSON)
+    let enabledMethods = seller.payment_methods_enabled || [];
+    if (typeof enabledMethods === 'string') {
+      try {
+        enabledMethods = JSON.parse(enabledMethods);
+      } catch (e) {
+        enabledMethods = [];
+      }
+    }
+
+    const paymentSettings = seller.payment_settings || {};
+    const wavePhone = paymentSettings.wave?.phone || null;
+    const omPhone = paymentSettings.orange_money?.phone || null;
+
     const paymentMethods = {
-      wave: seller.wave_qr_code_url ? {
-        available: true,
-        qr_code_url: seller.wave_qr_code_url
-      } : { available: false },
-      orange_money: seller.orange_money_qr_code_url ? {
-        available: true,
-        qr_code_url: seller.orange_money_qr_code_url
-      } : { available: false },
-      manual: { available: true } // Toujours disponible
+      wave: {
+        available: Boolean(enabledMethods.includes('wave') || wavePhone || seller.wave_qr_code_url),
+        phone: wavePhone,
+        qr_code_url: seller.wave_qr_code_url || null
+      },
+      orange_money: {
+        available: Boolean(enabledMethods.includes('orange_money') || omPhone || seller.orange_money_qr_code_url),
+        phone: omPhone,
+        qr_code_url: seller.orange_money_qr_code_url || null
+      },
+      manual: { available: true }
     };
 
     res.json({
@@ -279,28 +296,17 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
         message: `Nouvelle commande de ${customer_name.trim()} - ${product.name}`
       };
 
-      // Créer la notification directement
-      const notification = await notificationService.createNotification(
+      // Utiliser le nouveau système de notifications
+      console.log(`🔔 Envoi notification pour commande #${order.id} au vendeur ${seller.id}`);
+      
+      const { sent } = await notificationService.sendRealtimeNotification(
         seller.id,
         'new_order',
-        `Nouvelle commande #${order.id}`,
-        `Nouvelle commande de ${customer_name.trim()} - ${product.name}`,
         notificationData
       );
-
-      // Tenter l'envoi en temps réel si global.notifySeller est disponible
-      if (global.notifySeller) {
-        try {
-          global.notifySeller(seller.id, 'new_order', notificationData);
-          await notification.update({ sent: true, sent_at: new Date() });
-          notificationSent = true;
-          console.log('✅ Notification envoyée en temps réel');
-        } catch (wsError) {
-          console.log('⚠️ Erreur WebSocket, notification sauvegardée seulement:', wsError.message);
-        }
-      } else {
-        console.log('⚠️ WebSocket non disponible, notification sauvegardée seulement');
-      }
+      
+      notificationSent = sent;
+      console.log(`${sent ? '✅' : '📱'} Notification ${sent ? 'envoyée en temps réel' : 'stockée pour récupération'} pour commande #${order.id}`);
     } catch (error) {
       console.error('❌ Erreur lors de l\'envoi de la notification:', error);
       notificationSent = false;
@@ -819,6 +825,65 @@ router.get('/database-info', async (req, res) => {
       message: error.message,
       environment: process.env.NODE_ENV || 'development'
     });
+  }
+});
+
+// Endpoint pour vérifier le statut d'une commande (retour PayDunya)
+router.get('/orders/:orderId/status', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findOne({
+      where: { id: orderId },
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['name', 'price']
+        }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Commande non trouvée' });
+    }
+
+    res.json({
+      order_id: order.id,
+      status: order.status,
+      total_price: order.total_price,
+      customer_name: order.customer_name,
+      product_name: order.product?.name
+    });
+
+  } catch (error) {
+    console.error('Erreur vérification statut commande:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Upload public de preuve de paiement (sans auth) - Cloudinary
+router.post('/upload/payment-proof', uploadPaymentProof.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucune image fournie' });
+    }
+
+    const imageData = {
+      url: req.file.path,
+      publicId: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      format: req.file.format,
+      width: req.file.width,
+      height: req.file.height
+    };
+
+    console.log('✅ Preuve de paiement uploadée sur Cloudinary:', imageData);
+    res.json({ success: true, image: imageData });
+  } catch (error) {
+    console.error('Erreur upload public preuve paiement:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'upload de la preuve' });
   }
 });
 

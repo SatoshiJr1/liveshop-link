@@ -16,29 +16,30 @@ import { Toaster } from 'sonner';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import OrderDetailPage from './pages/OrderDetailPage';
-import CreditsPage from './pages/CreditsPage';
+// import CreditsPage from './pages/CreditsPage'; // Désactivé temporairement
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminSellersPage from './pages/AdminSellersPage';
 import AdminOrdersPage from './pages/AdminOrdersPage';
 import AdminProductsPage from './pages/AdminProductsPage';
-import AdminCreditsPage from './pages/AdminCreditsPage';
+// import AdminCreditsPage from './pages/AdminCreditsPage'; // Désactivé temporairement
 import AdminSellerDetailPage from './pages/AdminSellerDetailPage';
 import AdminSecurityPage from './pages/AdminSecurityPage';
 import PaymentSettingsPage from './pages/PaymentSettingsPage';
+import WalletPage from './pages/WalletPage';
 import TestImageUpload from './components/TestImageUpload';
 import { AdminRoute, SellerRoute, AuthRoute } from './components/ProtectedRoute';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const AppContent = () => {
   const { isAuthenticated, loading, isAdmin, token } = useAuth();
 
   // Initialiser le store de notifications
   useEffect(() => {
-    console.log('🔔 App.jsx - Token disponible:', token ? 'OUI' : 'NON');
+    if (loading) return;
+    
     if (token) {
-      console.log('🔔 App.jsx - Initialisation NotificationStore avec token');
       notificationStore.setToken(token);
     } else {
-      console.log('🔔 App.jsx - Déconnexion NotificationStore');
       notificationStore.setToken(null);
     }
   }, [token]);
@@ -63,6 +64,7 @@ const AppContent = () => {
 
   return (
     <>
+      <PWAInstallPrompt />
       <Toaster 
         position="top-right"
         richColors
@@ -111,11 +113,11 @@ const AppContent = () => {
                       <AdminProductsPage />
                     </AdminRoute>
                   } />
-                  <Route path="admin/credits" element={
+                  {/* <Route path="admin/credits" element={
                     <AdminRoute>
                       <AdminCreditsPage />
                     </AdminRoute>
-                  } />
+                  } /> */}
                   <Route path="admin/security" element={
                     <AdminRoute>
                       <AdminSecurityPage />
@@ -153,9 +155,14 @@ const AppContent = () => {
                       <LivesPage />
                     </SellerRoute>
                   } />
-                  <Route path="credits" element={
+                  {/* <Route path="credits" element={
                     <SellerRoute>
                       <CreditsPage />
+                    </SellerRoute>
+                  } /> */}
+                  <Route path="wallet" element={
+                    <SellerRoute>
+                      <WalletPage />
                     </SellerRoute>
                   } />
                   <Route path="payment-settings" element={

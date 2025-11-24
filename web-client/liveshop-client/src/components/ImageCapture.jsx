@@ -6,6 +6,7 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -79,6 +80,7 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
   const uploadImage = async (file) => {
     try {
       setError(null);
+      setUploadSuccess(false);
       
       // Valider le fichier
       if (file.size > 10 * 1024 * 1024) { // 10MB max
@@ -89,8 +91,8 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
       formData.append('image', file);
 
       const apiUrl = window.location.hostname.includes('livelink.store') 
-        ? 'https://api.livelink.store/api/upload/payment-proof'
-        : 'http://localhost:3001/api/upload/payment-proof';
+        ? 'https://api.livelink.store/api/public/upload/payment-proof'
+        : 'http://localhost:3001/api/public/upload/payment-proof';
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -101,7 +103,13 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
         const data = await response.json();
         if (data.success && data.image) {
           onImageCaptured(data.image.url);
+          setUploadSuccess(true);
           console.log('✅ Image uploadée sur Cloudinary:', data.image);
+          
+          // Masquer le succès après 3 secondes
+          setTimeout(() => {
+            setUploadSuccess(false);
+          }, 3000);
         } else {
           throw new Error('Erreur lors de l\'upload');
         }
@@ -112,6 +120,7 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
     } catch (error) {
       console.error('Erreur upload:', error);
       setError(error.message);
+      setUploadSuccess(false);
     }
   };
 
@@ -131,18 +140,34 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
           <img 
             src={capturedImage.url} 
             alt="Preuve de paiement" 
-            className="w-full h-48 object-cover rounded-lg border-2 border-green-200"
+            className={`w-full h-48 object-cover rounded-lg border-2 transition-all duration-300 ${
+              uploadSuccess ? 'border-green-400 shadow-lg shadow-green-200' : 'border-green-200'
+            }`}
           />
           <button
             onClick={removeImage}
-            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-          <div className="absolute bottom-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs flex items-center">
+          
+          {/* Indicateur de succès plus visible */}
+          <div className={`absolute bottom-2 left-2 px-3 py-2 rounded-full text-xs flex items-center transition-all duration-300 ${
+            uploadSuccess 
+              ? 'bg-green-500 text-white shadow-lg animate-pulse' 
+              : 'bg-green-500 text-white'
+          }`}>
             <Check className="w-3 h-3 mr-1" />
-            Image capturée
+            {uploadSuccess ? '✅ Upload réussi !' : 'Image capturée'}
           </div>
+          
+          {/* Badge de statut en haut */}
+          {uploadSuccess && (
+            <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs flex items-center animate-bounce">
+              <Check className="w-3 h-3 mr-1" />
+              Sauvegardé
+            </div>
+          )}
         </div>
       )}
 
@@ -155,9 +180,20 @@ const ImageCapture = ({ onImageCaptured, onImageRemoved }) => {
 
       {/* Indicateur de chargement */}
       {uploading && (
-        <div className="text-blue-600 text-sm bg-blue-50 p-3 rounded-lg mb-3 flex items-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          Upload en cours...
+        <div className="text-blue-600 text-sm bg-blue-50 p-4 rounded-lg mb-3 flex items-center gap-3 border border-blue-200">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+          <div>
+            <div className="font-medium">Upload en cours...</div>
+            <div className="text-xs text-blue-500">Sauvegarde de votre preuve de paiement</div>
+          </div>
+        </div>
+      )}
+
+      {/* Message de succès temporaire */}
+      {uploadSuccess && (
+        <div className="text-green-600 text-sm bg-green-50 p-3 rounded-lg mb-3 flex items-center gap-2 animate-pulse">
+          <Check className="w-4 h-4" />
+          <span className="font-medium">Preuve de paiement sauvegardée avec succès !</span>
         </div>
       )}
 

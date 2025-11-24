@@ -4,6 +4,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, MessageCircle, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getBackendUrl } from '../config/domains';
 
 const OrderDetailPage = () => {
   const { orderId } = useParams();
@@ -12,30 +13,47 @@ const OrderDetailPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Helper pour construire les URLs d'images
+  const getImageUrl = (url) => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `${getBackendUrl()}${url}`;
+  };
 
   useEffect(() => {
     const fetchOrder = async () => {
+      console.log('📦 [ORDER-DETAIL] Chargement commande:', orderId, 'token:', token ? 'présent' : 'manquant');
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`http://localhost:3001/api/orders/${orderId}`, {
+        const res = await fetch(`${getBackendUrl()}/api/orders/${orderId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
+        console.log('📦 [ORDER-DETAIL] Réponse statut:', res.status);
         const data = await res.json();
+        console.log('📦 [ORDER-DETAIL] Données:', data);
         if (res.ok) {
           setOrder(data.order);
         } else {
           setError(data.error || 'Erreur lors du chargement de la commande');
         }
-      } catch {
+      } catch (err) {
+        console.error('❌ [ORDER-DETAIL] Erreur:', err);
         setError('Erreur réseau');
       } finally {
         setLoading(false);
       }
     };
-    if (orderId && token) fetchOrder();
+    
+    console.log('📦 [ORDER-DETAIL] useEffect déclenché, orderId:', orderId, 'token:', token ? 'OK' : 'MANQUANT');
+    if (orderId && token) {
+      fetchOrder();
+    } else {
+      console.warn('⚠️ [ORDER-DETAIL] Pas de orderId ou token, skip fetch');
+      setLoading(false);
+    }
   }, [orderId, token]);
 
   if (loading) {
@@ -127,7 +145,7 @@ const OrderDetailPage = () => {
               <span className="font-semibold ">Preuve de paiement :</span>
               <div className="mt-2">
                 <img 
-                  src={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  src={getImageUrl(order.payment_proof_url)}
                   alt="Preuve de paiement"
                   className="w-full max-w-md rounded-lg border-2 border-gray-200"
                   onError={(e) => {
@@ -139,7 +157,7 @@ const OrderDetailPage = () => {
                   Image non disponible
                 </div>
                 <a 
-                  href={`http://localhost:3001/api/upload${order.payment_proof_url}`}
+                  href={getImageUrl(order.payment_proof_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-block"

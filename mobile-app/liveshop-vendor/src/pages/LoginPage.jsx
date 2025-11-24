@@ -112,7 +112,7 @@ const LoginPage = () => {
       localStorage.removeItem('remember_me');
     }
     
-    const result = await login(fullPhone.trim(), pin);
+    const result = await login(fullPhone.trim(), pin, rememberMe);
     if (!result.success) {
       setError(result.error || 'Numéro ou code PIN incorrect');
     } else {

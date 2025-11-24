@@ -1,16 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, X, Check, AlertCircle } from 'lucide-react';
 import { useNotificationStore } from '../hooks/useNotificationStore';
+import audioService from '../services/audioService';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import NotificationToast from './NotificationToast';
 
-const NotificationIndicator = () => {
-  const { notifications, unreadCount, markAsRead, isConnected } = useNotificationStore();
-  const [showNotifications, setShowNotifications] = useState(false);
+const NotificationIndicator = ({ 
+  showNotifications: externalShowNotifications, 
+  setShowNotifications: externalSetShowNotifications 
+}) => {
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [internalShowNotifications, setInternalShowNotifications] = useState(false);
   const [activeToasts, setActiveToasts] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [lastProcessedEventId, setLastProcessedEventId] = useState(null);
+  
+  // Relire le store à chaque forceUpdate
+  const storeData = useNotificationStore();
+  const { notifications = [], unreadCount = 0, markAsRead, isConnected } = storeData;
+
+  // Log à chaque render pour debug
+  console.log('🎨 [INDICATOR-RENDER] NotificationIndicator render, forceUpdate:', forceUpdate, 'notifications:', notifications.length, 'unreadCount:', unreadCount);
+
+  // Utiliser les props externes si disponibles, sinon l'état interne
+  const showNotifications = externalShowNotifications !== undefined ? externalShowNotifications : internalShowNotifications;
+  const setShowNotifications = externalSetShowNotifications || setInternalShowNotifications;
+
+  // Force update au montage et écoute des refresh
+  useEffect(() => {
+    console.log('🎊 [INDICATOR-MOUNT] NotificationIndicator monté, notifications actuelles:', notifications.length);
+    
+    // Écouter les demandes de force refresh et FORCER un re-render
+    const handleForceRefresh = () => {
+      console.log('🔄 [INDICATOR-REFRESH] Force refresh reçu, force re-render...');
+      setForceUpdate(prev => {
+        const newValue = prev + 1;
+        console.log('🔄 [INDICATOR-FORCE-UPDATE] forceUpdate:', prev, '→', newValue);
+        return newValue;
+      });
+    };
+    
+    window.addEventListener('forceRefreshNotifications', handleForceRefresh);
+    
+    return () => {
+      window.removeEventListener('forceRefreshNotifications', handleForceRefresh);
+    };
+  }, []); // Dépendances vides pour ne s'abonner qu'une fois
+
+  // Détecter les changements de taille d'écran
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const formatTime = (date) => {
     const now = new Date();
@@ -47,9 +95,15 @@ const NotificationIndicator = () => {
     }
   };
 
-  // Marquage automatique comme lu à l'ouverture
+  // Marquage automatique comme lu à l'ouverture + activation audio
   useEffect(() => {
     if (showNotifications && unreadCount > 0) {
+      // Activer l'audio au premier clic (requis par les navigateurs)
+      if (!audioService.enabled) {
+        audioService.setEnabled(true);
+        console.log('🔊 Audio activé automatiquement');
+      }
+      
       // Marquer automatiquement toutes les notifications comme lues
       markAsRead();
     }
@@ -66,22 +120,63 @@ const NotificationIndicator = () => {
 
   // Écouter les nouvelles notifications pour afficher les toasts
   useEffect(() => {
+    console.log('🎊 NotificationIndicator - Configuration listener newNotifications');
+    
     const handleNewNotifications = (event) => {
+      console.log('🎊 NotificationIndicator - Événement newNotifications reçu:', event.detail);
       const { notifications: newNotifications } = event.detail;
       
-      newNotifications.forEach(notification => {
-        const toastId = `toast-${notification.id}-${Date.now()}`;
-        setActiveToasts(prev => [...prev, { id: toastId, notification }]);
+      // Créer un ID unique pour cet événement
+      const eventId = `${Date.now()}-${JSON.stringify(newNotifications)}`;
+      
+      // Vérifier si on a déjà traité cet événement
+      if (lastProcessedEventId === eventId) {
+        console.log('⚠️ Événement déjà traité, ignoré:', eventId);
+        return;
+      }
+      
+      setLastProcessedEventId(eventId);
+      console.log('🎊 NotificationIndicator - Nombre de notifications:', newNotifications?.length);
+      
+      if (newNotifications && newNotifications.length > 0) {
+        newNotifications.forEach((notification, index) => {
+          console.log('🎊 NotificationIndicator - Création toast pour:', notification);
+          const toastId = `toast-${notification.id}-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          setActiveToasts(prev => {
+            // Vérifier si un toast avec cette notification existe déjà
+            const existingToast = prev.find(toast => toast.notification.id === notification.id);
+            if (existingToast) {
+              console.log('⚠️ Toast déjà existant pour notification:', notification.id);
+              return prev;
+            }
+            
+            console.log('🎊 NotificationIndicator - Ajout toast, total:', prev.length + 1);
+            return [...prev, { id: toastId, notification }];
+          });
+          
+          // Supprimer le toast après 8 secondes
+          setTimeout(() => {
+            setActiveToasts(prev => prev.filter(toast => toast.id !== toastId));
+          }, 8000);
+        });
         
-        // Supprimer le toast après 8 secondes
-        setTimeout(() => {
-          setActiveToasts(prev => prev.filter(toast => toast.id !== toastId));
-        }, 8000);
-      });
+        // 🔔 Mettre à jour le store de notifications pour le badge
+        console.log('🔔 Mise à jour du store de notifications...');
+        // Émettre un événement pour mettre à jour le store
+        window.dispatchEvent(new CustomEvent('updateNotificationStore', {
+          detail: { notifications: newNotifications }
+        }));
+      } else {
+        console.warn('⚠️ NotificationIndicator - Pas de notifications dans l\'événement');
+      }
     };
 
     window.addEventListener('newNotifications', handleNewNotifications);
-    return () => window.removeEventListener('newNotifications', handleNewNotifications);
+    return () => {
+      console.log('🎊 NotificationIndicator - Suppression listener newNotifications');
+      window.removeEventListener('newNotifications', handleNewNotifications);
+    };
   }, []);
 
   const handleViewOrder = (orderId) => {
@@ -100,46 +195,33 @@ const NotificationIndicator = () => {
 
   return (
     <div className="relative">
-      {/* Bouton de notification - Design moderne et responsive */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setShowNotifications(!showNotifications)}
-        className={`relative p-2.5 md:p-3 rounded-full transition-all duration-200 hover:bg-purple-50 hover:scale-105 ${
-          showNotifications ? 'bg-purple-100 text-purple-600' : 'hover:text-purple-600'
-        }`}
-      >
-        <Bell className="w-4 h-4 md:w-5 md:h-5" />
-        {unreadCount > 0 && (
-          <div className="absolute -top-1 -right-1">
-            <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center shadow-lg animate-bounce">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </div>
-          </div>
-        )}
-        {isConnected && !unreadCount && (
-          <div className="absolute -top-1 -right-1 h-2.5 w-2.5 md:h-3 md:w-3 bg-green-500 rounded-full animate-pulse shadow-lg"></div>
-        )}
-      </Button>
 
-      {/* Panneau de notifications - Design moderne et responsive */}
+      {/* Overlay pour fermer le panneau */}
       {showNotifications && (
-        <div className="absolute right-0 top-12 w-80 sm:w-96 z-50 animate-in slide-in-from-top-2 duration-200 sm:right-0 right-2">
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowNotifications(false)}
+        />
+      )}
+
+      {/* Panneau de notifications - Position fixe depuis le header */}
+      {showNotifications && (
+        <div className="fixed top-16 right-4 w-80 sm:w-80 md:w-96 max-w-80 sm:max-w-sm z-50 animate-in slide-in-from-top-2 duration-200">
           <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-md rounded-2xl overflow-hidden">
-            {/* Header avec gradient - Responsive */}
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 md:p-4 text-white">
+            {/* Header avec gradient - Compact */}
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 md:gap-3">
-                  <div className="p-1.5 md:p-2 bg-white/20 rounded-full">
-                    <Bell className="w-4 h-4 md:w-5 md:h-5" />
+                  <div className="p-1.5 bg-white/20 rounded-full">
+                    <Bell className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-base md:text-lg">Notifications</h3>
+                    <h3 className="font-semibold text-sm">Notifications</h3>
                     {isConnected && (
-                      <div className="flex items-center gap-1.5 md:gap-2 text-white/80 text-xs md:text-sm">
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <span className="hidden sm:inline">Connecté en temps réel</span>
-                        <span className="sm:hidden">Temps réel</span>
+                      <div className="flex items-center gap-1.5 text-white/80 text-xs">
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="hidden sm:inline">Connecté</span>
+                        <span className="sm:hidden">En ligne</span>
                       </div>
                     )}
                   </div>
@@ -157,22 +239,22 @@ const NotificationIndicator = () => {
               </div>
             </div>
 
-            {/* Contenu des notifications - Responsive */}
-            <div className="max-h-80 md:max-h-96 overflow-y-auto">
+            {/* Contenu des notifications - Compact */}
+            <div className="max-h-64 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-6 md:p-8 text-center">
-                  <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                    <Bell className="w-6 h-6 md:w-8 md:h-8 text-purple-500" />
+                <div className="p-4 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-purple-500" />
                   </div>
-                  <h4 className="text-base md:text-lg font-medium text-gray-900 mb-2">Aucune notification</h4>
-                  <p className="text-gray-500 text-xs md:text-sm">Vous serez notifié ici des nouvelles commandes</p>
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Aucune notification</h4>
+                  <p className="text-gray-500 text-xs">Vous serez notifié ici des nouvelles commandes</p>
                 </div>
               ) : (
-                <div className="p-2 md:p-3 space-y-2">
+                <div className="p-2 space-y-2">
                   {notifications.slice(0, 10).map((notification) => (
                     <div
                       key={notification.id}
-                      className={`group relative p-3 md:p-4 rounded-xl border transition-all duration-300 hover:shadow-md cursor-pointer ${
+                      className={`group relative p-3 rounded-xl border transition-all duration-300 hover:shadow-md cursor-pointer ${
                         !notification.read 
                           ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 shadow-sm' 
                           : 'bg-white border-gray-100 hover:border-gray-200'
@@ -203,10 +285,10 @@ const NotificationIndicator = () => {
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
                             {notification.title}
                           </h4>
-                          <p className="text-sm text-gray-600 mb-2 leading-relaxed">
+                          <p className="text-xs sm:text-sm text-gray-600 mb-2 leading-relaxed line-clamp-2">
                             {notification.message}
                           </p>
                           <div className="flex items-center justify-between">
@@ -214,7 +296,7 @@ const NotificationIndicator = () => {
                               {formatTime(notification.created_at)}
                             </span>
                             {notification.type === 'new_order' && (
-                              <span className="text-blue-600 font-medium text-xs">
+                              <span className="text-blue-600 font-medium text-xs hidden sm:inline">
                                 Cliquer pour voir
                               </span>
                             )}
@@ -229,8 +311,8 @@ const NotificationIndicator = () => {
 
             {/* Footer avec statistiques et bouton voir toutes les commandes */}
             {notifications.length > 0 && (
-              <div className="border-t border-gray-100 p-2 md:p-3 bg-gray-50/50">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+              <div className="border-t border-gray-100 p-3 bg-gray-50/50">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                   <span>{notifications.length} notification{notifications.length > 1 ? 's' : ''}</span>
                   <span>{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</span>
                 </div>
@@ -239,9 +321,10 @@ const NotificationIndicator = () => {
                     variant="ghost"
                     size="sm"
                     onClick={handleViewAllOrders}
-                    className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs py-1.5"
+                    className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-sm py-2 h-10"
                   >
-                    Voir toutes les commandes
+                    <span className="hidden sm:inline">Voir toutes les commandes</span>
+                    <span className="sm:hidden">Voir commandes</span>
                   </Button>
                 )}
               </div>
@@ -258,9 +341,28 @@ const NotificationIndicator = () => {
         />
       )}
 
-      {/* Toasts de notifications en temps réel */}
+      {/* Toasts responsives avec Tailwind */}
       {activeToasts.map((toast, index) => (
-        <div key={toast.id} style={{ top: `${4 + (index * 120)}rem` }}>
+        <div 
+          key={toast.id} 
+          className={`
+            fixed z-50 transition-all duration-300 ease-out
+            /* Mobile: sous le header, pleine largeur */
+            left-3 right-3
+            /* Tablet: coin supérieur droit */
+            md:left-auto md:right-4 md:w-96
+            /* Desktop: optimisé */
+            lg:right-6 lg:w-80
+          `}
+          style={{ 
+            // Position verticale responsive
+            top: isMobile 
+              ? `${5 + (index * 4.5)}rem` // Mobile: empiler vers le bas sous le header
+              : `${1 + (index * 0.5)}rem`, // Desktop/Tablet: léger décalage depuis le top
+            zIndex: 50 + index,
+            animationDelay: `${index * 150}ms`
+          }}
+        >
           <NotificationToast
             notification={toast.notification}
             onClose={() => handleCloseToast(toast.id)}

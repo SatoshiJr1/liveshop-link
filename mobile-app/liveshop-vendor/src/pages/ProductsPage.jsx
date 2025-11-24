@@ -17,18 +17,18 @@ import {
   ChevronRight,
   Camera,
   Tag,
-  Wifi,
-  WifiOff
+  Maximize2
 } from 'lucide-react';
 import ProductForm from '../components/ProductForm';
+import ImageLightbox from '../components/ImageLightbox';
 
 const ProductsPage = () => {
   const { refreshCredits } = useAuth();
   const [products, setProducts] = useState([]);
+  const [lightboxImage, setLightboxImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [realtimeStatus, setRealtimeStatus] = useState('disconnected');
   
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,7 +45,6 @@ const ProductsPage = () => {
       realtimeService.off('product_created', handleProductCreated);
       realtimeService.off('product_updated', handleProductUpdated);
       realtimeService.off('product_deleted', handleProductDeleted);
-      realtimeService.off('connection', handleConnectionChange);
     };
   }, []);
 
@@ -58,7 +57,6 @@ const ProductsPage = () => {
     realtimeService.on('product_created', handleProductCreated);
     realtimeService.on('product_updated', handleProductUpdated);
     realtimeService.on('product_deleted', handleProductDeleted);
-    realtimeService.on('connection', handleConnectionChange);
   };
 
   // Gestion des événements temps réel
@@ -90,10 +88,6 @@ const ProductsPage = () => {
     showNotification('Produit supprimé', 'warning');
   };
 
-  const handleConnectionChange = (status) => {
-    console.log('🔌 Statut connexion temps réel:', status);
-    setRealtimeStatus(status.status);
-  };
 
   // Fonction pour afficher les notifications
   const showNotification = (message, type = 'info') => {
@@ -133,22 +127,23 @@ const ProductsPage = () => {
   };
 
   const openCreateDialog = async () => {
-    try {
-      // Vérifier les crédits avant d'ouvrir le dialogue
-      const creditCheck = await ApiService.checkCredits('ADD_PRODUCT');
-      
-      if (!creditCheck.data.hasEnough) {
-        alert(`Crédits insuffisants ! Vous avez ${creditCheck.data.currentBalance} crédits, mais il en faut ${creditCheck.data.requiredCredits} pour ajouter un produit.`);
-        return;
-      }
-      
-      setEditingProduct(null);
-      setShowDialog(true);
-    } catch (error) {
-      console.error('Erreur lors de la vérification des crédits:', error);
-      alert('Erreur lors de la vérification des crédits. Veuillez réessayer.');
-    }
+    // Plus de vérification de crédits - ouverture directe du dialogue
+    setEditingProduct(null);
+    setShowDialog(true);
   };
+
+  // Déterminer si on est en desktop (>= sm)
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 640px)').matches;
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 640px)');
+    const handler = (e) => setIsDesktop(e.matches);
+    try { mq.addEventListener('change', handler); } catch { mq.addListener(handler); }
+    return () => { try { mq.removeEventListener('change', handler); } catch { mq.removeListener(handler); } };
+  }, []);
 
   const openEditDialog = (product) => {
     setEditingProduct(product);
@@ -269,29 +264,35 @@ const ProductsPage = () => {
     });
 
     return (
-      <Card key={product.id} className="relative group hover: transition-shadow ">
-        <div className="relative ">
+      <Card key={product.id} className="relative group hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <div className="relative">
           {mainImageUrl ? (
-            <img
-              src={mainImageUrl}
-              alt={product.name}
-              className="w-full h-48 object-cover rounded-t-lg "
-              onError={(e) => {
-                console.error('❌ Erreur chargement image produit:', {
-                  productName: product.name,
-                  imageUrl: mainImageUrl
-                });
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
+            <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: mainImageUrl, name: product.name })}>
+              <img
+                src={mainImageUrl}
+                alt={product.name}
+                className="w-full h-32 sm:h-48 object-cover rounded-t-lg transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  console.error('❌ Erreur chargement image produit:', {
+                    productName: product.name,
+                    imageUrl: mainImageUrl
+                  });
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              {/* Overlay hover avec icône zoom */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center rounded-t-lg">
+                <Maximize2 className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
+            </div>
           ) : null}
           
           {/* Placeholder si pas d'image ou erreur */}
-          <div className={`w-full h-48 bg-gray-200 rounded-t-lg flex items-center justify-center ${mainImageUrl ? 'hidden' : ''}`}>
+          <div className={`w-full h-32 sm:h-48 bg-gray-200 dark:bg-gray-700 rounded-t-lg flex items-center justify-center ${mainImageUrl ? 'hidden' : ''}`}>
             <div className="text-center">
-              <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">{product.name}</p>
+              <ImageIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 dark:text-gray-500 mx-auto mb-1 sm:mb-2" />
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 px-1">{product.name}</p>
             </div>
           </div>
 
@@ -309,55 +310,77 @@ const ProductsPage = () => {
             </Badge>
           )}
 
-          {/* Actions au survol */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 ">
-            <div className="flex gap-2 ">
+          {/* Actions au survol - Desktop seulement */}
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 items-center justify-center opacity-0 group-hover:opacity-100 hidden lg:flex">
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={() => openEditDialog(product)}
-                className="bg-white text-gray-900 hover:bg-gray-100 "
+                className="bg-white text-gray-900 hover:bg-gray-100"
               >
-                <Edit className="w-4 h-4 " />
+                <Edit className="w-4 h-4" />
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
                 onClick={() => handleDelete(product.id)}
-                className="bg-red-500 hover:bg-red-600 "
+                className="bg-red-500 hover:bg-red-600"
               >
-                <Trash2 className="w-4 h-4 " />
+                <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
         </div>
 
-        <CardContent className="p-4 ">
-          <div className="flex items-start justify-between mb-2 ">
-            <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2 ">
+        <CardContent className="p-2 sm:p-4">
+          <div className="flex items-start justify-between mb-1 sm:mb-2">
+            <CardTitle className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
               {product.name}
             </CardTitle>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => handleTogglePin(product.id)}
-              className={`p-1 ${product.is_pinned ? 'text-yellow-500' : 'text-gray-400'}`}
+              className={`p-1 ${product.is_pinned ? 'text-yellow-500 dark:text-yellow-400' : 'text-gray-400 dark:text-gray-500'}`}
             >
-              <Star className={`w-4 h-4 ${product.is_pinned ? 'fill-current' : ''}`} />
+              <Star className={`w-3 h-3 sm:w-4 sm:h-4 ${product.is_pinned ? 'fill-current' : ''}`} />
             </Button>
           </div>
 
-          <CardDescription className="text-gray-600 mb-3 line-clamp-2 ">
+          <CardDescription className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-2 sm:mb-3 line-clamp-2 hidden sm:block">
             {product.description}
           </CardDescription>
 
-          <div className="flex items-center justify-between mb-3 ">
-            <span className="text-xl font-bold text-purple-600 ">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <span className="text-sm sm:text-xl font-bold text-purple-600 dark:text-purple-400">
               {product.price?.toLocaleString()} FCFA
             </span>
-            <span className="text-sm text-gray-500 ">
+            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               Stock: {product.stock_quantity}
             </span>
+          </div>
+
+          {/* Actions rapides pour mobile */}
+          <div className="flex gap-1 sm:hidden">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openEditDialog(product)}
+              className="flex-1 h-8 text-xs border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <Edit className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Modifier</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleDelete(product.id)}
+              className="flex-1 h-8 text-xs border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              <Trash2 className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Supprimer</span>
+            </Button>
           </div>
 
           {/* Attributs spécifiques */}
@@ -371,15 +394,44 @@ const ProductsPage = () => {
               }
             }
             if (attributes && Object.keys(attributes).length > 0) {
+              // Helper pour les couleurs d'attributs
+              const getAttributeColor = (key) => {
+                const colorMap = {
+                  size: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                  taille: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                  color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                  couleur: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+                  material: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                  matériel: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                  material: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                  weight: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+                  poids: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                };
+                return colorMap[key.toLowerCase()] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+              };
+
+              const formatKey = (key) => {
+                const keyMap = {
+                  size: 'Taille',
+                  color: 'Couleur',
+                  material: 'Matériel',
+                  weight: 'Poids'
+                };
+                return keyMap[key.toLowerCase()] || key.charAt(0).toUpperCase() + key.slice(1);
+              };
+
               return (
-                <div className="flex flex-wrap gap-1 mb-3 ">
+                <div className="flex flex-wrap gap-1 mb-3">
                   {Object.entries(attributes).slice(0, 3).map(([key, value]) => (
-                    <Badge key={key} variant="outline" className="text-xs ">
-                      {key}: {value}
+                    <Badge 
+                      key={key} 
+                      className={`${getAttributeColor(key)} text-xs font-medium border-0`}
+                    >
+                      <span className="font-bold">{formatKey(key)}:</span> {value}
                     </Badge>
                   ))}
                   {Object.keys(attributes).length > 3 && (
-                    <Badge variant="outline" className="text-xs ">
+                    <Badge className="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 text-xs border-0">
                       +{Object.keys(attributes).length - 3} autres
                     </Badge>
                   )}
@@ -439,6 +491,7 @@ const ProductsPage = () => {
               </div>
             </div>
           )}
+
         </CardContent>
       </Card>
     );
@@ -456,33 +509,18 @@ const ProductsPage = () => {
   }
 
   return (
-    <div className="space-y-6 ">
-      {/* Header avec titre et bouton d'ajout - Responsive en bloc sur mobile */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-0 mb-6">
+    <div className="space-y-3 md:space-y-6">
+      {/* Header avec titre et bouton d'ajout - Desktop seulement */}
+      <div className="hidden md:flex md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Mes Produits</h1>
-          <p className="text-sm md:text-base text-gray-600">Gérez votre catalogue de produits</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Mes Produits</h1>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-300">Gérez votre catalogue de produits</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          {/* Indicateur temps réel */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium">
-            {realtimeStatus === 'connected' ? (
-              <>
-                <Wifi className="w-3 h-3 text-green-500" />
-                <span className="text-green-600">Temps réel</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="w-3 h-3 text-gray-400" />
-                <span className="text-gray-500">Hors ligne</span>
-              </>
-            )}
-          </div>
-          
+        <div className="flex items-center gap-3">
           <Button
             onClick={openCreateDialog}
-            className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto px-6 py-3"
+            className="bg-purple-600 hover:bg-purple-700 px-6 py-3"
           >
             <Plus className="w-4 h-4 mr-2" />
             Ajouter un produit
@@ -490,43 +528,78 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 ">
-          <CardContent className="p-4 ">
-            <div className="flex items-center ">
-              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3 ">
-                <Package className="w-5 h-5 text-white " />
+      {/* Statistiques rapides - Une ligne mobile (scrollable) + grille desktop */}
+      {/* Mobile: chips compactes scrollables */}
+      <div className="sm:hidden -mx-4 px-4">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-2 shrink-0 rounded-xl border border-blue-200/40 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-900/20 px-3 py-2">
+            <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center">
+              <Package className="w-3 h-3 text-white" />
+            </div>
+            <div className="text-xs">
+              <div className="text-blue-800 dark:text-blue-200 font-medium">Total</div>
+              <div className="text-blue-900 dark:text-blue-100 font-bold">{totalProducts}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 rounded-xl border border-yellow-200/40 dark:border-yellow-900/40 bg-yellow-50/60 dark:bg-yellow-900/20 px-3 py-2">
+            <div className="w-5 h-5 rounded bg-yellow-500 flex items-center justify-center">
+              <Star className="w-3 h-3 text-white" />
+            </div>
+            <div className="text-xs">
+              <div className="text-yellow-800 dark:text-yellow-200 font-medium">Épinglés</div>
+              <div className="text-yellow-900 dark:text-yellow-100 font-bold">{products.filter(p => p.is_pinned).length}</div>
+            </div>
+          </div>
+          {/* Photos retiré du ruban mobile pour éviter le débordement */}
+          <div className="flex items-center gap-2 shrink-0 rounded-xl border border-purple-200/40 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-900/20 px-3 py-2">
+            <div className="w-5 h-5 rounded bg-purple-500 flex items-center justify-center">
+              <Tag className="w-3 h-3 text-white" />
+            </div>
+            <div className="text-xs">
+              <div className="text-purple-800 dark:text-purple-200 font-medium">Catégories</div>
+              <div className="text-purple-900 dark:text-purple-100 font-bold">{new Set(products.map(p => p.category)).size}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: grille 4 colonnes */}
+      <div className="hidden sm:grid grid-cols-4 gap-4">
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+          <CardContent className="p-1 md:p-4">
+            <div className="flex items-center justify-between">
+              <div className="w-4 h-4 md:w-10 md:h-10 bg-blue-500 rounded flex items-center justify-center">
+                <Package className="w-2 h-2 md:w-5 md:h-5 text-white" />
               </div>
-              <div>
-                <p className="text-sm text-blue-700 font-medium ">Total</p>
-                <p className="text-2xl font-bold text-blue-900 ">{totalProducts}</p>
+              <div className="text-right">
+                <p className="text-xs md:text-sm text-blue-700 dark:text-blue-300 font-medium">Total</p>
+                <p className="text-xs md:text-2xl font-bold text-blue-900 dark:text-blue-100">{totalProducts}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-yellow-50 to-yellow-100 ">
-          <CardContent className="p-4 ">
-            <div className="flex items-center ">
-              <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center mr-3 ">
-                <Star className="w-5 h-5 text-white " />
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20">
+          <CardContent className="p-1 md:p-4">
+            <div className="flex items-center justify-between">
+              <div className="w-4 h-4 md:w-10 md:h-10 bg-yellow-500 rounded flex items-center justify-center">
+                <Star className="w-2 h-2 md:w-5 md:h-5 text-white" />
               </div>
-              <div>
-                <p className="text-sm text-yellow-700 font-medium ">Épinglés</p>
-                <p className="text-2xl font-bold text-yellow-900 ">{products.filter(p => p.is_pinned).length}</p>
+              <div className="text-right">
+                <p className="text-xs md:text-sm text-yellow-700 dark:text-yellow-300 font-medium">Épinglés</p>
+                <p className="text-xs md:text-2xl font-bold text-yellow-900 dark:text-yellow-100">{products.filter(p => p.is_pinned).length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100 ">
-          <CardContent className="p-4 ">
-            <div className="flex items-center ">
-              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-3 ">
-                <Camera className="w-5 h-5 text-white " />
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
+          <CardContent className="p-1 md:p-4">
+            <div className="flex items-center justify-between">
+              <div className="w-4 h-4 md:w-10 md:h-10 bg-green-500 rounded flex items-center justify-center">
+                <Camera className="w-2 h-2 md:w-5 md:h-5 text-white" />
               </div>
-              <div>
-                <p className="text-sm text-green-700 font-medium ">Avec photos</p>
-                <p className="text-2xl font-bold text-green-900 ">{products.filter(p => {
+              <div className="text-right">
+                <p className="text-xs md:text-sm text-green-700 dark:text-green-300 font-medium">Photos</p>
+                <p className="text-xs md:text-2xl font-bold text-green-900 dark:text-green-100">{products.filter(p => {
                   let images = p.images;
                   if (typeof images === 'string') {
                     try {
@@ -541,15 +614,15 @@ const ProductsPage = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100 ">
-          <CardContent className="p-4 ">
-            <div className="flex items-center ">
-              <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-3 ">
-                <Tag className="w-5 h-5 text-white " />
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
+          <CardContent className="p-1 md:p-4">
+            <div className="flex items-center justify-between">
+              <div className="w-4 h-4 md:w-10 md:h-10 bg-purple-500 rounded flex items-center justify-center">
+                <Tag className="w-2 h-2 md:w-5 md:h-5 text-white" />
               </div>
-              <div>
-                <p className="text-sm text-purple-700 font-medium ">Catégories</p>
-                <p className="text-2xl font-bold text-purple-900 ">{new Set(products.map(p => p.category)).size}</p>
+              <div className="text-right">
+                <p className="text-xs md:text-sm text-purple-700 dark:text-purple-300 font-medium">Catégories</p>
+                <p className="text-xs md:text-2xl font-bold text-purple-900 dark:text-purple-100">{new Set(products.map(p => p.category)).size}</p>
               </div>
             </div>
           </CardContent>
@@ -573,7 +646,7 @@ const ProductsPage = () => {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-6">
             {products.map(renderProductCard)}
           </div>
 
@@ -645,11 +718,20 @@ const ProductsPage = () => {
         </>
       )}
 
-      {/* Modal pour ajouter/modifier un produit */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto ">
+      {/* Bouton flottant pour ajouter un produit */}
+      <Button
+        onClick={() => setShowDialog(true)}
+        className="fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200 lg:hidden"
+        size="lg"
+      >
+        <Plus className="w-6 h-6 text-white" />
+      </Button>
+
+      {/* Modal desktop + plein écran mobile */}
+      <Dialog open={showDialog && isDesktop} onOpenChange={setShowDialog}>
+        <DialogContent className="hidden sm:block max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
               {editingProduct ? 'Modifier le produit' : 'Ajouter un produit'}
             </DialogTitle>
           </DialogHeader>
@@ -660,6 +742,50 @@ const ProductsPage = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Plein écran mobile */}
+      {showDialog && !isDesktop && (
+        <div className="sm:hidden fixed inset-0 z-[70] flex">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowDialog(false)} />
+          {/* Sheet content */}
+          <div className="relative flex flex-col bg-white dark:bg-gray-900 w-full h-full overscroll-contain">
+          {/* Header mobile */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <button
+              aria-label="Fermer"
+              onClick={() => setShowDialog(false)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <div className="text-base font-semibold">
+              {editingProduct ? 'Modifier le produit' : 'Ajouter un produit'}
+            </div>
+            <div className="w-8" />
+          </div>
+
+          {/* Contenu scrollable */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-4 py-4">
+              <ProductForm
+                onSubmit={handleSubmit}
+                onCancel={() => setShowDialog(false)}
+                initialData={editingProduct}
+              />
+            </div>
+          </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox pour visualiser les images */}
+      <ImageLightbox
+        imageUrl={lightboxImage?.url}
+        productName={lightboxImage?.name}
+        isOpen={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+      />
     </div>
   );
 };

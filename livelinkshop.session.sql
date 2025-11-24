@@ -4,3 +4,4 @@ create TABLE sessionsy (
     user_id INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ 

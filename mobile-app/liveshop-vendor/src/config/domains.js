@@ -35,11 +35,22 @@ export const getClientDomain = () => {
 
 // Fonction utilitaire pour obtenir le domaine backend
 export const getBackendDomain = () => {
-  // FORCER LA PRODUCTION si on est sur livelink.store
-  if (window.location.hostname.includes('livelink.store')) {
+  // FORCER LA PRODUCTION si on est sur livelink.store OU si pas localhost
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  if (!isLocalhost || window.location.hostname.includes('livelink.store')) {
+    console.log('🌐 [BACKEND] Utilisation API production');
     return 'https://api.livelink.store';
   }
+  
+  console.log('🔧 [BACKEND] Utilisation API développement');
   return currentConfig.backendDomain;
+};
+
+// Helper pour obtenir l'URL complète (sans /api)
+export const getBackendUrl = () => {
+  const isProd = window.location.hostname.includes('livelink.store');
+  return isProd ? 'https://api.livelink.store' : 'http://localhost:3001';
 };
 
 // Fonction pour construire l'URL de l'API
