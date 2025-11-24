@@ -3,24 +3,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { LogOut, X, User } from 'lucide-react';
-import Checkbox from '@/components/ui/checkbox';
 
 const LogoutPage = () => {
   const { seller, logout } = useAuth();
   const navigate = useNavigate();
-  const [keepRememberMe, setKeepRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
     setLoading(true);
-    
-    // Si l'utilisateur ne veut pas garder "Se souvenir", supprimer les données
-    if (!keepRememberMe) {
-      localStorage.removeItem('remembered_phone');
-      localStorage.removeItem('remember_me');
-    }
     
     // Attendre un peu pour l'animation
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -67,27 +58,6 @@ const LogoutPage = () => {
                   <p className="text-sm text-gray-500 ">{seller?.phone_number}</p>
                 </div>
               </div>
-            </div>
-
-            {/* Option "Se souvenir" */}
-            <div className="space-y-3 ">
-              <Label className="text-sm font-medium text-gray-700 ">
-                Options de déconnexion
-              </Label>
-              
-              <Checkbox
-                id="keep-remember-me"
-                checked={keepRememberMe}
-                onChange={setKeepRememberMe}
-                label="Garder mes informations de connexion"
-              />
-              
-              <p className="text-xs text-gray-500 ">
-                {keepRememberMe 
-                  ? "Votre numéro de téléphone sera conservé pour la prochaine connexion."
-                  : "Vos informations de connexion seront supprimées."
-                }
-              </p>
             </div>
 
             {/* Boutons d'action */}

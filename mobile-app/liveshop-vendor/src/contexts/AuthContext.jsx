@@ -351,14 +351,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (keepRememberMe = false) => {
+  const logout = () => {
     localStorage.removeItem('liveshop_token');
     
-    // Si on ne garde pas "Se souvenir", supprimer aussi les données de connexion
-    if (!keepRememberMe) {
-      localStorage.removeItem('remembered_phone');
-      localStorage.removeItem('remember_me');
-    }
+    // Note: On ne supprime PAS les infos "Se souvenir de moi" ici.
+    // Elles sont gérées uniquement lors du login (si l'utilisateur décoche la case).
+    // Cela permet de pré-remplir le numéro même après une déconnexion explicite.
     
     // 🔌 Déconnecter le WebSocket
     console.log('🔌 Déconnexion WebSocket...');
