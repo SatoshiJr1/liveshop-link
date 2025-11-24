@@ -47,7 +47,7 @@ const Layout = ({ children }) => {
     { id: 'products', name: 'Produits', icon: Package, path: '/products' },
     { id: 'orders', name: 'Commandes', icon: ShoppingBag, path: '/orders' },
     { id: 'stats', name: 'Stats', icon: BarChart3, path: '/stats' },
-    { id: 'lives', name: 'Lives', icon: Store, path: '/lives' },
+    { id: 'lives', name: 'Sessions', icon: Store, path: '/lives' },
     { id: 'wallet', name: 'Wallet', icon: Wallet, path: '/wallet' },
     // Paiements retiré de la barre de navigation; accessible via menu
   ];
@@ -85,7 +85,7 @@ const Layout = ({ children }) => {
       'products': 'Produits', 
       'orders': 'Commandes',
       'stats': 'Stats',
-      'lives': 'Lives'
+      'lives': 'Sessions'
     };
     
     return shortNames[item.id] || item.name;
@@ -312,7 +312,7 @@ const Layout = ({ children }) => {
               {activePage === 'products' && 'Produits'}
               {activePage === 'orders' && 'Commandes'}
               {activePage === 'stats' && 'Statistiques'}
-              {activePage === 'lives' && 'Lives'}
+              {activePage === 'lives' && 'Sessions'}
               {activePage === 'credits' && 'Gérer les crédits'}
             </h2>
           </div>

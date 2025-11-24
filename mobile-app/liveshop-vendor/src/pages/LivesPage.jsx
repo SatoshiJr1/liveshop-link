@@ -45,11 +45,11 @@ function LiveIconGlitch({ size = 36 }) {
       <rect x="8" y="18" width="48" height="32" rx="12" stroke="url(#live-gradient)" strokeWidth="4" fill="none"/>
       <path d="M20 18 L32 8 L44 18" stroke="url(#live-gradient)" strokeWidth="4" fill="none" strokeLinecap="round"/>
       {/* Effet glitch : texte cyan décalé à gauche */}
-      <text x="31" y="44" textAnchor="middle" fontWeight="bold" fontSize="18" fill="#00fff7" fontFamily="Poppins, Arial, sans-serif" opacity="0.7">LIVE</text>
+      <text x="31" y="44" textAnchor="middle" fontWeight="bold" fontSize="18" fill="#00fff7" fontFamily="Poppins, Arial, sans-serif" opacity="0.7">SESSION</text>
       {/* Effet glitch : texte rose décalé à droite */}
-      <text x="33" y="44" textAnchor="middle" fontWeight="bold" fontSize="18" fill="#ff2a68" fontFamily="Poppins, Arial, sans-serif" opacity="0.7">LIVE</text>
+      <text x="33" y="44" textAnchor="middle" fontWeight="bold" fontSize="18" fill="#ff2a68" fontFamily="Poppins, Arial, sans-serif" opacity="0.7">SESSION</text>
       {/* Texte principal dégradé */}
-      <text x="32" y="44" textAnchor="middle" fontWeight="bold" fontSize="18" fill="url(#live-gradient)" fontFamily="Poppins, Arial, sans-serif">LIVE</text>
+      <text x="32" y="44" textAnchor="middle" fontWeight="bold" fontSize="18" fill="url(#live-gradient)" fontFamily="Poppins, Arial, sans-serif">SESSION</text>
     </svg>
   );
 }
@@ -136,9 +136,9 @@ export default function LivesPage() {
       setTitle('');
       setDate('');
       setSelectedProducts([]);
-      setSuccess('Live créé avec succès !');
+      setSuccess('Session créée avec succès !');
     } catch {
-      setError('Erreur lors de la création du live.');
+      setError('Erreur lors de la création de la session.');
     } finally {
       setLoading(false);
     }
@@ -146,13 +146,13 @@ export default function LivesPage() {
 
   // Suppression d'un live
   const handleDeleteLive = async (liveId) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce live ?')) return;
+    if (!window.confirm('Voulez-vous vraiment supprimer cette session ?')) return;
     setDeletingId(liveId);
     try {
       await api.deleteLive(liveId);
       setLives(lives => lives.filter(l => l.id !== liveId));
     } catch {
-      alert('Erreur lors de la suppression du live.');
+      alert('Erreur lors de la suppression de la session.');
     } finally {
       setDeletingId(null);
     }
@@ -263,7 +263,7 @@ export default function LivesPage() {
             <Video className="w-8 h-8 text-red-500" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
           </div>
-          Mes Lives
+          Mes Sessions
         </h2>
         {/* Le bouton 'Créer un live' n'est plus ici sur mobile */}
         <div className="hidden md:flex flex-col gap-3 w-full md:w-auto">
@@ -271,7 +271,7 @@ export default function LivesPage() {
             onClick={() => setShowCreate(!showCreate)}
             className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition w-full md:w-auto whitespace-nowrap"
           >
-            {showCreate ? 'Annuler' : 'Créer un live'}
+            {showCreate ? 'Annuler' : 'Créer une session'}
           </button>
         </div>
       </div>
@@ -326,9 +326,9 @@ export default function LivesPage() {
         <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <span className="font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                            <span className="font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
                 <Radio className="w-4 h-4" />
-                Dernier live créé :
+                Dernière session créée :
               </span>
               <div className="font-medium dark:text-white break-words mt-1">
                 {lastLive.title}
@@ -365,7 +365,7 @@ export default function LivesPage() {
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
               <Video className="w-4 h-4" />
-              Titre du live
+              Titre de la session
             </label>
             <input value={title} onChange={e => setTitle(e.target.value)} required
               className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white " />
@@ -419,7 +419,7 @@ export default function LivesPage() {
               ) : (
                 <>
                   <Zap className="w-4 h-4" />
-                  Créer le live
+                  Créer la session
                 </>
               )}
             </button>
@@ -432,7 +432,7 @@ export default function LivesPage() {
           onClick={() => setShowCreate(true)}
           className="fixed bottom-29 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
           style={{ boxShadow: '0 4px 24px rgba(80,0,120,0.18)' }}
-          title="Créer un live"
+          title="Créer une session"
         >
           <Video className="w-8 h-8" />
         </button>
@@ -440,7 +440,7 @@ export default function LivesPage() {
       {/* Liste paginée des lives */}
       <div className="space-y-4 flex-1 w-full ">
         {advancedPaginatedLives.length === 0 ? (
-          <div className="text-center text-gray-500 dark:text-gray-400 ">Aucun live trouvé.</div>
+          <div className="text-center text-gray-500 dark:text-gray-400 ">Aucune session trouvée.</div>
         ) : (
           advancedPaginatedLives.map(live => (
             <div key={live.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 w-full mb-2">
@@ -457,7 +457,7 @@ export default function LivesPage() {
                 {getLiveStatus(live) === 'En cours' && (
                   <span className="ml-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-live-pulse flex items-center gap-1">
                     <Radio className="w-3 h-3" />
-                    EN LIVE
+                    EN COURS
                   </span>
                 )}
                 {getLiveStatus(live) === 'Terminé' && (
@@ -493,21 +493,21 @@ export default function LivesPage() {
                   href={getLivePublicLink(live)} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  title="Regarder le live" 
+                  title="Regarder la session" 
                   className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 p-2 rounded-full bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
                 >
                   <Play className="w-5 h-5" />
                 </a>
                 <button 
                   onClick={() => setSelectedLive(live)} 
-                  title="Paramètres du live" 
+                  title="Paramètres de la session" 
                   className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 p-2 rounded-full bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
                 >
                   <Settings className="w-5 h-5" />
                 </button>
                 <button 
                   onClick={() => handleDuplicateLive(live)} 
-                  title="Dupliquer ce live" 
+                  title="Dupliquer cette session" 
                   className="text-purple-400 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200 p-2 rounded-full bg-purple-100 dark:bg-purple-900/20 hover:bg-purple-200 dark:hover:bg-purple-900/30 transition-colors"
                 >
                   <Repeat className="w-5 h-5" />
@@ -515,7 +515,7 @@ export default function LivesPage() {
                 <button 
                   onClick={() => handleDeleteLive(live.id)} 
                   disabled={deletingId === live.id} 
-                  title="Supprimer ce live" 
+                  title="Supprimer cette session" 
                   className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-full bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="w-5 h-5" />
