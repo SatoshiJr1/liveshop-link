@@ -465,7 +465,7 @@ export default function DashboardPage() {
                     className="h-auto p-6 flex flex-col items-center space-y-2 hover:bg-green-50 hover:border-green-200 transition-all"
                   >
                     <Users className="w-8 h-8 text-green-600" />
-                    <span className="font-medium">Gérer les lives</span>
+                    <span className="font-medium">Gérer les sessions</span>
                     <span className="text-xs text-gray-500">Créer, organiser</span>
                   </Button>
                 </div>
@@ -483,7 +483,7 @@ export default function DashboardPage() {
                   Notifications vocales
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  Configurez les annonces vocales pendant vos lives
+                  Configurez les annonces vocales pendant vos sessions
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -517,7 +517,7 @@ export default function DashboardPage() {
                   className="w-full"
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  Rapports par live
+                  Rapports par session
                 </Button>
 
                 <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-3 lg:p-4 border border-green-100">
