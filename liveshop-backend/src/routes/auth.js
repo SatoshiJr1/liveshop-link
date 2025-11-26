@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const { authenticateToken } = require('../middleware/auth');
+const CreditService = require('../services/creditService');
 
 // sendWhatsAppOTP maintenant délégué au service unifié
 const sendWhatsAppOTP = async (phone, otp) => otpService.sendOTP(phone, otp);
@@ -122,6 +123,19 @@ router.post('/set-pin', async (req, res) => {
       });
       
       console.log('✅ Nouveau compte créé:', seller.id);
+      
+      // Grant initial credits to new seller
+      try {
+        const config = await CreditService.loadConfigFromDatabase();
+        const initialCredits = config.INITIAL_CREDITS || 0;
+        if (initialCredits > 0) {
+          await CreditService.addBonusCredits(seller.id, initialCredits, 'Initial credits upon registration');
+          console.log(`💳 Initial credits (${initialCredits}) granted to seller ${seller.id}`);
+        }
+      } catch (creditError) {
+        console.error('⚠️ Erreur lors de l\'attribution des crédits initiaux:', creditError);
+        // Non-blocking error - don't fail account creation
+      }
   } else {
       console.log('🔄 Mise à jour du compte existant:', seller.id);
     seller.pin_hash = pin_hash;

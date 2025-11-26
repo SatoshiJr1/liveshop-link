@@ -29,6 +29,7 @@ import apiService from '../services/api';
 const CreditsPage = () => {
   const [credits, setCredits] = useState(null);
   const [packages, setPackages] = useState({});
+  const [paymentMethods, setPaymentMethods] = useState({});
   const [actionCosts, setActionCosts] = useState({});
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
@@ -55,6 +56,14 @@ const CreditsPage = () => {
       setCredits(creditsData.data);
       setPackages(packagesData.data.packages);
       setActionCosts(packagesData.data.actionCosts);
+      
+      // Filter payment methods to only show enabled ones
+      const allPaymentMethods = packagesData.data.paymentMethods || {};
+      const enabledMethods = Object.entries(allPaymentMethods)
+        .filter(([key, value]) => value.enabled === true)
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+      setPaymentMethods(enabledMethods);
+      
       setHistory(historyData.data.transactions);
       setStats(statsData.data);
     } catch (error) {
@@ -194,11 +203,20 @@ const CreditsPage = () => {
                     <SelectValue placeholder="Sélectionner une méthode" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="wave">Wave</SelectItem>
-                    <SelectItem value="orange_money">Orange Money</SelectItem>
-                    <SelectItem value="free_money">Free Money</SelectItem>
-                    <SelectItem value="cash">Espèces</SelectItem>
-                    <SelectItem value="bank_transfer">Virement bancaire</SelectItem>
+                    {Object.entries(paymentMethods).map(([key, method]) => (
+                      <SelectItem key={key} value={key}>
+                        {key === 'wave' && 'Wave'}
+                        {key === 'orange_money' && 'Orange Money'}
+                        {key === 'free_money' && 'Free Money'}
+                        {key === 'cash' && 'Espèces'}
+                        {key === 'bank_transfer' && 'Virement bancaire'}
+                        {key === 'WAVE' && 'Wave'}
+                        {key === 'ORANGE_MONEY' && 'Orange Money'}
+                        {key === 'FREE_MONEY' && 'Free Money'}
+                        {key === 'CASH' && 'Espèces'}
+                        {key === 'BANK_TRANSFER' && 'Virement bancaire'}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

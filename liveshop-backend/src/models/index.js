@@ -8,6 +8,7 @@ const OTP = require('./OTP');
 const Notification = require('./Notification');
 const CreditTransaction = require('./CreditTransaction');
 const Comment = require('./Comment');
+const AdminSetting = require('./AdminSetting');
 
 // Définition des associations
 Seller.hasMany(Product, { 
@@ -104,6 +105,7 @@ module.exports = {
   OTP,
   Notification,
   CreditTransaction,
-  Comment
+  Comment,
+  AdminSetting
 };
 

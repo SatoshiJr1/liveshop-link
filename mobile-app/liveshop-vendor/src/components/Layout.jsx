@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import useCreditsModuleStatus from '../hooks/useCreditsModuleStatus';
 import { Menu, Sun, Moon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +33,17 @@ const Layout = ({ children }) => {
   const location = useLocation();
 
   const { seller, credits, refreshCredits, isAdmin } = useAuth();
+  const { isEnabled: creditsEnabled } = useCreditsModuleStatus();
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🎯 Layout Debug:', {
+      seller: seller?.name,
+      credits: credits?.balance,
+      creditsEnabled,
+      isAdmin
+    });
+  }, [seller, credits, creditsEnabled, isAdmin]);
   
   const navigation = isAdmin ? [
     // Navigation pour SuperAdmin
@@ -93,9 +105,23 @@ const Layout = ({ children }) => {
 
   // Détermine la page active à partir de l'URL
   const getActivePage = () => {
-    const path = location.pathname.replace(/^\//, '');
-    const found = navigation.find(item => path.startsWith(item.id));
-    return found ? found.id : 'dashboard';
+    const currentPath = location.pathname;
+    
+    // Trouver tous les items dont le chemin correspond au début de l'URL actuelle
+    // On gère le cas exact OU le cas où c'est un sous-chemin (ex: /admin/sellers/123 match /admin/sellers)
+    const matches = navigation.filter(item => 
+      currentPath === item.path || currentPath.startsWith(`${item.path}/`)
+    );
+    
+    if (matches.length > 0) {
+      // Retourner l'ID de l'item avec le chemin le plus long (le plus spécifique)
+      // Cela permet de distinguer /admin de /admin/sellers
+      return matches.reduce((prev, current) => 
+        prev.path.length > current.path.length ? prev : current
+      ).id;
+    }
+    
+    return 'dashboard';
   };
   const activePage = getActivePage();
 
@@ -127,12 +153,12 @@ const Layout = ({ children }) => {
           </div>
         </div>
         <div className="flex items-center space-x-2 ml-2">
-          {/* Indicateur de crédits - Optimisé pour mobile */}
-          {credits && !isAdmin && (
+          {/* Indicateur de crédits - Optimisé pour mobile - Visible seulement si module activé */}
+          {credits && !isAdmin && creditsEnabled && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleCreditsClick}
+              onClick={() => navigate('/credits')}
               className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white border-0 shadow-lg font-bold px-2 py-1"
             >
               <Coins className="w-4 h-4 mr-1" />
@@ -317,12 +343,12 @@ const Layout = ({ children }) => {
             </h2>
           </div>
           <div className="flex items-center space-x-4">
-            {/* Indicateur de crédits pour desktop */}
-            {credits && !isAdmin && (
+            {/* Indicateur de crédits pour desktop - Visible seulement si module activé */}
+            {credits && !isAdmin && creditsEnabled && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleCreditsClick}
+                onClick={() => navigate('/credits')}
                 className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white border-0 shadow-lg font-bold px-4 py-2"
               >
                 <Coins className="w-4 h-4 mr-2" />

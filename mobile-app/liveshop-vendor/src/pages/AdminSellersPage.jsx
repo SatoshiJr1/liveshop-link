@@ -172,301 +172,334 @@ const AdminSellersPage = () => {
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Vendeurs</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              {sellers.length} vendeurs au total • {sellers.filter(s => s.is_active).length} actifs
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
-              <Users className="w-5 h-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Super Admin</span>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900 p-4 md:p-8 space-y-8 font-sans">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Gestion des Vendeurs
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Administrez les comptes vendeurs et suivez leurs performances.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+           <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {sellers.length} Vendeurs Total
+              </span>
+           </div>
+           <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {sellers.filter(s => s.is_active).length} Actifs
+              </span>
+           </div>
         </div>
       </div>
 
-      {/* Filtres et recherche */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      {/* Filtres et Recherche */}
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-800">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                  placeholder="Rechercher par nom, téléphone ou ID..."
+                placeholder="Rechercher par nom, téléphone ou ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-blue-500"
               />
             </div>
-            </div>
-            <div className="flex space-x-2">
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 no-scrollbar">
               <Button
                 variant={activeTab === 'all' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('all')}
                 size="sm"
-            >
-                Tous ({sellers.length})
+                className={activeTab === 'all' ? 'bg-gray-900 text-white hover:bg-gray-800' : ''}
+              >
+                Tous
+                <Badge variant="secondary" className="ml-2 bg-gray-100 text-gray-900">{sellers.length}</Badge>
               </Button>
               <Button
                 variant={activeTab === 'active' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('active')}
                 size="sm"
-            >
-                Actifs ({sellers.filter(s => s.is_active).length})
+                className={activeTab === 'active' ? 'bg-green-600 text-white hover:bg-green-700 border-transparent' : ''}
+              >
+                Actifs
+                <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">{sellers.filter(s => s.is_active).length}</Badge>
               </Button>
               <Button
                 variant={activeTab === 'inactive' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('inactive')}
                 size="sm"
+                className={activeTab === 'inactive' ? 'bg-red-600 text-white hover:bg-red-700 border-transparent' : ''}
               >
-                Inactifs ({sellers.filter(s => !s.is_active).length})
-            </Button>
+                Inactifs
+                <Badge variant="secondary" className="ml-2 bg-red-100 text-red-800">{sellers.filter(s => !s.is_active).length}</Badge>
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Liste des vendeurs */}
-        <div className="lg:col-span-2">
-          <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="w-5 h-5" />
-                <span>Liste des vendeurs</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-                {filteredSellers.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>Aucun vendeur trouvé</p>
-                  </div>
-                ) : (
-                  filteredSellers.map((seller) => (
-                    <div 
-                      key={seller.id} 
-                      className={`flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
-                        selectedSeller?.id === seller.id ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' : ''
-                      }`}
-                      onClick={() => handleSellerAction(seller.id, 'view')}
-                    >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {seller.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">{seller.name}</p>
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <Phone className="w-3 h-3 mr-1" />
-                            {seller.phone_number}
-                          </p>
-                          <p className="text-xs text-gray-400">ID: {seller.public_link_id}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Badge className={getRoleColor(seller.role)}>
-                          {seller.role}
-                        </Badge>
-                        <Badge className={getStatusColor(seller.is_active)}>
-                          {seller.is_active ? 'Actif' : 'Inactif'}
-                        </Badge>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{seller.credit_balance} crédits</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(seller.created_at).toLocaleDateString()}
-                          </p>
-                          {/* Chiffres d'affaires */}
-                          {sellersRevenue[seller.id] && (
-                            <div className="mt-1">
-                              <p className="text-xs font-bold text-green-600">
-                                {sellersRevenue[seller.id].totalRevenue.toLocaleString()} FCFA
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {sellersRevenue[seller.id].totalOrdersCount} commandes
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          {seller.is_active ? (
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSellerAction(seller.id, 'suspend');
-                              }}
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Pause className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSellerAction(seller.id, 'activate');
-                              }}
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <Play className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-                  </div>
-
-        {/* Détails du vendeur sélectionné */}
-        <div className="lg:col-span-1">
-          {selectedSeller ? (
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center space-x-2">
-                    <Eye className="w-5 h-5" />
-                    <span>Détails</span>
-                  </CardTitle>
-                    <Button
-                    onClick={() => setSelectedSeller(null)}
-                    variant="ghost"
-                      size="sm"
-                    >
-                    <XCircle className="w-4 h-4" />
-                    </Button>
+        {/* Liste des vendeurs */}
+        <div className="lg:col-span-2 space-y-4">
+          {filteredSellers.length === 0 ? (
+            <Card className="border-dashed border-2 border-gray-200 dark:border-gray-700 bg-transparent shadow-none">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                  <Users className="w-8 h-8 text-gray-400" />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Informations du vendeur */}
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-white font-bold text-xl">
-                      {selectedSeller.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">{selectedSeller.name}</h3>
-                  <p className="text-sm text-gray-500">{selectedSeller.phone_number}</p>
-                  <div className="mt-3 space-y-2">
-                    <Badge className={getRoleColor(selectedSeller.role)}>
-                      {selectedSeller.role}
-                    </Badge>
-                    <Badge className={getStatusColor(selectedSeller.is_active)}>
-                      {selectedSeller.is_active ? 'Actif' : 'Inactif'}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Statistiques */}
-                {sellerDetails && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <Package className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                        <p className="text-lg font-bold text-blue-600">{sellerDetails.products.length}</p>
-                        <p className="text-xs text-gray-500">Produits</p>
-                      </div>
-                      <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <ShoppingCart className="w-6 h-6 mx-auto mb-2 text-green-600" />
-                        <p className="text-lg font-bold text-green-600">{sellerDetails.revenue.totalOrdersCount}</p>
-                        <p className="text-xs text-gray-500">Commandes</p>
-                      </div>
-                    </div>
-
-                    {/* Chiffres d'affaires */}
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900 dark:text-white">Chiffres d'affaires</h4>
-                      
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total CA</span>
-                          <span className="text-lg font-bold text-green-600">
-                            {sellerDetails.revenue.totalRevenue.toLocaleString()} FCFA
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Payées:</span>
-                            <span className="font-medium text-blue-600">
-                              {sellerDetails.revenue.paidRevenue.toLocaleString()} FCFA
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Livrées:</span>
-                            <span className="font-medium text-emerald-600">
-                              {sellerDetails.revenue.deliveredRevenue.toLocaleString()} FCFA
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2 text-center">
-                          <p className="font-bold text-blue-600">{sellerDetails.revenue.paidOrdersCount}</p>
-                          <p className="text-gray-500">Commandes payées</p>
-                        </div>
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded p-2 text-center">
-                          <p className="font-bold text-emerald-600">{sellerDetails.revenue.deliveredOrdersCount}</p>
-                          <p className="text-gray-500">Commandes livrées</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="space-y-2">
-                    <Button
-                    onClick={() => handleSellerAction(selectedSeller.id, selectedSeller.is_active ? 'suspend' : 'activate')}
-                    variant={selectedSeller.is_active ? 'destructive' : 'default'}
-                    className="w-full"
-                    >
-                    {selectedSeller.is_active ? (
-                        <>
-                        <Pause className="w-4 h-4 mr-2" />
-                          Suspendre
-                        </>
-                      ) : (
-                        <>
-                        <Play className="w-4 h-4 mr-2" />
-                          Activer
-                        </>
-                      )}
-                    </Button>
-                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Aucun vendeur trouvé</h3>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Essayez de modifier vos filtres de recherche.</p>
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <div className="text-center text-gray-500">
-                  <Eye className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>Sélectionnez un vendeur pour voir les détails</p>
-          </div>
-        </CardContent>
-      </Card>
+            filteredSellers.map((seller) => (
+              <div 
+                key={seller.id} 
+                className={`group relative bg-white dark:bg-gray-800 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden ${
+                  selectedSeller?.id === seller.id 
+                    ? 'border-blue-500 ring-1 ring-blue-500 shadow-md' 
+                    : 'border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md'
+                }`}
+                onClick={() => handleSellerAction(seller.id, 'view')}
+              >
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                  {/* Avatar & Info */}
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="relative">
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm transform group-hover:scale-105 transition-transform duration-200">
+                        {seller.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${seller.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-blue-600 transition-colors">
+                        {seller.name}
+                      </h3>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3 h-3" /> {seller.phone_number}
+                        </span>
+                        <span className="hidden sm:inline text-gray-300">•</span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> ID: {seller.public_link_id}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats & Actions */}
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 border-gray-100 dark:border-gray-700 pt-4 sm:pt-0 mt-2 sm:mt-0">
+                    <div className="text-right mr-2">
+                      <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Crédits</p>
+                      <p className="font-bold text-gray-900 dark:text-white text-lg">{seller.credit_balance}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${getRoleColor(seller.role)} shadow-sm`}>
+                        {seller.role}
+                      </Badge>
+                      
+                      <div className="flex gap-1">
+                        {seller.is_active ? (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSellerAction(seller.id, 'suspend');
+                            }}
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
+                            title="Suspendre"
+                          >
+                            <Pause className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSellerAction(seller.id, 'activate');
+                            }}
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full"
+                            title="Activer"
+                          >
+                            <Play className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Revenue Mini-Stats (if available) */}
+                {sellersRevenue[seller.id] && (
+                  <div className="bg-gray-50 dark:bg-gray-900/50 px-5 py-3 flex items-center justify-between text-sm border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex gap-4">
+                      <span className="text-gray-500">
+                        <span className="font-medium text-gray-900 dark:text-white">{sellersRevenue[seller.id].totalOrdersCount}</span> commandes
+                      </span>
+                      <span className="text-gray-500">
+                        <span className="font-medium text-green-600">{sellersRevenue[seller.id].paidOrdersCount}</span> payées
+                      </span>
+                    </div>
+                    <div className="font-medium text-gray-900 dark:text-white flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-green-500" />
+                      {sellersRevenue[seller.id].totalRevenue.toLocaleString()} FCFA
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
           )}
+        </div>
+
+        {/* Détails du vendeur sélectionné (Sticky Sidebar) */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6 space-y-6">
+            {selectedSeller ? (
+              <Card className="border-0 shadow-lg bg-white dark:bg-gray-800 overflow-hidden animate-in slide-in-from-right-4 duration-300">
+                <div className="h-24 bg-gradient-to-r from-blue-600 to-purple-600 relative">
+                  <Button
+                    onClick={() => setSelectedSeller(null)}
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-white/80 hover:text-white hover:bg-white/20 rounded-full"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </Button>
+                </div>
+                <div className="px-6 pb-6">
+                  <div className="relative -mt-12 mb-4 flex justify-center">
+                    <div className="w-24 h-24 bg-white dark:bg-gray-800 rounded-2xl p-1 shadow-lg">
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-3xl">
+                        {selectedSeller.name.charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedSeller.name}</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{selectedSeller.phone_number}</p>
+                    <div className="flex justify-center gap-2 mt-3">
+                      <Badge className={getRoleColor(selectedSeller.role)}>{selectedSeller.role}</Badge>
+                      <Badge variant={selectedSeller.is_active ? "default" : "destructive"} className={selectedSeller.is_active ? "bg-green-500 hover:bg-green-600" : ""}>
+                        {selectedSeller.is_active ? 'Compte Actif' : 'Compte Suspendu'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {sellerDetails ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl text-center border border-blue-100 dark:border-blue-800">
+                          <Package className="w-5 h-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                          <p className="text-xl font-bold text-gray-900 dark:text-white">{sellerDetails.products.length}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Produits</p>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-xl text-center border border-purple-100 dark:border-purple-800">
+                          <ShoppingCart className="w-5 h-5 mx-auto mb-1 text-purple-600 dark:text-purple-400" />
+                          <p className="text-xl font-bold text-gray-900 dark:text-white">{sellerDetails.revenue.totalOrdersCount}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Commandes</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-green-500" />
+                          Performance Financière
+                        </h4>
+                        
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-end">
+                            <span className="text-sm text-gray-500">Chiffre d'affaires</span>
+                            <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                              {sellerDetails.revenue.totalRevenue.toLocaleString()} <span className="text-xs font-normal text-gray-400">FCFA</span>
+                            </span>
+                          </div>
+                          
+                          <div className="h-2 w-full bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden flex">
+                            <div 
+                              className="h-full bg-green-500" 
+                              style={{ width: `${sellerDetails.revenue.totalRevenue > 0 ? (sellerDetails.revenue.paidRevenue / sellerDetails.revenue.totalRevenue) * 100 : 0}%` }}
+                            ></div>
+                            <div 
+                              className="h-full bg-blue-500" 
+                              style={{ width: `${sellerDetails.revenue.totalRevenue > 0 ? (sellerDetails.revenue.deliveredRevenue / sellerDetails.revenue.totalRevenue) * 100 : 0}%` }}
+                            ></div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              <span className="text-gray-600 dark:text-gray-400">Payé: {sellerDetails.revenue.paidRevenue.toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                              <span className="text-gray-600 dark:text-gray-400">Livré: {sellerDetails.revenue.deliveredRevenue.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <Button
+                          onClick={() => handleSellerAction(selectedSeller.id, selectedSeller.is_active ? 'suspend' : 'activate')}
+                          variant={selectedSeller.is_active ? 'destructive' : 'default'}
+                          className="w-full shadow-sm"
+                        >
+                          {selectedSeller.is_active ? (
+                            <>
+                              <Pause className="w-4 h-4 mr-2" />
+                              Suspendre le compte
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              Activer le compte
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-sm text-gray-500 mt-2">Chargement des détails...</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              <Card className="border-dashed border-2 border-gray-200 dark:border-gray-700 bg-transparent shadow-none hidden lg:block">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center opacity-50">
+                  <Eye className="w-16 h-16 mb-4 text-gray-300" />
+                  <p className="text-gray-500 font-medium">Sélectionnez un vendeur pour voir ses détails complets</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

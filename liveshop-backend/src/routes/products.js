@@ -353,6 +353,32 @@ router.patch('/:id/pin', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Produit non trouvé' });
     }
 
+    // Si on épingle (pas déjà épinglé), vérifier et consommer les crédits
+    if (!product.is_pinned) {
+      const CreditService = require('../services/creditService');
+      
+      // Vérifier les crédits
+      const creditCheck = await CreditService.hasEnoughCredits(req.seller.id, 'PIN_PRODUCT');
+      if (!creditCheck.hasEnough) {
+        return res.status(403).json({
+          success: false,
+          error: 'Crédits insuffisants',
+          details: {
+            currentBalance: creditCheck.currentBalance,
+            requiredCredits: creditCheck.requiredCredits,
+            actionType: 'PIN_PRODUCT'
+          },
+          message: `Vous n'avez pas assez de crédits pour épingler ce produit. Solde actuel: ${creditCheck.currentBalance}, requis: ${creditCheck.requiredCredits}`
+        });
+      }
+
+      // Consommer les crédits
+      await CreditService.consumeCredits(req.seller.id, 'PIN_PRODUCT', {
+        productId: req.params.id,
+        productName: product.name
+      });
+    }
+
     await product.update({ is_pinned: !product.is_pinned });
     res.json({ 
       message: product.is_pinned ? 'Produit épinglé' : 'Produit désépinglé',

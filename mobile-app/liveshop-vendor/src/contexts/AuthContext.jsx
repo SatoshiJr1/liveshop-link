@@ -373,7 +373,7 @@ export const AuthProvider = ({ children }) => {
     if (isAdmin) return null;
     try {
       const response = await apiService.getCredits();
-      // setCredits(response.data); // Laisser l'état désactivé pour l'instant
+      setCredits(response.data);
       return response.data;
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des crédits:', error);
