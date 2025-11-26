@@ -16,7 +16,12 @@ import {
   Calendar,
   User,
   Activity,
-  X
+  X,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownLeft,
+  CreditCard,
+  Settings
 } from 'lucide-react';
 import apiService from '../services/api';
 
@@ -111,21 +116,21 @@ const AdminCreditsPage = () => {
 
   const getTypeColor = (type) => {
     switch (type) {
-      case 'purchase': return 'bg-green-100 text-green-800';
-      case 'consumption': return 'bg-red-100 text-red-800';
-      case 'bonus': return 'bg-blue-100 text-blue-800';
-      case 'refund': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'purchase': return 'bg-green-100 text-green-800 border-green-200';
+      case 'consumption': return 'bg-red-100 text-red-800 border-red-200';
+      case 'bonus': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'refund': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'purchase': return <Plus className="w-4 h-4" />;
-      case 'consumption': return <Minus className="w-4 h-4" />;
-      case 'bonus': return <TrendingUp className="w-4 h-4" />;
-      case 'refund': return <TrendingDown className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
+      case 'purchase': return <Plus className="w-3 h-3" />;
+      case 'consumption': return <Minus className="w-3 h-3" />;
+      case 'bonus': return <TrendingUp className="w-3 h-3" />;
+      case 'refund': return <TrendingDown className="w-3 h-3" />;
+      default: return <Activity className="w-3 h-3" />;
     }
   };
 
@@ -165,186 +170,470 @@ const AdminCreditsPage = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-        </div>
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-600 to-orange-700 rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Gestion des Crédits</h1>
-            <p className="text-yellow-100">Administration globale du système de crédits</p>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold">{stats.total}</div>
-            <p className="text-yellow-100 text-sm">transactions total</p>
-          </div>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900 p-4 md:p-8 space-y-8 font-sans">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Gestion des Crédits
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Administration globale du système de crédits et transactions.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+           <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {stats.total} Transactions
+              </span>
+           </div>
+           <Button 
+              onClick={() => window.location.href = '/admin/credits/settings'} 
+              variant="outline"
+              className="border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 shadow-md"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Paramètres
+            </Button>
+           <Button 
+              onClick={() => setShowAddCredits(true)} 
+              className="bg-yellow-500 hover:bg-yellow-600 text-white shadow-md shadow-yellow-500/20"
+            >
+              <Wallet className="w-4 h-4 mr-2" />
+              Gérer les crédits
+            </Button>
         </div>
       </div>
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+      {/* Statistiques Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-none shadow-md bg-gradient-to-br from-yellow-500 to-orange-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-yellow-100 text-sm font-medium mb-1">Crédits Ajoutés</p>
+                <h3 className="text-3xl font-bold">{stats.totalCreditsAdded.toLocaleString()}</h3>
               </div>
-              <Coins className="w-8 h-8 text-blue-500" />
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <ArrowUpRight className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-yellow-100 text-sm">
+              <Plus className="w-4 h-4 mr-1" />
+              <span>Total entrées</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-red-500">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600">Achats</p>
-                <p className="text-2xl font-bold text-green-600">{stats.purchases}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Crédits Consommés</p>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalCreditsConsumed.toLocaleString()}</h3>
               </div>
-              <Plus className="w-8 h-8 text-green-500" />
+              <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <ArrowDownLeft className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+            <div className="mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+              <div className="bg-red-500 h-full rounded-full" style={{ width: '75%' }}></div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-green-500">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600">Consommations</p>
-                <p className="text-2xl font-bold text-red-600">{stats.consumptions}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Achats</p>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.purchases}</h3>
               </div>
-              <Minus className="w-8 h-8 text-red-500" />
+              <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <CreditCard className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-green-600 text-sm font-medium">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              <span>Transactions d'achat</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600">Bonus</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.bonuses}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Bonus Distribués</p>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.bonuses}</h3>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-500" />
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <Coins className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Crédits ajoutés</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.totalCreditsAdded.toLocaleString()}
-                </p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Crédits consommés</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {stats.totalCreditsConsumed.toLocaleString()}
-                </p>
-              </div>
-              <TrendingDown className="w-8 h-8 text-red-500" />
+            <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
+              <Plus className="w-4 h-4 mr-1" />
+              <span>Récompenses</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Actions rapides */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Coins className="w-5 h-5" />
-            <span>Actions rapides</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button 
-              onClick={() => setShowAddCredits(true)} 
-              className="flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Ajouter des crédits</span>
-            </Button>
+      {/* Filtres et Recherche */}
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-800">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Rechercher une transaction..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus:ring-yellow-500"
+              />
+            </div>
             
-            <Button 
-              variant="outline"
-              onClick={() => setShowAddCredits(true)} 
-              className="flex items-center space-x-2"
-            >
-              <Minus className="w-4 h-4" />
-              <span>Retirer des crédits</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal Ajout/Retrait de crédits */}
-      {showAddCredits && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Gestion des crédits</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Vendeur</label>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <div className="relative min-w-[180px]">
+                <Activity className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <select
-                  value={selectedSellerForCredits}
-                  onChange={(e) => setSelectedSellerForCredits(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none appearance-none cursor-pointer"
                 >
-                  <option value="">Sélectionner un vendeur</option>
+                  <option value="all">Tous les types</option>
+                  <option value="purchase">Achats</option>
+                  <option value="consumption">Consommations</option>
+                  <option value="bonus">Bonus</option>
+                  <option value="refund">Remboursements</option>
+                </select>
+              </div>
+
+              <div className="relative min-w-[180px]">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <select
+                  value={filterSeller}
+                  onChange={(e) => setFilterSeller(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none appearance-none cursor-pointer"
+                >
+                  <option value="all">Tous les vendeurs</option>
                   {sellers.map(seller => (
-                    <option key={seller.id} value={seller.id}>
-                      {seller.name} ({seller.credit_balance} crédits)
+                    <option key={seller.id} value={seller.id.toString()}>
+                      {seller.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Montant</label>
-                <Input
-                  type="number"
-                  value={creditAmount}
-                  onChange={(e) => setCreditAmount(e.target.value)}
-                  placeholder="Nombre de crédits"
-                />
+              <Button onClick={loadTransactions} variant="outline" className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                <Filter className="w-4 h-4 mr-2" />
+                Actualiser
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Liste des transactions */}
+      <div className="space-y-4">
+        {filteredTransactions.length === 0 ? (
+          <Card className="border-dashed border-2 border-gray-200 dark:border-gray-700 bg-transparent shadow-none">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <Coins className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 dark:text-white">Aucune transaction trouvée</h3>
+              <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-md">
+                Aucune transaction ne correspond à vos critères de recherche.
+              </p>
+              <Button 
+                variant="outline" 
+                className="mt-6"
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterType('all');
+                  setFilterSeller('all');
+                }}
+              >
+                Réinitialiser les filtres
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {filteredTransactions.map((transaction) => (
+              <div 
+                key={transaction.id} 
+                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+              >
+                <div className="p-5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    {/* Transaction Info */}
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                        {transaction.type.charAt(0).toUpperCase()}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-lg truncate">
+                            {transaction.seller?.name || transaction.Seller?.name || 'N/A'}
+                          </h3>
+                          <Badge variant="outline" className={getTypeColor(transaction.type)}>
+                            <span className="flex items-center gap-1">
+                              {getTypeIcon(transaction.type)}
+                              {getTypeText(transaction.type)}
+                            </span>
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{transaction.description}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> 
+                            {new Date(transaction.created_at).toLocaleDateString()} à {new Date(transaction.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Amount & Actions */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-8 w-full md:w-auto border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-4 md:pt-0">
+                      <div className="flex flex-col items-start sm:items-end">
+                        <span className={`text-2xl font-bold ${transaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {transaction.amount >= 0 ? '+' : ''}{transaction.amount.toLocaleString()}
+                        </span>
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          Solde: {transaction.balance_before?.toLocaleString()} → {transaction.balance_after?.toLocaleString()}
+                        </span>
+                      </div>
+                      
+                      <Button
+                        onClick={() => setSelectedTransaction(transaction)}
+                        variant="outline"
+                        className="w-full sm:w-auto border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Détails
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Détails Transaction */}
+      {selectedTransaction && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
+            <div className="sticky top-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center z-10">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                Détails de la Transaction
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setSelectedTransaction(null)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-8">
+              {/* En-tête de la transaction */}
+              <div className="flex items-center gap-4 p-5 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-md">
+                  {selectedTransaction.type.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {getTypeText(selectedTransaction.type)}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {selectedTransaction.seller?.name || selectedTransaction.Seller?.name || 'N/A'}
+                  </p>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={getTypeColor(selectedTransaction.type)}>
+                      <span className="flex items-center gap-1">
+                        {getTypeIcon(selectedTransaction.type)}
+                        {getTypeText(selectedTransaction.type)}
+                      </span>
+                    </Badge>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Raison</label>
+              {/* Informations détaillées */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Montant</label>
+                    <p className={`text-2xl font-bold ${selectedTransaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {selectedTransaction.amount >= 0 ? '+' : ''}{selectedTransaction.amount.toLocaleString()} crédits
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700/30 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                      {selectedTransaction.description || 'Aucune description'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type d'action</label>
+                    <p className="text-gray-900 dark:text-white font-mono text-sm bg-gray-50 dark:bg-gray-700/30 p-2 rounded border border-gray-100 dark:border-gray-700 inline-block">
+                      {selectedTransaction.action_type || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-gray-500" />
+                      Évolution du solde
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Avant</span>
+                        <span className="font-mono font-medium text-gray-900 dark:text-white">{selectedTransaction.balance_before?.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full h-px bg-gray-200 dark:bg-gray-600"></div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Après</span>
+                        <span className="font-mono font-bold text-gray-900 dark:text-white">{selectedTransaction.balance_after?.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Statut</label>
+                    <Badge className={selectedTransaction.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}>
+                      {selectedTransaction.status === 'completed' ? 'Terminé' : selectedTransaction.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations temporelles */}
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-4 flex flex-wrap gap-6 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(selectedTransaction.created_at).toLocaleDateString('fr-FR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  {new Date(selectedTransaction.created_at).toLocaleTimeString('fr-FR')}
+                </div>
+              </div>
+
+              {/* Métadonnées si disponibles */}
+              {selectedTransaction.metadata && Object.keys(selectedTransaction.metadata).length > 0 && (
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Informations supplémentaires</label>
+                  <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                    <pre className="text-xs font-mono whitespace-pre-wrap">
+                      {JSON.stringify(selectedTransaction.metadata, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedTransaction(null)}
+              >
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajout/Retrait de crédits */}
+      {showAddCredits && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-yellow-500" />
+                Gestion des crédits
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setShowAddCredits(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Vendeur</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <select
+                    value={selectedSellerForCredits}
+                    onChange={(e) => setSelectedSellerForCredits(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="">Sélectionner un vendeur</option>
+                    {sellers.map(seller => (
+                      <option key={seller.id} value={seller.id}>
+                        {seller.name} ({seller.credit_balance} crédits)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Montant</label>
+                <div className="relative">
+                  <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    type="number"
+                    value={creditAmount}
+                    onChange={(e) => setCreditAmount(e.target.value)}
+                    placeholder="Nombre de crédits"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Raison</label>
                 <Input
                   value={creditReason}
                   onChange={(e) => setCreditReason(e.target.value)}
-                  placeholder="Raison de l'opération"
+                  placeholder="Raison de l'opération (ex: Bonus mensuel)"
                 />
               </div>
 
-              <div className="flex space-x-2">
+              <div className="pt-4 flex gap-3">
                 <Button 
                   onClick={handleAddCredits}
-                  className="flex-1"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Ajouter
@@ -357,262 +646,7 @@ const AdminCreditsPage = () => {
                   <Minus className="w-4 h-4 mr-2" />
                   Retirer
                 </Button>
-                <Button 
-                  onClick={() => setShowAddCredits(false)}
-                  variant="outline"
-                >
-                  Annuler
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filtres */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher une transaction..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="border rounded-lg px-3 py-2"
-            >
-              <option value="all">Tous les types</option>
-              <option value="purchase">Achats</option>
-              <option value="consumption">Consommations</option>
-              <option value="bonus">Bonus</option>
-              <option value="refund">Remboursements</option>
-            </select>
-
-            <select
-              value={filterSeller}
-              onChange={(e) => setFilterSeller(e.target.value)}
-              className="border rounded-lg px-3 py-2"
-            >
-              <option value="all">Tous les vendeurs</option>
-              {sellers.map(seller => (
-                <option key={seller.id} value={seller.id.toString()}>
-                  {seller.name}
-                </option>
-              ))}
-            </select>
-
-            <Button onClick={loadTransactions} variant="outline" className="flex items-center space-x-2">
-              <Filter className="w-4 h-4" />
-              <span>Actualiser</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Liste des transactions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Activity className="w-5 h-5" />
-            <span>Historique des transactions ({filteredTransactions.length})</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {transaction.type.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold">{transaction.seller?.name || transaction.Seller?.name || 'N/A'}</h3>
-                        <Badge className={getTypeColor(transaction.type)}>
-                          <div className="flex items-center space-x-1">
-                            {getTypeIcon(transaction.type)}
-                            <span>{getTypeText(transaction.type)}</span>
-                          </div>
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600">{transaction.description}</p>
-                      <p className="text-sm text-gray-500">
-                        Solde avant: {transaction.balance_before?.toLocaleString()} → 
-                        Après: {transaction.balance_after?.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <div className="text-right">
-                      <p className={`text-lg font-bold ${transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {transaction.amount >= 0 ? '+' : ''}{transaction.amount.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(transaction.created_at).toLocaleDateString()}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(transaction.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-
-                    <button
-                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center space-x-1"
-                      onClick={() => setSelectedTransaction(transaction)}
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Détails</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal Détails Transaction */}
-      {selectedTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Détails de la Transaction</h2>
-              <button
-                onClick={() => setSelectedTransaction(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* En-tête de la transaction */}
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                  {selectedTransaction.type.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    {getTypeText(selectedTransaction.type)}
-                  </h3>
-                  <p className="text-gray-600">
-                    {selectedTransaction.seller?.name || selectedTransaction.Seller?.name || 'N/A'}
-                  </p>
-                  <Badge className={getTypeColor(selectedTransaction.type)}>
-                    <div className="flex items-center space-x-1">
-                      {getTypeIcon(selectedTransaction.type)}
-                      <span>{getTypeText(selectedTransaction.type)}</span>
-                    </div>
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Informations détaillées */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Montant</label>
-                    <p className={`text-2xl font-bold ${selectedTransaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedTransaction.amount >= 0 ? '+' : ''}{selectedTransaction.amount.toLocaleString()} crédits
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <p className="text-gray-900">{selectedTransaction.description || 'Aucune description'}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Type d'action</label>
-                    <p className="text-gray-900">{selectedTransaction.action_type || 'N/A'}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Statut</label>
-                    <Badge className={selectedTransaction.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                      {selectedTransaction.status === 'completed' ? 'Terminé' : selectedTransaction.status}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Solde avant</label>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {selectedTransaction.balance_before?.toLocaleString()} crédits
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Solde après</label>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {selectedTransaction.balance_after?.toLocaleString()} crédits
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Méthode de paiement</label>
-                    <p className="text-gray-900">{selectedTransaction.payment_method || 'N/A'}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Référence de paiement</label>
-                    <p className="text-gray-900">{selectedTransaction.payment_reference || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Informations temporelles */}
-              <div className="border-t pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Date de création</label>
-                    <p className="text-gray-900">
-                      {new Date(selectedTransaction.created_at).toLocaleDateString('fr-FR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Heure</label>
-                    <p className="text-gray-900">
-                      {new Date(selectedTransaction.created_at).toLocaleTimeString('fr-FR')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Métadonnées si disponibles */}
-              {selectedTransaction.metadata && Object.keys(selectedTransaction.metadata).length > 0 && (
-                <div className="border-t pt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Informations supplémentaires</label>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {JSON.stringify(selectedTransaction.metadata, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => setSelectedTransaction(null)}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-              >
-                Fermer
-              </button>
             </div>
           </div>
         </div>

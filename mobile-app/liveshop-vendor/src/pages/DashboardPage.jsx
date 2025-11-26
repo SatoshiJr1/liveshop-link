@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import useCreditsModuleStatus from '../hooks/useCreditsModuleStatus';
 import { 
   ShoppingBag, 
   Package, 
@@ -24,6 +25,7 @@ import {
   Activity,
   Mic,
   TestTube,
+  Coins,
   // Coins // Désactivé temporairement
 } from 'lucide-react';
 import VoiceControls from '../components/VoiceControls';
@@ -34,6 +36,7 @@ import { getPublicLink } from '../config/domains';
 export default function DashboardPage() {
   const { seller, loading } = useAuth();
   const navigate = useNavigate();
+  const { isEnabled: creditsEnabled } = useCreditsModuleStatus();
   const [stats, setStats] = useState({ 
     totalCA: 0, 
     totalOrders: 0, 
@@ -43,7 +46,7 @@ export default function DashboardPage() {
     pending_orders: 0,
     paid_orders: 0
   });
-  // const [credits, setCredits] = useState(null); // Désactivé temporairement
+  const [sellerCredits, setSellerCredits] = useState(seller?.credits || 0);
   const [recentOrders, setRecentOrders] = useState([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -122,6 +125,13 @@ export default function DashboardPage() {
       window.removeEventListener('orderStatusUpdated', handleOrderStatusUpdate);
     };
   }, [seller?.id]);
+
+  // Mettre à jour les crédits du vendeur
+  useEffect(() => {
+    if (seller?.credits !== undefined) {
+      setSellerCredits(seller.credits);
+    }
+  }, [seller?.credits]);
 
   const fetchDashboardData = async () => {
     try {
@@ -251,44 +261,49 @@ export default function DashboardPage() {
           </div>
 
           {/* Lien public - Design amélioré */}
-          <div className="bg-white/10 rounded-xl p-2 lg:p-4">
-            <h3 className="font-semibold mb-2 lg:mb-3 flex items-center text-sm lg:text-base">
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Votre lien de boutique
-            </h3>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-              <div className="bg-white/20 px-3 py-2 rounded-lg text-xs lg:text-sm flex-1 truncate font-mono text-center sm:text-left flex items-center justify-center sm:justify-start">
-                <span className="text-purple-200">{getPublicLink(seller.public_link_id).replace(`/${seller.public_link_id}`, '/')}</span>
-                <span className="text-white font-bold">{seller.public_link_id}</span>
+          <div className="bg-white/10 rounded-xl p-2 lg:p-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1">
+                <h3 className="font-semibold mb-2 lg:mb-3 flex items-center text-sm lg:text-base">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Votre lien de boutique
+                </h3>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                  <div className="bg-white/20 px-3 py-2 rounded-lg text-xs lg:text-sm flex-1 truncate font-mono text-center sm:text-left flex items-center justify-center sm:justify-start">
+                    <span className="text-purple-200">{getPublicLink(seller.public_link_id).replace(`/${seller.public_link_id}`, '/')}</span>
+                    <span className="text-white font-bold">{seller.public_link_id}</span>
+                  </div>
+                  <div className="flex justify-center sm:justify-start space-x-2">
+                    <Button 
+                      onClick={copyPublicLink} 
+                      size="sm" 
+                      variant="secondary" 
+                      className={`transition-all duration-300 ${
+                        copied 
+                          ? 'bg-green-500/80 hover:bg-green-600/80 text-white scale-110' 
+                          : 'bg-white/20 hover:bg-white/30 hover:scale-105'
+                      }`}
+                      title={copied ? "Lien copié !" : "Copier le lien"}
+                    >
+                      {copied ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={openPublicLink} 
+                      size="sm" 
+                      variant="secondary" 
+                      className="bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-105"
+                      title="Ouvrir la boutique"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-center sm:justify-start space-x-2">
-                <Button 
-                  onClick={copyPublicLink} 
-                  size="sm" 
-                  variant="secondary" 
-                  className={`transition-all duration-300 ${
-                    copied 
-                      ? 'bg-green-500/80 hover:bg-green-600/80 text-white scale-110' 
-                      : 'bg-white/20 hover:bg-white/30 hover:scale-105'
-                  }`}
-                  title={copied ? "Lien copié !" : "Copier le lien"}
-                >
-                  {copied ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-                <Button 
-                  onClick={openPublicLink} 
-                  size="sm" 
-                  variant="secondary" 
-                  className="bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-105"
-                  title="Ouvrir la boutique"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
+              
             </div>
           </div>
         </div>

@@ -13,7 +13,11 @@ import {
   UserCheck,
   UserX,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Filter,
+  CheckCircle,
+  Key
 } from 'lucide-react';
 import apiService from '../services/api';
 
@@ -21,6 +25,7 @@ const AdminSecurityPage = () => {
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRole, setSelectedRole] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadSellers();
@@ -47,22 +52,34 @@ const AdminSecurityPage = () => {
     }
   };
 
+  const handleStatusChange = async (sellerId, currentStatus) => {
+    try {
+      await apiService.updateSeller(sellerId, { is_active: !currentStatus });
+      loadSellers();
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
+    }
+  };
+
   const getRoleColor = (role) => {
     switch (role) {
-      case 'superadmin': return 'bg-purple-500 text-white';
-      case 'admin': return 'bg-blue-500 text-white';
-      case 'seller': return 'bg-green-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'superadmin': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'admin': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'seller': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusColor = (isActive) => {
-    return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    return isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200';
   };
 
-  const filteredSellers = selectedRole === 'all' 
-    ? sellers 
-    : sellers.filter(seller => seller.role === selectedRole);
+  const filteredSellers = sellers.filter(seller => {
+    const matchesRole = selectedRole === 'all' || seller.role === selectedRole;
+    const matchesSearch = seller.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          seller.phone_number.includes(searchTerm);
+    return matchesRole && matchesSearch;
+  });
 
   const stats = {
     total: sellers.length,
@@ -75,243 +92,286 @@ const AdminSecurityPage = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4 ">
-        <div className="flex items-center justify-center h-64 ">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 "></div>
-        </div>
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6 ">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-red-600 to-orange-700 rounded-lg p-6 text-white ">
-        <div className="flex items-center justify-between ">
-          <div>
-            <h1 className="text-2xl font-bold mb-2 ">Sécurité & Rôles</h1>
-            <p className="text-red-100 ">Gestion des rôles et surveillance de la sécurité</p>
-          </div>
-          <div className="text-right ">
-            <div className="text-3xl font-bold ">{sellers.length}</div>
-            <p className="text-red-100 text-sm ">utilisateurs total</p>
-          </div>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900 p-4 md:p-8 space-y-8 font-sans">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Sécurité & Rôles
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Gestion des permissions, rôles et surveillance de la sécurité.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+           <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-red-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {stats.total} Utilisateurs
+              </span>
+           </div>
         </div>
       </div>
 
-      {/* Statistiques de sécurité */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 ">
-        <Card>
-          <CardContent className="p-4 ">
-            <div className="flex items-center justify-between ">
+      {/* Statistiques Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-none shadow-md bg-gradient-to-br from-red-500 to-orange-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600 ">Total</p>
-                <p className="text-2xl font-bold ">{stats.total}</p>
+                <p className="text-red-100 text-sm font-medium mb-1">Super Admins</p>
+                <h3 className="text-3xl font-bold">{stats.superadmin}</h3>
               </div>
-              <Users className="w-8 h-8 text-blue-500 " />
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-red-100 text-sm">
+              <Lock className="w-4 h-4 mr-1" />
+              <span>Accès complet</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 ">
-            <div className="flex items-center justify-between ">
+        <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600 ">SuperAdmin</p>
-                <p className="text-2xl font-bold text-purple-600 ">{stats.superadmin}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Administrateurs</p>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.admin}</h3>
               </div>
-              <Shield className="w-8 h-8 text-purple-500 " />
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <UserCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+            <div className="mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+              <div className="bg-blue-500 h-full rounded-full" style={{ width: `${(stats.admin / stats.total) * 100}%` }}></div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 ">
-            <div className="flex items-center justify-between ">
+        <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-green-500">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600 ">Admin</p>
-                <p className="text-2xl font-bold text-blue-600 ">{stats.admin}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Vendeurs Actifs</p>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.active}</h3>
               </div>
-              <Lock className="w-8 h-8 text-blue-500 " />
+              <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-green-600 text-sm font-medium">
+              <Activity className="w-4 h-4 mr-1" />
+              <span>En ligne</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 ">
-            <div className="flex items-center justify-between ">
+        <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-gray-500">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm text-gray-600 ">Vendeurs</p>
-                <p className="text-2xl font-bold text-green-600 ">{stats.seller}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Comptes Suspendus</p>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.inactive}</h3>
               </div>
-              <UserCheck className="w-8 h-8 text-green-500 " />
+              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <UserX className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 ">
-            <div className="flex items-center justify-between ">
-              <div>
-                <p className="text-sm text-gray-600 ">Actifs</p>
-                <p className="text-2xl font-bold text-green-600 ">{stats.active}</p>
-              </div>
-              <UserCheck className="w-8 h-8 text-green-500 " />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 ">
-            <div className="flex items-center justify-between ">
-              <div>
-                <p className="text-sm text-gray-600 ">Inactifs</p>
-                <p className="text-2xl font-bold text-red-600 ">{stats.inactive}</p>
-              </div>
-              <UserX className="w-8 h-8 text-red-500 " />
+            <div className="mt-4 flex items-center text-gray-500 text-sm font-medium">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              <span>Action requise</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtres */}
-      <Card>
-        <CardContent className="p-6 ">
-          <div className="flex items-center space-x-4 ">
-            <label className="text-sm font-medium ">Filtrer par rôle :</label>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="border rounded-lg px-3 py-2 "
-            >
-              <option value="all">Tous les rôles</option>
-              <option value="superadmin">SuperAdmin</option>
-              <option value="admin">Admin</option>
-              <option value="seller">Vendeur</option>
-            </select>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Liste des utilisateurs */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Filtres */}
+          <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-800">
+            <CardContent className="p-4">
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher un utilisateur..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="relative w-full md:w-48">
+                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <select
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none appearance-none cursor-pointer"
+                    >
+                      <option value="all">Tous les rôles</option>
+                      <option value="superadmin">SuperAdmin</option>
+                      <option value="admin">Admin</option>
+                      <option value="seller">Vendeur</option>
+                    </select>
+                  </div>
+                  
+                  <Button onClick={loadSellers} variant="outline" size="icon" className="shrink-0">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Button onClick={loadSellers} variant="outline" className="flex items-center space-x-2 ">
-              <Settings className="w-4 h-4 " />
-              <span>Actualiser</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Liste des utilisateurs */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 ">
-            <Shield className="w-5 h-5 " />
-            <span>Gestion des rôles ({filteredSellers.length})</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 ">
+          <div className="space-y-4">
             {filteredSellers.map((sellerItem) => (
-              <div key={sellerItem.id} className="border rounded-lg p-4 hover:bg-gray-50 ">
-                <div className="flex items-center justify-between ">
-                  <div className="flex items-center space-x-4 ">
-                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center text-white font-semibold ">
-                      {sellerItem.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2 ">
-                        <h3 className="font-semibold ">{sellerItem.name}</h3>
-                        <Badge className={getRoleColor(sellerItem.role)}>
-                          {sellerItem.role}
-                        </Badge>
-                        <Badge className={getStatusColor(sellerItem.is_active)}>
-                          {sellerItem.is_active ? 'Actif' : 'Inactif'}
-                        </Badge>
+              <div 
+                key={sellerItem.id} 
+                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+              >
+                <div className="p-5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                        {sellerItem.name.charAt(0).toUpperCase()}
                       </div>
-                      <p className="text-sm text-gray-600 ">{sellerItem.phone_number}</p>
-                      <p className="text-xs text-gray-400 ">ID: {sellerItem.public_link_id}</p>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-lg">{sellerItem.name}</h3>
+                          <Badge variant="outline" className={getRoleColor(sellerItem.role)}>
+                            {sellerItem.role}
+                          </Badge>
+                          <Badge variant="outline" className={getStatusColor(sellerItem.is_active)}>
+                            {sellerItem.is_active ? 'Actif' : 'Suspendu'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                          <span>{sellerItem.phone_number}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">ID: {sellerItem.public_link_id}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center space-x-2 ">
-                    <div className="text-right ">
-                      <p className="text-sm font-semibold ">{sellerItem.credit_balance} crédits</p>
-                      <p className="text-xs text-gray-500 ">
-                        {new Date(sellerItem.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col space-y-1 ">
-                      <select
-                        value={sellerItem.role}
-                        onChange={(e) => handleRoleChange(sellerItem.id, e.target.value)}
-                        className="text-xs border rounded px-2 py-1 "
-                        disabled={sellerItem.phone_number === '+221771842787'}
-                      >
-                        <option value="seller">Vendeur</option>
-                        <option value="admin">Admin</option>
-                        <option value="superadmin">SuperAdmin</option>
-                      </select>
-                      
-                      <Button
-                        size="sm"
-                        variant={sellerItem.is_active ? "destructive" : "default"}
-                        onClick={() => handleRoleChange(sellerItem.id, { is_active: !sellerItem.is_active })}
-                        disabled={sellerItem.phone_number === '+221771842787'}
-                      >
-                        {sellerItem.is_active ? 'Suspendre' : 'Activer'}
-                      </Button>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-gray-700">
+                      <div className="flex flex-col gap-2 w-full sm:w-auto">
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={sellerItem.role}
+                            onChange={(e) => handleRoleChange(sellerItem.id, e.target.value)}
+                            className="text-sm border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1.5 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-red-500 outline-none"
+                            disabled={sellerItem.phone_number === '+221771842787'}
+                          >
+                            <option value="seller">Vendeur</option>
+                            <option value="admin">Admin</option>
+                            <option value="superadmin">SuperAdmin</option>
+                          </select>
+                          
+                          <Button
+                            size="sm"
+                            variant={sellerItem.is_active ? "destructive" : "default"}
+                            className={sellerItem.is_active ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200" : "bg-green-600 hover:bg-green-700 text-white"}
+                            onClick={() => handleStatusChange(sellerItem.id, sellerItem.is_active)}
+                            disabled={sellerItem.phone_number === '+221771842787'}
+                          >
+                            {sellerItem.is_active ? 'Suspendre' : 'Activer'}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Alertes de sécurité */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 ">
-            <AlertTriangle className="w-5 h-5 " />
-            <span>Alertes de sécurité</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 ">
-            {sellers.filter(s => s.credit_balance < 10).map(seller => (
-              <div key={seller.id} className="flex items-center space-x-3 p-3 bg-red-50 border border-red-200 rounded-lg ">
-                <AlertCircle className="w-5 h-5 text-red-500 " />
+        {/* Alertes de sécurité Sidebar */}
+        <div className="space-y-6">
+          <Card className="border-none shadow-lg bg-white dark:bg-gray-800 sticky top-6">
+            <CardHeader className="border-b border-gray-100 dark:border-gray-700 bg-red-50/50 dark:bg-red-900/10">
+              <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                <AlertTriangle className="w-5 h-5" />
+                Alertes de sécurité
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {sellers.filter(s => s.credit_balance < 10).map(seller => (
+                  <div key={`alert-credit-${seller.id}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-full shrink-0">
+                        <AlertCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">{seller.name}</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Solde critique: <span className="font-bold text-orange-600">{seller.credit_balance} crédits</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {sellers.filter(s => !s.is_active).map(seller => (
+                  <div key={`alert-status-${seller.id}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full shrink-0">
+                        <UserX className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">{seller.name}</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Compte suspendu ou inactif
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {sellers.filter(s => s.credit_balance < 10).length === 0 && 
+                 sellers.filter(s => !s.is_active).length === 0 && (
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Shield className="w-8 h-8 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Tout est sécurisé</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                      Aucune alerte de sécurité détectée pour le moment.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-blue-50 dark:bg-blue-900/10">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Key className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div>
-                  <p className="font-medium text-red-800 ">
-                    {seller.name} - Crédits faibles ({seller.credit_balance})
+                  <h4 className="font-medium text-blue-900 dark:text-blue-300 text-sm">Politique de sécurité</h4>
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+                    Les super-administrateurs ont un accès complet. Les administrateurs peuvent gérer les vendeurs mais pas les autres admins. Les vendeurs ont un accès limité à leur propre dashboard.
                   </p>
-                  <p className="text-sm text-red-600 ">Vendeur avec peu de crédits</p>
                 </div>
               </div>
-            ))}
-
-            {sellers.filter(s => !s.is_active).map(seller => (
-              <div key={seller.id} className="flex items-center space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg ">
-                <UserX className="w-5 h-5 text-yellow-500 " />
-                <div>
-                  <p className="font-medium text-yellow-800 ">
-                    {seller.name} - Compte suspendu
-                  </p>
-                  <p className="text-sm text-yellow-600 ">Vendeur inactif</p>
-                </div>
-              </div>
-            ))}
-
-            {sellers.filter(s => s.credit_balance < 10).length === 0 && 
-             sellers.filter(s => !s.is_active).length === 0 && (
-              <div className="text-center py-8 text-gray-500 ">
-                <Shield className="w-12 h-12 mx-auto mb-4 text-green-500 " />
-                <p>Aucune alerte de sécurité</p>
-                <p className="text-sm ">Tous les comptes sont en bon état</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

@@ -51,6 +51,7 @@ const notificationRoutes = require('./routes/notifications');
 const creditRoutes = require('./routes/credits');
 // const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
+const adminSettingsRoutes = require('./routes/admin-settings');
 const sellerRoutes = require('./routes/sellers');
 const uploadRoutes = require('./routes/upload');
 const pushRoutes = require('./routes/push');
@@ -458,6 +459,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/credits', creditRoutes);
 // app.use('/api/comments', commentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/push', pushRoutes);
@@ -523,6 +525,22 @@ const startServer = async () => {
     // Démarrer le processeur de retry
     notificationService.startRetryProcessor();
     console.log('🔄 Processeur de retry démarré');
+    
+    // Initialiser la configuration des crédits
+    const { initializeCreditsConfig } = require('./services/initializationService');
+    try {
+      await initializeCreditsConfig();
+    } catch (error) {
+      console.error('❌ Erreur initialisation crédits:', error);
+    }
+    
+    // Initialiser le compte superadmin au démarrage
+    const { initSuperAdmin } = require('./scripts/initSuperAdmin');
+    try {
+      await initSuperAdmin();
+    } catch (error) {
+      console.error('❌ Erreur initialisation superadmin:', error);
+    }
     
     // Nettoyer les anciennes notifications (une fois par jour)
     setInterval(async () => {

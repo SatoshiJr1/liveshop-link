@@ -319,7 +319,9 @@ router.get('/stats/summary', authenticateToken, async (req, res) => {
 });
 
 // Route pour générer le ticket de livraison (privée - pour les vendeurs)
-router.get('/:orderId/delivery-ticket', authenticateToken, async (req, res) => {
+router.get('/:orderId/delivery-ticket', authenticateToken, ...requireAndConsumeCredits('GENERATE_CUSTOMER_CARD', (req) => ({
+  orderId: req.params.orderId
+})), async (req, res) => {
   try {
     console.log('🖨️ Génération de ticket pour la commande:', req.params.orderId);
     const { orderId } = req.params;

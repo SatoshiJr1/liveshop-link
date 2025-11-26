@@ -62,8 +62,40 @@ const generateToken = (sellerId) => {
   );
 };
 
+/**
+ * Middleware pour vérifier que l'utilisateur est un admin
+ * Doit être utilisé après authenticateToken
+ */
+const adminOnly = async (req, res, next) => {
+  try {
+    if (!req.seller) {
+      return res.status(401).json({
+        error: 'Non authentifié'
+      });
+    }
+
+    // Vérifier si le vendeur est admin (accepter plusieurs formats pour compatibilité)
+    const validAdminRoles = ['admin', 'super_admin', 'superadmin'];
+    if (!validAdminRoles.includes(req.seller.role)) {
+      return res.status(403).json({
+        error: 'Accès refusé',
+        message: 'Cette action nécessite les droits administrateur',
+        debug: `Role actuel: ${req.seller.role}`
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('🔍 AdminOnly Middleware - Erreur:', error);
+    return res.status(500).json({
+      error: 'Erreur de vérification des droits'
+    });
+  }
+};
+
 module.exports = {
   authenticateToken,
-  generateToken
+  generateToken,
+  adminOnly
 };
 

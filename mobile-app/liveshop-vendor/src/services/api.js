@@ -413,6 +413,46 @@ class ApiService {
       method: 'DELETE'
     });
   }
+
+  // Admin Credits Settings
+  async getCreditsModuleStatus() {
+    return this.request('/admin/settings/credits/status');
+  }
+
+  async getCreditsSettings() {
+    return this.request('/admin/settings/credits');
+  }
+
+  async updateCreditsSettings(settings) {
+    return this.request('/admin/settings/credits', {
+      method: 'PUT',
+      body: JSON.stringify(settings)
+    });
+  }
+
+  async toggleCreditsModule() {
+    return this.request('/admin/settings/credits/toggle', {
+      method: 'POST'
+    });
+  }
+
+  async updateCreditPackage(packageType, data) {
+    return this.request(`/admin/settings/credits/package/${packageType}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateActionCost(actionType, cost) {
+    return this.request(`/admin/settings/credits/action-cost/${actionType}`, {
+      method: 'PUT',
+      body: JSON.stringify({ cost })
+    });
+  }
+
+  async getCreditsStats() {
+    return this.request('/admin/settings/credits/stats');
+  }
 }
 
 export default new ApiService();
