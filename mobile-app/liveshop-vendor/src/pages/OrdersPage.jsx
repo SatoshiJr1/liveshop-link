@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useAuth } from '../contexts/AuthContext';
+import { useCreditsContext } from '../contexts/CreditsContext';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -25,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import ApiService from '../services/api';
 import QRCodeModal from '../components/QRCodeModal';
+import InsufficientCreditsModal from '../components/InsufficientCreditsModal';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +41,11 @@ import {
 
 const OrdersPage = () => {
   const { refreshCredits } = useAuth();
+  const { 
+    useCreditsForAction, 
+    insufficientCreditsModal, 
+    closeInsufficientCreditsModal 
+  } = useCreditsContext();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -179,11 +186,11 @@ const OrdersPage = () => {
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      // Vérifier les crédits avant de traiter la commande
-      const creditCheck = await ApiService.checkCredits('PROCESS_ORDER');
+      // Utiliser les crédits via le contexte
+      const result = await useCreditsForAction('process_order', 'traiter cette commande');
       
-      if (!creditCheck.data.hasEnough) {
-        alert(`Crédits insuffisants ! Vous avez ${creditCheck.data.currentBalance} crédits, mais il en faut ${creditCheck.data.requiredCredits} pour traiter une commande.`);
+      if (!result.success) {
+        // Le modal s'affiche automatiquement si crédits insuffisants
         return;
       }
       
@@ -807,6 +814,15 @@ const OrdersPage = () => {
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
         orderId={selectedOrderForQR}
+      />
+
+      {/* Modal de crédits insuffisants */}
+      <InsufficientCreditsModal
+        isOpen={insufficientCreditsModal.isOpen}
+        onClose={closeInsufficientCreditsModal}
+        currentBalance={insufficientCreditsModal.currentBalance}
+        requiredCredits={insufficientCreditsModal.requiredCredits}
+        actionName={insufficientCreditsModal.actionName}
       />
     </div>
   );

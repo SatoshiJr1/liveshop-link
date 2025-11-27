@@ -121,74 +121,74 @@ const AdminSecurityPage = () => {
       </div>
 
       {/* Statistiques Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card className="border-none shadow-md bg-gradient-to-br from-red-500 to-orange-600 text-white">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-red-100 text-sm font-medium mb-1">Super Admins</p>
-                <h3 className="text-3xl font-bold">{stats.superadmin}</h3>
+              <div className="min-w-0">
+                <p className="text-red-100 text-xs md:text-sm font-medium mb-1 truncate">Super Admins</p>
+                <h3 className="text-xl md:text-3xl font-bold truncate">{stats.superadmin}</h3>
               </div>
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Shield className="w-6 h-6 text-white" />
+              <div className="p-1.5 md:p-2 bg-white/20 rounded-lg backdrop-blur-sm shrink-0 ml-2">
+                <Shield className="w-4 h-4 md:w-6 md:h-6 text-white" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-red-100 text-sm">
-              <Lock className="w-4 h-4 mr-1" />
-              <span>Accès complet</span>
+            <div className="mt-2 md:mt-4 flex items-center text-red-100 text-[10px] md:text-sm">
+              <Lock className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              <span className="truncate">Accès complet</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Administrateurs</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.admin}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Administrateurs</p>
+                <h3 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">{stats.admin}</h3>
               </div>
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <UserCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg shrink-0 ml-2">
+                <UserCheck className="w-4 h-4 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <div className="mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+            <div className="mt-2 md:mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
               <div className="bg-blue-500 h-full rounded-full" style={{ width: `${(stats.admin / stats.total) * 100}%` }}></div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-green-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Vendeurs Actifs</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.active}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Vendeurs Actifs</p>
+                <h3 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">{stats.active}</h3>
               </div>
-              <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <div className="p-1.5 md:p-2 bg-green-50 dark:bg-green-900/20 rounded-lg shrink-0 ml-2">
+                <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-green-600 text-sm font-medium">
-              <Activity className="w-4 h-4 mr-1" />
-              <span>En ligne</span>
+            <div className="mt-2 md:mt-4 flex items-center text-green-600 text-[10px] md:text-sm font-medium">
+              <Activity className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              <span className="truncate">En ligne</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-gray-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Comptes Suspendus</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.inactive}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Comptes Suspendus</p>
+                <h3 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">{stats.inactive}</h3>
               </div>
-              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <UserX className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              <div className="p-1.5 md:p-2 bg-gray-100 dark:bg-gray-700 rounded-lg shrink-0 ml-2">
+                <UserX className="w-4 h-4 md:w-6 md:h-6 text-gray-600 dark:text-gray-400" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-gray-500 text-sm font-medium">
-              <AlertCircle className="w-4 h-4 mr-1" />
-              <span>Action requise</span>
+            <div className="mt-2 md:mt-4 flex items-center text-gray-500 text-[10px] md:text-sm font-medium">
+              <AlertCircle className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              <span className="truncate">Action requise</span>
             </div>
           </CardContent>
         </Card>
@@ -241,37 +241,37 @@ const AdminSecurityPage = () => {
                 key={sellerItem.id} 
                 className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
               >
-                <div className="p-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                <div className="p-3 md:p-5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+                    <div className="flex items-start gap-3 md:gap-4">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm md:text-lg shrink-0 shadow-sm">
                         {sellerItem.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-gray-900 dark:text-white text-lg">{sellerItem.name}</h3>
-                          <Badge variant="outline" className={getRoleColor(sellerItem.role)}>
+                          <h3 className="font-bold text-gray-900 dark:text-white text-sm md:text-lg truncate">{sellerItem.name}</h3>
+                          <Badge variant="outline" className={`${getRoleColor(sellerItem.role)} text-[10px] md:text-xs px-1.5 py-0.5`}>
                             {sellerItem.role}
                           </Badge>
-                          <Badge variant="outline" className={getStatusColor(sellerItem.is_active)}>
+                          <Badge variant="outline" className={`${getStatusColor(sellerItem.is_active)} text-[10px] md:text-xs px-1.5 py-0.5`}>
                             {sellerItem.is_active ? 'Actif' : 'Suspendu'}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-2 md:gap-4 mt-1 text-xs md:text-sm text-gray-500 dark:text-gray-400 flex-wrap">
                           <span>{sellerItem.phone_number}</span>
                           <span className="hidden sm:inline">•</span>
-                          <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">ID: {sellerItem.public_link_id}</span>
+                          <span className="font-mono text-[10px] md:text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded truncate max-w-[150px]">ID: {sellerItem.public_link_id}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-gray-700">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4 pt-3 md:pt-0 border-t md:border-t-0 border-gray-50 dark:border-gray-700 w-full md:w-auto pl-14 md:pl-0">
                       <div className="flex flex-col gap-2 w-full sm:w-auto">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                           <select
                             value={sellerItem.role}
                             onChange={(e) => handleRoleChange(sellerItem.id, e.target.value)}
-                            className="text-sm border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1.5 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-red-500 outline-none"
+                            className="flex-1 sm:flex-none text-xs md:text-sm border border-gray-200 dark:border-gray-700 rounded-md px-2 md:px-3 py-1.5 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-red-500 outline-none h-8 md:h-9"
                             disabled={sellerItem.phone_number === '+221771842787'}
                           >
                             <option value="seller">Vendeur</option>
@@ -282,7 +282,7 @@ const AdminSecurityPage = () => {
                           <Button
                             size="sm"
                             variant={sellerItem.is_active ? "destructive" : "default"}
-                            className={sellerItem.is_active ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200" : "bg-green-600 hover:bg-green-700 text-white"}
+                            className={`flex-1 sm:flex-none h-8 md:h-9 text-xs md:text-sm ${sellerItem.is_active ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200" : "bg-green-600 hover:bg-green-700 text-white"}`}
                             onClick={() => handleStatusChange(sellerItem.id, sellerItem.is_active)}
                             disabled={sellerItem.phone_number === '+221771842787'}
                           >

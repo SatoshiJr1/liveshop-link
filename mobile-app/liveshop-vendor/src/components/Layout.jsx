@@ -89,16 +89,27 @@ const Layout = ({ children }) => {
 
   // Fonction pour obtenir le nom d'affichage selon la taille d'écran
   const getDisplayName = (item) => {
-    if (isAdmin) return item.name;
-    
     // Noms courts pour mobile, longs pour desktop
     const shortNames = {
+      // Vendeur
       'dashboard': 'Accueil',
       'products': 'Produits', 
       'orders': 'Commandes',
       'stats': 'Stats',
-      'lives': 'Sessions'
+      'lives': 'Sessions',
+      'wallet': 'Wallet',
+      // Admin
+      'admin': 'Accueil',
+      'sellers': 'Vendeurs',
+      'credits': 'Crédits',
+      'security': 'Sécurité'
     };
+    
+    // Cas spéciaux pour Admin qui partagent des IDs ou concepts similaires
+    if (isAdmin) {
+       if (item.id === 'orders') return 'Commandes'; // Supervision Commandes -> Commandes
+       if (item.id === 'products') return 'Produits'; // Modération Produits -> Produits
+    }
     
     return shortNames[item.id] || item.name;
   };
@@ -124,6 +135,11 @@ const Layout = ({ children }) => {
     return 'dashboard';
   };
   const activePage = getActivePage();
+
+  // Logic for responsive navigation
+  const MAX_BOTTOM_NAV_ITEMS = 5;
+  const visibleNavItems = navigation.slice(0, MAX_BOTTOM_NAV_ITEMS);
+  const hiddenNavItems = navigation.slice(MAX_BOTTOM_NAV_ITEMS);
 
   // Fermer le menu mobile quand on clique ailleurs
   useEffect(() => {
@@ -186,26 +202,40 @@ const Layout = ({ children }) => {
             {showMobileMenu && (
               <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                 <div className="py-2">
-                  <button
-                    onClick={() => {
-                      navigate('/credits');
-                      setShowMobileMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    Gérer les crédits
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/wallet');
-                      setShowMobileMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                  >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Wallet
-                  </button>
+                  {/* Items hidden from bottom nav */}
+                  {hiddenNavItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          handleNavigation(item.path);
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {item.name}
+                      </button>
+                    );
+                  })}
+                  
+                  {/* Separator if needed */}
+                  {hiddenNavItems.length > 0 && <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>}
+
+                  {!isAdmin && (
+                    <button
+                      onClick={() => {
+                        navigate('/credits');
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      <Coins className="w-4 h-4 mr-2" />
+                      Gérer les crédits
+                    </button>
+                  )}
+                  
                   <button
                     onClick={() => {
                       navigate('/logout');
@@ -374,22 +404,22 @@ const Layout = ({ children }) => {
 
       {/* Mobile Bottom Navigation Bar - Amélioré pour mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
-        <div className="flex items-center justify-around px-2 py-3">
-          {navigation.filter((item) => item.id !== 'wallet').map((item) => {
+        <div className="flex items-center justify-around px-1 py-1">
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.path)}
-                className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
+                className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
                   isActive
                     ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
                     : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
                 }`}
               >
-                <Icon className={`w-6 h-6 mb-2 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
-                <span className="text-xs font-semibold truncate leading-tight">{getDisplayName(item)}</span>
+                <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
+                <span className="text-[10px] font-medium truncate w-full text-center leading-tight">{getDisplayName(item)}</span>
               </button>
             );
           })}

@@ -415,19 +415,21 @@ const AdminCreditsSettingsPage = () => {
         {activeTab === 'actions' && (
           <div className="space-y-3">
             {Object.entries(settings.actionCosts || {}).map(([actionType, cost]) => (
-              <div key={actionType} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <div key={actionType} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 gap-3 sm:gap-0">
                 <div className="flex items-center gap-3">
-                  <Zap className="w-5 h-5 text-purple-600" />
-                  <span className="font-medium text-gray-900 dark:text-white">{actionType}</span>
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+                  </div>
+                  <span className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">{actionType}</span>
                 </div>
                 
                 {editingCost === actionType ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto pl-11 sm:pl-0">
                     <Input
                       type="number"
                       defaultValue={cost}
                       id={`cost-${actionType}`}
-                      className="w-24"
+                      className="w-20 sm:w-24 h-8 sm:h-10"
                       min="0"
                     />
                     <Button
@@ -436,7 +438,7 @@ const AdminCreditsSettingsPage = () => {
                         const newCost = parseInt(document.getElementById(`cost-${actionType}`).value);
                         handleUpdateActionCost(actionType, newCost);
                       }}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 h-8 sm:h-10"
                     >
                       <Check className="w-4 h-4" />
                     </Button>
@@ -444,17 +446,19 @@ const AdminCreditsSettingsPage = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => setEditingCost(null)}
+                      className="h-8 sm:h-10"
                     >
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-purple-600">{cost} cr</span>
+                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pl-11 sm:pl-0">
+                    <span className="text-base sm:text-lg font-bold text-purple-600">{cost} cr</span>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setEditingCost(actionType)}
+                      className="h-8 w-8 p-0"
                     >
                       <Edit2 className="w-4 h-4" />
                     </Button>
@@ -468,54 +472,54 @@ const AdminCreditsSettingsPage = () => {
         {/* Statistics */}
         {activeTab === 'stats' && (
           stats ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200">
-                <CardContent className="p-5">
+                <CardContent className="p-4 md:p-5">
                   <div className="flex items-center justify-between mb-2">
-                    <Activity className="w-8 h-8 text-blue-600" />
-                    <span className="text-3xl font-bold text-blue-600">{stats.totalTransactions}</span>
+                    <Activity className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+                    <span className="text-xl md:text-3xl font-bold text-blue-600">{stats.totalTransactions}</span>
                   </div>
-                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Transactions totales</p>
+                  <p className="text-xs md:text-sm font-medium text-blue-900 dark:text-blue-100">Transactions totales</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200">
-                <CardContent className="p-5">
+                <CardContent className="p-4 md:p-5">
                   <div className="flex items-center justify-between mb-2">
-                    <CheckCircle2 className="w-8 h-8 text-green-600" />
-                    <span className="text-3xl font-bold text-green-600">{stats.completedTransactions}</span>
+                    <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-green-600" />
+                    <span className="text-xl md:text-3xl font-bold text-green-600">{stats.completedTransactions}</span>
                   </div>
-                  <p className="text-sm font-medium text-green-900 dark:text-green-100">Complétées</p>
+                  <p className="text-xs md:text-sm font-medium text-green-900 dark:text-green-100">Complétées</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200">
-                <CardContent className="p-5">
+                <CardContent className="p-4 md:p-5">
                   <div className="flex items-center justify-between mb-2">
-                    <TrendingUp className="w-8 h-8 text-purple-600" />
-                    <span className="text-3xl font-bold text-purple-600">{stats.totalCreditsUsed}</span>
+                    <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-purple-600" />
+                    <span className="text-xl md:text-3xl font-bold text-purple-600">{stats.totalCreditsUsed}</span>
                   </div>
-                  <p className="text-sm font-medium text-purple-900 dark:text-purple-100">Crédits consommés</p>
+                  <p className="text-xs md:text-sm font-medium text-purple-900 dark:text-purple-100">Crédits consommés</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-200">
-                <CardContent className="p-5">
+                <CardContent className="p-4 md:p-5">
                   <div className="flex items-center justify-between mb-2">
-                    <DollarSign className="w-8 h-8 text-yellow-600" />
-                    <span className="text-3xl font-bold text-yellow-600">{stats.totalRevenue?.toLocaleString() || 0}</span>
+                    <DollarSign className="w-6 h-6 md:w-8 md:h-8 text-yellow-600" />
+                    <span className="text-xl md:text-3xl font-bold text-yellow-600 truncate">{stats.totalRevenue?.toLocaleString() || 0}</span>
                   </div>
-                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">Revenu (XOF)</p>
+                  <p className="text-xs md:text-sm font-medium text-yellow-900 dark:text-yellow-100">Revenu (XOF)</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200">
-                <CardContent className="p-5">
+                <CardContent className="p-4 md:p-5">
                   <div className="flex items-center justify-between mb-2">
-                    <Activity className="w-8 h-8 text-indigo-600" />
-                    <span className="text-3xl font-bold text-indigo-600">{stats.sellersWithCredits}</span>
+                    <Activity className="w-6 h-6 md:w-8 md:h-8 text-indigo-600" />
+                    <span className="text-xl md:text-3xl font-bold text-indigo-600">{stats.sellersWithCredits}</span>
                   </div>
-                  <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">Vendeurs avec crédits</p>
+                  <p className="text-xs md:text-sm font-medium text-indigo-900 dark:text-indigo-100">Vendeurs avec crédits</p>
                 </CardContent>
               </Card>
             </div>

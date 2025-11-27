@@ -129,73 +129,73 @@ const AdminProductsPage = () => {
       </div>
 
       {/* Statistiques Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card className="border-none shadow-md bg-gradient-to-br from-green-500 to-emerald-600 text-white">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-green-100 text-sm font-medium mb-1">Total Produits</p>
-                <h3 className="text-3xl font-bold">{stats.total}</h3>
+              <div className="min-w-0">
+                <p className="text-green-100 text-xs md:text-sm font-medium mb-1 truncate">Total Produits</p>
+                <h3 className="text-2xl md:text-3xl font-bold">{stats.total}</h3>
               </div>
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Package className="w-6 h-6 text-white" />
+              <div className="p-1.5 md:p-2 bg-white/20 rounded-lg backdrop-blur-sm shrink-0 ml-2">
+                <Package className="w-4 h-4 md:w-6 md:h-6 text-white" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-green-100 text-sm">
-              <Box className="w-4 h-4 mr-1" />
-              <span>Catalogue global</span>
+            <div className="mt-2 md:mt-4 flex items-center text-green-100 text-xs md:text-sm">
+              <Box className="w-3 h-3 md:w-4 md:h-4 mr-1 shrink-0" />
+              <span className="truncate">Catalogue global</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Actifs</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.active}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Actifs</p>
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{stats.active}</h3>
               </div>
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg shrink-0 ml-2">
+                <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <div className="mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+            <div className="mt-2 md:mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
               <div className="bg-blue-500 h-full rounded-full" style={{ width: `${(stats.active / stats.total) * 100}%` }}></div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-red-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Inactifs</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.inactive}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Inactifs</p>
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{stats.inactive}</h3>
               </div>
-              <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <div className="p-1.5 md:p-2 bg-red-50 dark:bg-red-900/20 rounded-lg shrink-0 ml-2">
+                <AlertTriangle className="w-4 h-4 md:w-6 md:h-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
-            <div className="mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+            <div className="mt-2 md:mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
               <div className="bg-red-500 h-full rounded-full" style={{ width: `${(stats.inactive / stats.total) * 100}%` }}></div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-purple-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Valeur Stock</p>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalValue.toLocaleString()} <span className="text-sm font-normal text-gray-500">FCFA</span></h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Valeur Stock</p>
+                <h3 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">{stats.totalValue.toLocaleString()} <span className="text-[10px] md:text-sm font-normal text-gray-500">FCFA</span></h3>
               </div>
-              <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <div className="p-1.5 md:p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg shrink-0 ml-2">
+                <DollarSign className="w-4 h-4 md:w-6 md:h-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-purple-600 text-sm font-medium">
-              <Layers className="w-4 h-4 mr-1" />
-              <span>Estimation totale</span>
+            <div className="mt-2 md:mt-4 flex items-center text-purple-600 text-xs md:text-sm font-medium">
+              <Layers className="w-3 h-3 md:w-4 md:h-4 mr-1 shrink-0" />
+              <span className="truncate">Estimation totale</span>
             </div>
           </CardContent>
         </Card>
@@ -266,17 +266,17 @@ const AdminProductsPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-3 md:gap-4">
             {filteredProducts.map((product) => (
               <div 
                 key={product.id} 
-                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:block"
               >
-                <div className="p-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="p-3 md:p-5 flex-1 flex flex-col md:block">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 flex-1">
                     {/* Product Info */}
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 group-hover:scale-105 transition-transform duration-200">
+                    <div className="flex flex-col md:flex-row items-start gap-3 md:gap-4 flex-1 min-w-0">
+                      <div className="relative w-full md:w-16 aspect-square md:h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 group-hover:scale-105 transition-transform duration-200">
                         {product.image_url ? (
                           <img 
                             src={product.image_url} 
@@ -288,62 +288,63 @@ const AdminProductsPage = () => {
                             }}
                           />
                         ) : null}
-                        <div className={`w-full h-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xl ${product.image_url ? 'hidden' : 'flex'}`}>
+                        <div className={`w-full h-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xl md:text-xl ${product.image_url ? 'hidden' : 'flex'}`}>
                           {product.name.charAt(0).toUpperCase()}
                         </div>
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-gray-900 dark:text-white text-lg truncate">{product.name}</h3>
-                          <Badge variant={product.is_active !== false ? "default" : "destructive"} className={product.is_active !== false ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-200" : "bg-red-100 text-red-800 hover:bg-red-200 border-red-200"}>
+                      <div className="flex-1 min-w-0 w-full">
+                        <div className="flex items-center justify-between md:justify-start gap-2 flex-wrap mb-1">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-sm md:text-lg truncate max-w-[120px] md:max-w-none">{product.name}</h3>
+                          <Badge variant={product.is_active !== false ? "default" : "destructive"} className={`text-[10px] md:text-xs px-1.5 py-0 h-5 ${product.is_active !== false ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-200" : "bg-red-100 text-red-800 hover:bg-red-200 border-red-200"}`}>
                             {product.is_active !== false ? 'Actif' : 'Inactif'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{product.description}</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <User className="w-3 h-3" /> Vendeur: <span className="font-medium text-gray-700 dark:text-gray-300">{product.seller?.name || product.Seller?.name || 'N/A'}</span>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1 hidden md:block">{product.description}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 md:mt-2 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                          <span className="flex items-center gap-1 truncate max-w-full">
+                            <User className="w-3 h-3" /> <span className="hidden md:inline">Vendeur:</span> <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{product.seller?.name || product.Seller?.name || 'N/A'}</span>
                           </span>
                           <span className="hidden sm:inline text-gray-300">•</span>
                           <span className="flex items-center gap-1">
-                            <Box className="w-3 h-3" /> Stock: <span className="font-medium text-gray-700 dark:text-gray-300">{product.stock_quantity || 0}</span>
+                            <Box className="w-3 h-3" /> <span className="hidden md:inline">Stock:</span> <span className="font-medium text-gray-700 dark:text-gray-300">{product.stock_quantity || 0}</span>
                           </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Price & Actions */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-8 w-full md:w-auto border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-4 md:pt-0">
-                      <div className="flex flex-col items-start sm:items-end">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {product.price?.toLocaleString()} <span className="text-sm font-normal text-gray-500">FCFA</span>
+                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-2 md:gap-8 w-full md:w-auto border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-2 md:pt-0 mt-auto md:mt-0">
+                      <div className="flex flex-col items-start md:items-end">
+                        <span className="text-base md:text-2xl font-bold text-gray-900 dark:text-white">
+                          {product.price?.toLocaleString()} <span className="text-[10px] md:text-sm font-normal text-gray-500">FCFA</span>
                         </span>
-                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <span className="text-[10px] md:text-xs text-gray-400 flex items-center gap-1 hidden md:flex">
                           <Calendar className="w-3 h-3" />
                           Ajouté le {new Date(product.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       
-                      <div className="flex gap-2 w-full sm:w-auto">
+                      <div className="flex gap-1 md:gap-2">
                         <Button
                           onClick={() => {
                             setSelectedProduct(product);
                             setShowProductModal(true);
                           }}
                           variant="outline"
-                          className="flex-1 sm:flex-none border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                          size="sm"
+                          className="h-7 md:h-9 text-xs md:text-sm border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 px-2 md:px-4"
                         >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Détails
+                          <Eye className="w-3.5 h-3.5 md:w-4 md:h-4 md:mr-2" />
+                          <span className="hidden md:inline">Détails</span>
                         </Button>
                         <Button
                           onClick={() => handleDeleteProduct(product.id)}
                           variant="destructive"
                           size="icon"
-                          className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-100 shadow-sm"
+                          className="h-7 w-7 md:h-9 md:w-9 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-100 shadow-sm"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         </Button>
                       </div>
                     </div>
@@ -351,7 +352,7 @@ const AdminProductsPage = () => {
 
                   {/* Categories */}
                   {product.categories && product.categories.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700/50 flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-50 dark:border-gray-700/50 flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar hidden md:flex">
                       <Tag className="w-3 h-3 text-gray-400 shrink-0" />
                       {product.categories.map((category, index) => (
                         <Badge key={index} variant="secondary" className="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 border-gray-100 dark:border-gray-600 shrink-0">

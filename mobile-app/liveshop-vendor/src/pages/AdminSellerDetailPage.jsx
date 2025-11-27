@@ -303,17 +303,17 @@ const AdminSellerDetailPage = () => {
               {seller.creditTransactions && seller.creditTransactions.length > 0 ? (
                 <div className="space-y-0 divide-y divide-gray-100 dark:divide-gray-700">
                   {seller.creditTransactions.map((transaction) => (
-                    <div key={transaction.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors px-2 rounded-lg -mx-2">
+                    <div key={transaction.id} className="py-3 md:py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors px-2 rounded-lg -mx-2 gap-2 sm:gap-0">
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-full shrink-0 ${transaction.amount >= 0 ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
                           {transaction.amount >= 0 ? <Plus className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white text-sm">{transaction.description}</p>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white text-sm truncate pr-2">{transaction.description}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 capitalize">{transaction.type}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right pl-11 sm:pl-0">
                         <p className={`font-bold text-sm ${transaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {transaction.amount >= 0 ? '+' : ''}{transaction.amount}
                         </p>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ApiService from '../services/api';
 import realtimeService from '../services/realtimeService';
 import { useAuth } from '../contexts/AuthContext';
+import { useCreditsContext } from '../contexts/CreditsContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,9 +22,15 @@ import {
 } from 'lucide-react';
 import ProductForm from '../components/ProductForm';
 import ImageLightbox from '../components/ImageLightbox';
+import InsufficientCreditsModal from '../components/InsufficientCreditsModal';
 
 const ProductsPage = () => {
   const { refreshCredits } = useAuth();
+  const { 
+    useCreditsForAction, 
+    insufficientCreditsModal, 
+    closeInsufficientCreditsModal 
+  } = useCreditsContext();
   const [products, setProducts] = useState([]);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -162,6 +169,15 @@ const ProductsPage = () => {
         console.log('✅ Produit modifié avec succès');
       } else {
         console.log('➕ Création d\'un nouveau produit');
+        
+        // Vérifier les crédits avant de créer le produit
+        const result = await useCreditsForAction('add_product', 'ajouter ce produit');
+        
+        if (!result.success) {
+          // Le modal s'affiche automatiquement si crédits insuffisants
+          throw new Error('Crédits insuffisants pour ajouter un produit');
+        }
+        
         await ApiService.createProduct(productData);
         console.log('✅ Produit créé avec succès');
         // Rafraîchir les crédits après création d'un produit
@@ -200,10 +216,27 @@ const ProductsPage = () => {
 
   const handleTogglePin = async (productId) => {
     try {
+      // Utiliser les crédits via le contexte
+      const result = await useCreditsForAction('pin_product', 'épingler ce produit');
+      
+      if (!result.success) {
+        // Le modal s'affiche automatiquement si crédits insuffisants
+        return;
+      }
+      
+      // Si succès, effectuer l'action
       await ApiService.togglePinProduct(productId);
       await fetchProducts(currentPage);
+      await refreshCredits();
     } catch (error) {
       console.error('Erreur lors de l\'épinglage:', error);
+      
+      // Vérifier si c'est une erreur de crédits
+      if (error.response?.status === 402) {
+        // Le modal est déjà géré par le contexte
+        return;
+      }
+      
       alert('Erreur lors de l\'épinglage du produit');
     }
   };
@@ -742,6 +775,15 @@ const ProductsPage = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Modal de crédits insuffisants */}
+      <InsufficientCreditsModal
+        isOpen={insufficientCreditsModal.isOpen}
+        onClose={closeInsufficientCreditsModal}
+        currentBalance={insufficientCreditsModal.currentBalance}
+        requiredCredits={insufficientCreditsModal.requiredCredits}
+        actionName={insufficientCreditsModal.actionName}
+      />
 
       {/* Plein écran mobile */}
       {showDialog && !isDesktop && (
