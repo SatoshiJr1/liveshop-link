@@ -1,12 +1,35 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import apiService from './api';
 
 /**
  * Service client pour gérer les crédits
  * Inclut la vérification des crédits avant les actions
  */
 class ClientCreditService {
+  /**
+   * Helper pour effectuer les requêtes avec fetch
+   * @private
+   */
+  static async _request(endpoint, options = {}) {
+    const url = `${apiService.baseURL}${endpoint}`;
+    const config = {
+      headers: apiService.getAuthHeaders(),
+      ...options
+    };
+
+    const response = await fetch(url, config);
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Attacher le statut à l'erreur pour la gestion ultérieure (ex: 402)
+      const error = new Error(data.error || data.message || 'Erreur API');
+      error.status = response.status;
+      error.response = { data, status: response.status }; // Mimic axios structure for compatibility
+      throw error;
+    }
+
+    return { data }; // Mimic axios structure
+  }
+
   /**
    * Acheter des crédits
    * @param {string} packageType - Type de package (BASIC, STANDARD, PREMIUM, UNLIMITED)
@@ -16,14 +39,14 @@ class ClientCreditService {
    */
   static async purchaseCredits(packageType, paymentMethod, phoneNumber) {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/credits/purchase`,
-        {
+      const response = await this._request('/credits/purchase', {
+        method: 'POST',
+        body: JSON.stringify({
           packageType,
           paymentMethod,
           phoneNumber
-        }
-      );
+        })
+      });
       return response.data;
     } catch (error) {
       throw this._handleError(error);
@@ -36,7 +59,7 @@ class ClientCreditService {
    */
   static async getBalance() {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/credits/balance`);
+      const response = await this._request('/credits/balance');
       return response.data;
     } catch (error) {
       throw this._handleError(error);
@@ -49,7 +72,7 @@ class ClientCreditService {
    */
   static async getPackages() {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/credits/packages`);
+      const response = await this._request('/credits/packages');
       return response.data;
     } catch (error) {
       throw this._handleError(error);
@@ -63,10 +86,8 @@ class ClientCreditService {
    */
   static async getTransactionHistory(options = {}) {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/credits/transactions`,
-        { params: options }
-      );
+      const params = new URLSearchParams(options);
+      const response = await this._request(`/credits/transactions?${params.toString()}`);
       return response.data;
     } catch (error) {
       throw this._handleError(error);
@@ -81,7 +102,7 @@ class ClientCreditService {
   static async checkCredits(actionType) {
     try {
       // Récupérer le solde actuel
-      const balanceResponse = await axios.get(`${API_BASE_URL}/api/credits/balance`);
+      const balanceResponse = await this._request('/credits/balance');
       const currentBalance = balanceResponse.data?.balance || 0;
 
       // Récupérer les coûts des actions (à ajouter dans l'API)
@@ -117,20 +138,20 @@ class ClientCreditService {
    */
   static async consumeCredits(actionType) {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/credits/consume`,
-        { actionType }
-      );
+      const response = await this._request('/credits/consume', {
+        method: 'POST',
+        body: JSON.stringify({ actionType })
+      });
       return response.data;
     } catch (error) {
       // Si 402 Payment Required, retourner l'information
-      if (error.response?.status === 402) {
+      if (error.status === 402 || error.response?.status === 402) {
         return {
           success: false,
           insufficientCredits: true,
-          error: error.response.data?.error,
-          message: error.response.data?.message,
-          creditsInfo: error.response.data?.creditsInfo
+          error: error.response?.data?.error,
+          message: error.response?.data?.message,
+          creditsInfo: error.response?.data?.creditsInfo
         };
       }
       throw this._handleError(error);

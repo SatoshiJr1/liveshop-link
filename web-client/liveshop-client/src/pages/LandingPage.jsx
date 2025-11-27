@@ -203,14 +203,22 @@ const LandingPage = () => {
       <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-purple-500/30 font-sans overflow-x-hidden">
         {/* Ambient Background Effects */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-slate-950">
-          {/* Flowing Gradient */}
+          {/* Main Top Gradient - Fixed but flows with scroll opacity/scale */}
+          <motion.div 
+            style={{ 
+              opacity: useTransform(scrollY, [0, 800], [1, 0]),
+              y: useTransform(scrollY, [0, 800], [0, -400])
+            }}
+            className="absolute top-0 left-0 right-0 h-[800px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-500/40 via-slate-950 to-slate-950"
+          />
+          
+          {/* Flowing Gradient that moves with scroll */}
           <motion.div 
             style={{ y: backgroundY }}
             className="absolute inset-0"
           >
-            <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-purple-600/20 rounded-full blur-[100px] animate-pulse mix-blend-screen" />
-            <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-blue-600/20 rounded-full blur-[100px] animate-pulse mix-blend-screen" style={{ animationDelay: '2s' }} />
-            <div className="absolute top-[30%] left-[30%] w-[40%] h-[40%] bg-pink-600/10 rounded-full blur-[120px]" />
+            <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-purple-600/30 rounded-full blur-[120px] mix-blend-screen" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-600/30 rounded-full blur-[120px] mix-blend-screen" />
           </motion.div>
 
           {/* Stars with Parallax */}
@@ -420,10 +428,16 @@ const LandingPage = () => {
         </section>
 
         {/* Problem/Solution Section */}
-        <section className="py-24 relative border-y border-white/5 bg-slate-900/30">
+        <section className="py-32 relative border-y border-white/5 bg-slate-900/30">
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div className="space-y-8">
+              <motion.div 
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="space-y-8"
+              >
                 <Badge className="bg-red-500/10 text-red-400 border-red-500/20">
                   Le Problème
                 </Badge>
@@ -436,7 +450,14 @@ const LandingPage = () => {
                     { title: "Paiements incertains", desc: "Courir après les clients pour le paiement après le live." },
                     { title: "Stock non synchronisé", desc: "Vendre le même article à plusieurs personnes par erreur." }
                   ].map((item, i) => (
-                    <div key={i} className="flex gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                    <motion.div 
+                      key={i} 
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/10"
+                    >
                       <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400">
                         <XCircle className="w-5 h-5" />
                       </div>
@@ -444,12 +465,18 @@ const LandingPage = () => {
                         <h3 className="font-bold text-white">{item.title}</h3>
                         <p className="text-slate-400 text-sm">{item.desc}</p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="space-y-8">
+              <motion.div 
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="space-y-8"
+              >
                 <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
                   La Solution
                 </Badge>
@@ -462,7 +489,14 @@ const LandingPage = () => {
                     { title: "Paiement sécurisé", desc: "Lien de paiement envoyé automatiquement en DM." },
                     { title: "Gestion de stock", desc: "Mise à jour du stock en temps réel à chaque vente." }
                   ].map((item, i) => (
-                    <div key={i} className="flex gap-4 p-4 rounded-xl bg-green-500/5 border border-green-500/10">
+                    <motion.div 
+                      key={i} 
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex gap-4 p-4 rounded-xl bg-green-500/5 border border-green-500/10"
+                    >
                       <div className="shrink-0 w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-400">
                         <CheckCircle className="w-5 h-5" />
                       </div>
@@ -470,25 +504,37 @@ const LandingPage = () => {
                         <h3 className="font-bold text-white">{item.title}</h3>
                         <p className="text-slate-400 text-sm">{item.desc}</p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
 
         {/* Demo Section */}
-        <section className="py-24 relative overflow-hidden">
+        <section className="py-32 relative overflow-hidden">
           <div className="max-w-5xl mx-auto px-6 text-center">
-            <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-6">
-              Démonstration
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-8">
-              Voyez la magie en action
-            </h2>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-6">
+                Démonstration
+              </Badge>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-8">
+                Voyez la magie en action
+              </h2>
+            </motion.div>
             
-            <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900 aspect-video group cursor-pointer">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900 aspect-video group cursor-pointer"
+            >
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-10" />
               
               {/* Placeholder for Video */}
@@ -508,14 +554,19 @@ const LandingPage = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
         {/* Features Grid */}
-        <section id="features" className="py-24 relative">
+        <section id="features" className="py-32 relative">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-20">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-20"
+            >
               <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 mb-4 hover:bg-purple-500/20">
                 Fonctionnalités
               </Badge>
@@ -525,7 +576,7 @@ const LandingPage = () => {
               <p className="text-slate-400 max-w-2xl mx-auto">
                 Une suite complète d'outils conçus pour propulser votre commerce vers de nouveaux sommets.
               </p>
-            </div>
+            </motion.div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((feature, idx) => (
@@ -552,20 +603,32 @@ const LandingPage = () => {
         </section>
 
         {/* How It Works */}
-        <section id="how-it-works" className="py-24 bg-slate-900/50 relative overflow-hidden">
+        <section id="how-it-works" className="py-32 bg-slate-900/50 relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <div className="text-center mb-20">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-20"
+            >
               <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-4">
                 Processus
               </Badge>
               <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
                 Simple comme bonjour
               </h2>
-            </div>
+            </motion.div>
 
             <div className="grid md:grid-cols-3 gap-12">
               {howItWorks.map((step, idx) => (
-                <div key={idx} className="relative text-center group">
+                <motion.div 
+                  key={idx} 
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.2 }}
+                  className="relative text-center group"
+                >
                   {idx < howItWorks.length - 1 && (
                     <div className="hidden md:block absolute top-12 left-1/2 w-full h-px bg-gradient-to-r from-white/20 to-transparent" />
                   )}
@@ -577,16 +640,21 @@ const LandingPage = () => {
                   </div>
                   <h3 className="text-xl font-bold text-white mb-4 relative z-10">{step.title}</h3>
                   <p className="text-slate-400 relative z-10">{step.description}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
         </section>
 
         {/* Pricing */}
-        <section id="pricing" className="py-8 relative">
+        <section id="pricing" className="py-32 relative">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
               <Badge className="bg-green-500/10 text-green-400 border-green-500/20 mb-4">
                 Tarifs
               </Badge>
@@ -596,132 +664,204 @@ const LandingPage = () => {
               <p className="text-slate-400 max-w-2xl mx-auto">
                 Pas d'abonnement mensuel. Achetez des crédits et utilisez-les quand vous voulez.
               </p>
-            </div>
+            </motion.div>
 
             <div className="grid md:grid-cols-3 gap-8">
               {pricingPlans.map((plan, idx) => (
-                <Card 
-                  key={idx} 
-                  className={`bg-white/5 border-white/10 relative overflow-hidden transition-all duration-300 hover:-translate-y-2 ${
-                    plan.popular ? 'ring-2 ring-purple-500 shadow-[0_0_40px_rgba(168,85,247,0.15)]' : ''
-                  }`}
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
                 >
-                  {plan.popular && (
-                    <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">
-                      POPULAIRE
-                    </div>
-                  )}
-                  <CardContent className="p-8">
-                    <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                    <div className="flex items-baseline gap-1 mb-6">
-                      <span className="text-4xl font-bold text-white">{plan.price}</span>
-                      <span className="text-slate-400">{plan.period}</span>
-                    </div>
-                    <p className="text-slate-400 mb-8 text-sm">{plan.description}</p>
-                    
-                    <ul className="space-y-4 mb-8">
-                      {plan.features.map((feat, i) => (
-                        <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
-                          <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                          {feat}
-                        </li>
-                      ))}
-                    </ul>
+                  <Card 
+                    className={`bg-white/5 border-white/10 relative overflow-hidden transition-all duration-300 hover:-translate-y-2 h-full ${
+                      plan.popular ? 'ring-2 ring-purple-500 shadow-[0_0_40px_rgba(168,85,247,0.15)]' : ''
+                    }`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">
+                        POPULAIRE
+                      </div>
+                    )}
+                    <CardContent className="p-8 flex flex-col h-full">
+                      <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                      <div className="flex items-baseline gap-1 mb-6">
+                        <span className="text-4xl font-bold text-white">{plan.price}</span>
+                        <span className="text-slate-400">{plan.period}</span>
+                      </div>
+                      <p className="text-slate-400 mb-8 text-sm">{plan.description}</p>
+                      
+                      <ul className="space-y-4 mb-8 flex-grow">
+                        {plan.features.map((feat, i) => (
+                          <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
+                            <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                            {feat}
+                          </li>
+                        ))}
+                      </ul>
 
-                    <Button 
-                      onClick={handleGetStarted}
-                      className={`w-full rounded-xl py-6 ${
-                        plan.popular 
-                          ? 'bg-purple-600 hover:bg-purple-500 text-white' 
-                          : 'bg-white/10 hover:bg-white/20 text-white'
-                      }`}
-                    >
-                      Choisir ce plan
-                    </Button>
-                  </CardContent>
-                </Card>
+                      <Button 
+                        onClick={handleGetStarted}
+                        className={`w-full rounded-xl py-6 ${
+                          plan.popular 
+                            ? 'bg-purple-600 hover:bg-purple-500 text-white' 
+                            : 'bg-white/10 hover:bg-white/20 text-white'
+                        }`}
+                      >
+                        Choisir ce plan
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </div>
         </section>
 
         {/* Testimonials */}
-        <section id="testimonials" className="py-8 bg-slate-900/30">
+        <section id="testimonials" className="py-32 bg-slate-900/30 relative z-10">
           <div className="max-w-7xl mx-auto px-6">
-            <h2 className="text-3xl md:text-5xl font-bold text-white text-center mb-8">
+            <motion.h2 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-3xl md:text-5xl font-bold text-white text-center mb-16"
+            >
               Ils nous font confiance
-            </h2>
+            </motion.h2>
             <div className="grid md:grid-cols-3 gap-8">
               {testimonials.map((t, idx) => (
-                <Card key={idx} className="bg-white/5 border-white/10 p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="text-4xl">{t.avatar}</div>
-                    <div>
-                      <div className="font-bold text-white">{t.name}</div>
-                      <div className="text-sm text-slate-400">{t.role}</div>
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <Card className="bg-white/5 border-white/10 p-6 h-full hover:bg-white/10 transition-colors">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="text-4xl">{t.avatar}</div>
+                      <div>
+                        <div className="font-bold text-white">{t.name}</div>
+                        <div className="text-sm text-slate-400">{t.role}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(t.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-slate-300 italic">"{t.content}"</p>
-                </Card>
+                    <div className="flex gap-1 mb-4">
+                      {[...Array(t.rating)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <p className="text-slate-300 italic">"{t.content}"</p>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </div>
         </section>
 
         {/* Contact */}
-        <section id="contact" className="py-8 relative">
-          <div className="max-w-4xl mx-auto px-6">
-            <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-white/10 overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500" />
-              <CardContent className="p-8 md:p-12">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-4">Contactez-nous</h2>
-                  <p className="text-slate-400">Une question ? Un projet ? Nous sommes là pour vous.</p>
-                </div>
-
-                <form onSubmit={handleContactSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-300">Nom</label>
-                      <input name="name" required className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all" placeholder="Votre nom" />
+        <section id="contact" className="py-32 relative overflow-hidden">
+          {/* Background elements for contact */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px] -z-10" />
+          
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              {/* Left Column: Info */}
+              <motion.div 
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="space-y-8"
+              >
+                <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20">
+                  Contact
+                </Badge>
+                <h2 className="text-4xl md:text-5xl font-bold text-white">
+                  Parlons de votre <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                    Projet
+                  </span>
+                </h2>
+                <p className="text-slate-400 text-lg leading-relaxed">
+                  Vous avez des questions sur LiveShop Link ? Notre équipe est là pour vous aider à démarrer votre aventure dans le live commerce.
+                </p>
+                
+                <div className="space-y-6 pt-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-purple-400">
+                      <Mail className="w-5 h-5" />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-300">Email</label>
-                      <input name="email" type="email" required className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all" placeholder="votre@email.com" />
+                    <div>
+                      <div className="text-sm text-slate-400">Email</div>
+                      <div className="text-white font-medium">contact@livelink.store</div>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Message</label>
-                    <textarea name="message" required rows="4" className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all" placeholder="Comment pouvons-nous vous aider ?" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-blue-400">
+                      <MessageCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">Support</div>
+                      <div className="text-white font-medium">Disponible 7j/7</div>
+                    </div>
                   </div>
+                </div>
+              </motion.div>
 
-                  {submitStatus === 'success' && (
-                    <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-center">
-                      Message envoyé avec succès !
-                    </div>
-                  )}
-                  {submitStatus === 'error' && (
-                    <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-center">
-                      Erreur lors de l'envoi.
-                    </div>
-                  )}
+              {/* Right Column: Form */}
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="bg-slate-900/50 backdrop-blur-xl border-white/10 p-2 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <CardContent className="p-8 relative z-10">
+                    <form onSubmit={handleContactSubmit} className="space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-300">Nom</label>
+                          <input name="name" required className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder:text-slate-600" placeholder="Votre nom" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-300">Email</label>
+                          <input name="email" type="email" required className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder:text-slate-600" placeholder="votre@email.com" />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300">Message</label>
+                        <textarea name="message" required rows="4" className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder:text-slate-600" placeholder="Comment pouvons-nous vous aider ?" />
+                      </div>
 
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full bg-white text-black hover:bg-slate-200 py-6 text-lg font-semibold rounded-xl"
-                  >
-                    {isSubmitting ? 'Envoi...' : 'Envoyer le message'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                      {submitStatus === 'success' && (
+                        <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-center">
+                          Message envoyé avec succès !
+                        </div>
+                      )}
+                      {submitStatus === 'error' && (
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-center">
+                          Erreur lors de l'envoi.
+                        </div>
+                      )}
+
+                      <Button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-6 text-lg font-semibold rounded-xl shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]"
+                      >
+                        {isSubmitting ? 'Envoi...' : 'Envoyer le message'}
+                        <ArrowRight className="ml-2 w-5 h-5" />
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
           </div>
         </section>
 

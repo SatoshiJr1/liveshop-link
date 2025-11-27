@@ -276,25 +276,31 @@ const AdminSellersPage = () => {
                 }`}
                 onClick={() => handleSellerAction(seller.id, 'view')}
               >
-                <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="p-3 md:p-5 flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4">
                   {/* Avatar & Info */}
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="relative">
-                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm transform group-hover:scale-105 transition-transform duration-200">
+                  <div className="flex items-start sm:items-center gap-3 md:gap-4 flex-1 min-w-0">
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-bold text-base md:text-xl shadow-sm transform group-hover:scale-105 transition-transform duration-200">
                         {seller.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${seller.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-white dark:border-gray-800 ${seller.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-blue-600 transition-colors">
-                        {seller.name}
-                      </h3>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between sm:block">
+                        <h3 className="font-bold text-gray-900 dark:text-white text-sm md:text-lg group-hover:text-blue-600 transition-colors truncate pr-2">
+                          {seller.name}
+                        </h3>
+                        {/* Mobile Role Badge */}
+                        <Badge className={`${getRoleColor(seller.role)} shadow-sm text-[10px] px-1.5 py-0 h-5 sm:hidden`}>
+                          {seller.role}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-0.5 md:mt-1 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1 truncate">
                           <Phone className="w-3 h-3" /> {seller.phone_number}
                         </span>
                         <span className="hidden sm:inline text-gray-300">•</span>
-                        <span className="flex items-center gap-1">
+                        <span className="hidden sm:flex items-center gap-1 truncate">
                           <MapPin className="w-3 h-3" /> ID: {seller.public_link_id}
                         </span>
                       </div>
@@ -302,14 +308,14 @@ const AdminSellersPage = () => {
                   </div>
 
                   {/* Stats & Actions */}
-                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 border-gray-100 dark:border-gray-700 pt-4 sm:pt-0 mt-2 sm:mt-0">
-                    <div className="text-right mr-2">
-                      <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Crédits</p>
-                      <p className="font-bold text-gray-900 dark:text-white text-lg">{seller.credit_balance}</p>
+                  <div className="flex items-center justify-between sm:justify-end gap-2 md:gap-4 w-full sm:w-auto border-t sm:border-t-0 border-gray-100 dark:border-gray-700 pt-2 sm:pt-0 mt-1 sm:mt-0">
+                    <div className="text-left sm:text-right mr-2 flex-1 sm:flex-none">
+                      <p className="text-[10px] md:text-xs text-gray-500 uppercase font-semibold tracking-wider">Crédits</p>
+                      <p className="font-bold text-gray-900 dark:text-white text-sm md:text-lg">{seller.credit_balance}</p>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Badge className={`${getRoleColor(seller.role)} shadow-sm`}>
+                      <Badge className={`${getRoleColor(seller.role)} shadow-sm hidden sm:inline-flex`}>
                         {seller.role}
                       </Badge>
                       
@@ -322,10 +328,10 @@ const AdminSellersPage = () => {
                             }}
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
+                            className="h-7 w-7 md:h-8 md:w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
                             title="Suspendre"
                           >
-                            <Pause className="w-4 h-4" />
+                            <Pause className="w-3.5 h-3.5 md:w-4 md:h-4" />
                           </Button>
                         ) : (
                           <Button
@@ -335,18 +341,18 @@ const AdminSellersPage = () => {
                             }}
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full"
+                            className="h-7 w-7 md:h-8 md:w-8 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full"
                             title="Activer"
                           >
-                            <Play className="w-4 h-4" />
+                            <Play className="w-3.5 h-3.5 md:w-4 md:h-4" />
                           </Button>
                         )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full"
+                          className="h-7 w-7 md:h-8 md:w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         </Button>
                       </div>
                     </div>
@@ -355,18 +361,18 @@ const AdminSellersPage = () => {
                 
                 {/* Revenue Mini-Stats (if available) */}
                 {sellersRevenue[seller.id] && (
-                  <div className="bg-gray-50 dark:bg-gray-900/50 px-5 py-3 flex items-center justify-between text-sm border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-900/50 px-3 md:px-5 py-2 md:py-3 flex items-center justify-between text-xs md:text-sm border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex gap-2 md:gap-4">
                       <span className="text-gray-500">
-                        <span className="font-medium text-gray-900 dark:text-white">{sellersRevenue[seller.id].totalOrdersCount}</span> commandes
+                        <span className="font-medium text-gray-900 dark:text-white">{sellersRevenue[seller.id].totalOrdersCount}</span> <span className="hidden sm:inline">commandes</span><span className="sm:hidden">cmd</span>
                       </span>
                       <span className="text-gray-500">
-                        <span className="font-medium text-green-600">{sellersRevenue[seller.id].paidOrdersCount}</span> payées
+                        <span className="font-medium text-green-600">{sellersRevenue[seller.id].paidOrdersCount}</span> <span className="hidden sm:inline">payées</span><span className="sm:hidden">ok</span>
                       </span>
                     </div>
                     <div className="font-medium text-gray-900 dark:text-white flex items-center gap-1">
                       <TrendingUp className="w-3 h-3 text-green-500" />
-                      {sellersRevenue[seller.id].totalRevenue.toLocaleString()} FCFA
+                      {sellersRevenue[seller.id].totalRevenue.toLocaleString()} <span className="hidden sm:inline">FCFA</span>
                     </div>
                   </div>
                 )}

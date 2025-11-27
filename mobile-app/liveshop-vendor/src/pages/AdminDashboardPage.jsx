@@ -173,21 +173,21 @@ const AdminDashboardPage = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             Dashboard
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
             Vue d'ensemble et gestion de votre plateforme.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
            <div className="hidden md:flex bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Système opérationnel</span>
            </div>
-           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
+           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
               <Calendar className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
                 {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
               </span>
            </div>
@@ -196,20 +196,20 @@ const AdminDashboardPage = () => {
 
       {/* Stats Grid - Modern & Clean */}
       {dashboardData && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <Card className="border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2 md:mb-4">
+                <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <Users className="w-4 h-4 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
                 </div>
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] md:text-xs px-1.5 py-0">
                   Total
                 </Badge>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Vendeurs Inscrits</p>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Vendeurs</p>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mt-1">
                   {dashboardData.sellers?.total || 0}
                 </h3>
               </div>
@@ -217,18 +217,18 @@ const AdminDashboardPage = () => {
           </Card>
 
           <Card className="border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <Package className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2 md:mb-4">
+                <div className="p-1.5 md:p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <Package className="w-4 h-4 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
                 </div>
-                <Badge variant="secondary" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                <Badge variant="secondary" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-[10px] md:text-xs px-1.5 py-0">
                   Actifs
                 </Badge>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Produits en ligne</p>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Produits</p>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mt-1">
                   {dashboardData.products?.total || 0}
                 </h3>
               </div>
@@ -236,18 +236,18 @@ const AdminDashboardPage = () => {
           </Card>
 
           <Card className="border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                  <ShoppingCart className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2 md:mb-4">
+                <div className="p-1.5 md:p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                  <ShoppingCart className="w-4 h-4 md:w-6 md:h-6 text-orange-600 dark:text-orange-400" />
                 </div>
-                <Badge variant="secondary" className="bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                <Badge variant="secondary" className="bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-[10px] md:text-xs px-1.5 py-0">
                   Commandes
                 </Badge>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Commandes</p>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total</p>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mt-1">
                   {dashboardData.orders?.total || 0}
                 </h3>
               </div>
@@ -255,19 +255,19 @@ const AdminDashboardPage = () => {
           </Card>
 
           <Card className="border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between mb-2 md:mb-4">
+                <div className="p-1.5 md:p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <TrendingUp className="w-4 h-4 md:w-6 md:h-6 text-purple-600 dark:text-purple-400" />
                 </div>
-                <Badge variant="secondary" className="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                <Badge variant="secondary" className="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-[10px] md:text-xs px-1.5 py-0">
                   Revenus
                 </Badge>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Volume d'affaires</p>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                  {(dashboardData.revenue?.total || 0).toLocaleString()} <span className="text-sm font-normal text-gray-500">FCFA</span>
+                <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Volume</p>
+                <h3 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white mt-1 truncate">
+                  {(dashboardData.revenue?.total || 0).toLocaleString()} <span className="text-[10px] md:text-sm font-normal text-gray-500">FCFA</span>
                 </h3>
               </div>
             </CardContent>
@@ -427,7 +427,71 @@ const AdminDashboardPage = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Mobile View (Cards) */}
+              <div className="md:hidden space-y-3 p-3">
+                {sellers.map((seller) => (
+                  <div key={seller.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                        {seller.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-gray-900 dark:text-white truncate">{seller.name}</p>
+                          <Badge className={`${getRoleColor(seller.role)} text-[10px] px-1.5 py-0 h-5`}>
+                            {seller.role}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500">{seller.phone_number}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t border-gray-50 dark:border-gray-700 pt-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${seller.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-xs text-gray-700 dark:text-gray-300">{seller.is_active ? 'Actif' : 'Suspendu'}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-gray-500 mr-1">Crédits:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{seller.credit_balance}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-3">
+                      <Button
+                        onClick={() => handleSellerAction(seller.id, 'view')}
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                      >
+                        <Eye className="w-3 h-3 mr-1" /> Détails
+                      </Button>
+                      {seller.is_active ? (
+                        <Button
+                          onClick={() => handleSellerAction(seller.id, 'suspend')}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          <Pause className="w-3 h-3 mr-1" /> Suspendre
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleSellerAction(seller.id, 'activate')}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-green-600 hover:bg-green-50"
+                        >
+                          <Play className="w-3 h-3 mr-1" /> Activer
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop View (Table) */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-gray-700/50">
                         <tr>
@@ -634,43 +698,43 @@ const AdminDashboardPage = () => {
                   </div>
                 ) : (
                   orders.map((order) => (
-                    <div key={order.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors gap-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 rounded-xl flex items-center justify-center text-orange-600 font-bold text-sm">
+                    <div key={order.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors gap-3 md:gap-4 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                      <div className="flex items-start space-x-3 md:space-x-4">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-50 dark:bg-orange-900/20 rounded-xl flex items-center justify-center text-orange-600 font-bold text-xs md:text-sm shrink-0">
                           #{order.id}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-900 dark:text-white">{order.customer_name}</p>
-                            <span className="text-xs text-gray-400">• {order.customer_phone}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-sm md:text-base text-gray-900 dark:text-white truncate">{order.customer_name}</p>
+                            <span className="text-[10px] md:text-xs text-gray-400">• {order.customer_phone}</span>
                           </div>
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                            <p className="text-xs text-gray-500 flex items-center gap-1">
-                                <Users className="w-3 h-3" /> Vendeur: <span className="font-medium text-gray-700 dark:text-gray-300">{order.seller?.name || 'N/A'}</span>
+                          <div className="flex flex-col sm:flex-row sm:gap-x-4 gap-y-0.5 mt-0.5 md:mt-1">
+                            <p className="text-[10px] md:text-xs text-gray-500 flex items-center gap-1 truncate">
+                                <Users className="w-3 h-3" /> <span className="hidden sm:inline">Vendeur:</span> <span className="font-medium text-gray-700 dark:text-gray-300">{order.seller?.name || 'N/A'}</span>
                             </p>
-                            <p className="text-xs text-gray-500 flex items-center gap-1">
-                                <Package className="w-3 h-3" /> Produit: <span className="font-medium text-gray-700 dark:text-gray-300">{order.product?.name || 'N/A'}</span> (x{order.quantity})
+                            <p className="text-[10px] md:text-xs text-gray-500 flex items-center gap-1 truncate">
+                                <Package className="w-3 h-3" /> <span className="hidden sm:inline">Produit:</span> <span className="font-medium text-gray-700 dark:text-gray-300">{order.product?.name || 'N/A'}</span> (x{order.quantity})
                             </p>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto pl-16 md:pl-0">
+                      <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto pl-14 md:pl-0">
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900 dark:text-white">
+                          <p className="text-sm md:text-base font-bold text-gray-900 dark:text-white">
                             {order.total_price?.toLocaleString()} FCFA
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-[10px] md:text-xs text-gray-500">
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Badge className={getOrderStatusColor(order.status)}>
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <Badge className={`${getOrderStatusColor(order.status)} text-[10px] md:text-xs px-1.5 py-0.5 h-5 md:h-6`}>
                             {order.status}
                             </Badge>
                             <Button 
                             variant="ghost"
                             size="icon"
-                            className="text-gray-400 hover:text-blue-600"
+                            className="h-8 w-8 text-gray-400 hover:text-blue-600"
                             onClick={() => handleOrderAction(order.id, 'view')}
                             >
                             <Eye className="w-4 h-4" />
@@ -711,7 +775,7 @@ const AdminDashboardPage = () => {
               </div>
               </CardHeader>
             <CardContent className="p-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-3 md:p-4">
                 {products.length === 0 ? (
                   <div className="col-span-full text-center py-12">
                     <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -719,8 +783,8 @@ const AdminDashboardPage = () => {
                   </div>
                 ) : (
                   products.map((product) => (
-                    <div key={product.id} className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
-                      <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                    <div key={product.id} className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
+                      <div className="aspect-square bg-gray-100 relative overflow-hidden">
                         {product.image_url ? (
                           <img 
                             src={product.image_url} 
@@ -733,47 +797,48 @@ const AdminDashboardPage = () => {
                           />
                         ) : null}
                         <div className={`w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ${product.image_url ? 'hidden' : 'flex'}`}>
-                          <Package className="w-10 h-10 text-gray-400" />
+                          <Package className="w-8 h-8 md:w-10 md:h-10 text-gray-400" />
                         </div>
-                        <div className="absolute top-2 right-2">
-                            <Badge variant={product.status === 'active' ? "default" : "secondary"} className="shadow-sm">
+                        <div className="absolute top-1.5 right-1.5 md:top-2 md:right-2">
+                            <Badge variant={product.status === 'active' ? "default" : "secondary"} className="shadow-sm text-[10px] px-1.5 h-5">
                                 {product.status === 'active' ? 'Actif' : 'Inactif'}
                             </Badge>
                         </div>
                       </div>
                       
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1" title={product.name}>{product.name}</h3>
-                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                                    <Users className="w-3 h-3" /> {product.seller?.name || 'N/A'}
+                      <div className="p-2.5 md:p-4 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-1 md:mb-2">
+                            <div className="w-full">
+                                <h3 className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white line-clamp-2 h-8 md:h-10 leading-tight" title={product.name}>{product.name}</h3>
+                                <p className="text-[10px] md:text-xs text-gray-500 flex items-center gap-1 mt-1 truncate">
+                                    <Users className="w-3 h-3 shrink-0" /> <span className="truncate">{product.seller?.name || 'N/A'}</span>
                                 </p>
                             </div>
                         </div>
                         
-                        <div className="flex items-end justify-between mt-4">
-                            <p className="font-bold text-lg text-gray-900 dark:text-white">
-                                {product.price?.toLocaleString()} <span className="text-xs font-normal text-gray-500">FCFA</span>
+                        <div className="mt-auto pt-2 flex items-end justify-between">
+                            <p className="font-bold text-sm md:text-lg text-gray-900 dark:text-white">
+                                {product.price?.toLocaleString()} <span className="text-[10px] md:text-xs font-normal text-gray-500">FCFA</span>
                             </p>
-                            <div className="flex gap-1">
-                                <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    className="h-8 w-8 text-gray-400 hover:text-blue-600"
-                                    onClick={() => handleProductAction(product.id, 'view')}
-                                >
-                                    <Eye className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    className="h-8 w-8 text-gray-400 hover:text-red-600"
-                                    onClick={() => handleProductAction(product.id, 'delete')}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            </div>
+                        </div>
+                        
+                        <div className="flex gap-1 mt-2 pt-2 border-t border-gray-50 dark:border-gray-700">
+                            <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="flex-1 h-7 text-[10px] md:text-xs text-gray-500 hover:text-blue-600 px-0"
+                                onClick={() => handleProductAction(product.id, 'view')}
+                            >
+                                <Eye className="w-3 h-3 mr-1" /> Détails
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 w-7 text-gray-400 hover:text-red-600 px-0"
+                                onClick={() => handleProductAction(product.id, 'delete')}
+                            >
+                                <Trash2 className="w-3 h-3" />
+                            </Button>
                         </div>
                       </div>
                     </div>

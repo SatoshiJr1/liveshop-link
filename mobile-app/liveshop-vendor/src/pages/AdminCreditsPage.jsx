@@ -181,107 +181,109 @@ const AdminCreditsPage = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             Gestion des Crédits
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
             Administration globale du système de crédits et transactions.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-           <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+           <div className="bg-white dark:bg-gray-800 px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-2">
               <Activity className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
                 {stats.total} Transactions
               </span>
            </div>
            <Button 
               onClick={() => window.location.href = '/admin/credits/settings'} 
               variant="outline"
-              className="border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 shadow-md"
+              size="sm"
+              className="border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 shadow-md h-9"
             >
               <Settings className="w-4 h-4 mr-2" />
               Paramètres
             </Button>
            <Button 
               onClick={() => setShowAddCredits(true)} 
-              className="bg-yellow-500 hover:bg-yellow-600 text-white shadow-md shadow-yellow-500/20"
+              size="sm"
+              className="bg-yellow-500 hover:bg-yellow-600 text-white shadow-md shadow-yellow-500/20 h-9"
             >
               <Wallet className="w-4 h-4 mr-2" />
-              Gérer les crédits
+              Gérer
             </Button>
         </div>
       </div>
 
       {/* Statistiques Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card className="border-none shadow-md bg-gradient-to-br from-yellow-500 to-orange-600 text-white">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-yellow-100 text-sm font-medium mb-1">Crédits Ajoutés</p>
-                <h3 className="text-3xl font-bold">{stats.totalCreditsAdded.toLocaleString()}</h3>
+              <div className="min-w-0">
+                <p className="text-yellow-100 text-xs md:text-sm font-medium mb-1 truncate">Crédits Ajoutés</p>
+                <h3 className="text-xl md:text-3xl font-bold truncate">{stats.totalCreditsAdded.toLocaleString()}</h3>
               </div>
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <ArrowUpRight className="w-6 h-6 text-white" />
+              <div className="p-1.5 md:p-2 bg-white/20 rounded-lg backdrop-blur-sm shrink-0 ml-2">
+                <ArrowUpRight className="w-4 h-4 md:w-6 md:h-6 text-white" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-yellow-100 text-sm">
-              <Plus className="w-4 h-4 mr-1" />
-              <span>Total entrées</span>
+            <div className="mt-2 md:mt-4 flex items-center text-yellow-100 text-[10px] md:text-sm">
+              <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              <span className="truncate">Total entrées</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-red-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Crédits Consommés</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalCreditsConsumed.toLocaleString()}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Crédits Consommés</p>
+                <h3 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">{stats.totalCreditsConsumed.toLocaleString()}</h3>
               </div>
-              <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <ArrowDownLeft className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <div className="p-1.5 md:p-2 bg-red-50 dark:bg-red-900/20 rounded-lg shrink-0 ml-2">
+                <ArrowDownLeft className="w-4 h-4 md:w-6 md:h-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
-            <div className="mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+            <div className="mt-2 md:mt-4 w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
               <div className="bg-red-500 h-full rounded-full" style={{ width: '75%' }}></div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-green-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Achats</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.purchases}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Achats</p>
+                <h3 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">{stats.purchases}</h3>
               </div>
-              <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <CreditCard className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <div className="p-1.5 md:p-2 bg-green-50 dark:bg-green-900/20 rounded-lg shrink-0 ml-2">
+                <CreditCard className="w-4 h-4 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-green-600 text-sm font-medium">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              <span>Transactions d'achat</span>
+            <div className="mt-2 md:mt-4 flex items-center text-green-600 text-[10px] md:text-sm font-medium">
+              <TrendingUp className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              <span className="truncate">Transactions</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-md bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Bonus Distribués</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.bonuses}</h3>
+              <div className="min-w-0">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">Bonus Distribués</p>
+                <h3 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">{stats.bonuses}</h3>
               </div>
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <Coins className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg shrink-0 ml-2">
+                <Coins className="w-4 h-4 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
-              <Plus className="w-4 h-4 mr-1" />
-              <span>Récompenses</span>
+            <div className="mt-2 md:mt-4 flex items-center text-blue-600 text-[10px] md:text-sm font-medium">
+              <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              <span className="truncate">Récompenses</span>
             </div>
           </CardContent>
         </Card>
@@ -374,28 +376,28 @@ const AdminCreditsPage = () => {
                 key={transaction.id} 
                 className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
               >
-                <div className="p-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="p-3 md:p-5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
                     {/* Transaction Info */}
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
+                    <div className="flex items-start gap-3 md:gap-4 flex-1">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm md:text-lg shrink-0 shadow-sm">
                         {transaction.type.charAt(0).toUpperCase()}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-gray-900 dark:text-white text-lg truncate">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-sm md:text-lg truncate">
                             {transaction.seller?.name || transaction.Seller?.name || 'N/A'}
                           </h3>
-                          <Badge variant="outline" className={getTypeColor(transaction.type)}>
+                          <Badge variant="outline" className={`${getTypeColor(transaction.type)} text-[10px] md:text-xs px-1.5 py-0.5`}>
                             <span className="flex items-center gap-1">
                               {getTypeIcon(transaction.type)}
                               {getTypeText(transaction.type)}
                             </span>
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{transaction.description}</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1 line-clamp-1">{transaction.description}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 md:mt-2 text-[10px] md:text-sm text-gray-500 dark:text-gray-400">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" /> 
                             {new Date(transaction.created_at).toLocaleDateString()} à {new Date(transaction.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -405,12 +407,12 @@ const AdminCreditsPage = () => {
                     </div>
 
                     {/* Amount & Actions */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-8 w-full md:w-auto border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-4 md:pt-0">
-                      <div className="flex flex-col items-start sm:items-end">
-                        <span className={`text-2xl font-bold ${transaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <div className="flex flex-row items-center justify-between md:justify-end gap-4 w-full md:w-auto border-t md:border-t-0 border-gray-50 dark:border-gray-700 pt-3 md:pt-0 mt-1 md:mt-0 pl-14 md:pl-0">
+                      <div className="flex flex-col items-start md:items-end">
+                        <span className={`text-lg md:text-2xl font-bold ${transaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {transaction.amount >= 0 ? '+' : ''}{transaction.amount.toLocaleString()}
                         </span>
-                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <span className="text-[10px] md:text-xs text-gray-400 flex items-center gap-1">
                           Solde: {transaction.balance_before?.toLocaleString()} → {transaction.balance_after?.toLocaleString()}
                         </span>
                       </div>
@@ -418,9 +420,10 @@ const AdminCreditsPage = () => {
                       <Button
                         onClick={() => setSelectedTransaction(transaction)}
                         variant="outline"
-                        className="w-full sm:w-auto border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        size="sm"
+                        className="h-8 text-xs md:text-sm border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
-                        <Eye className="w-4 h-4 mr-2" />
+                        <Eye className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                         Détails
                       </Button>
                     </div>
