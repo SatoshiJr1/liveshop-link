@@ -37,7 +37,7 @@ router.get('/', authenticateToken, async (req, res) => {
  */
 router.post('/purchase', authenticateToken, async (req, res) => {
   try {
-    const { packageType, paymentMethod, paymentReference } = req.body;
+    const { packageType, paymentMethod, phoneNumber } = req.body;
     const sellerId = req.seller.id;
 
     // Validation des données
@@ -61,7 +61,7 @@ router.post('/purchase', authenticateToken, async (req, res) => {
     }
 
     // Procéder à l'achat
-    const result = await CreditService.purchaseCredits(sellerId, packageType, paymentMethod, paymentReference);
+    const result = await CreditService.purchaseCredits(sellerId, packageType, paymentMethod, phoneNumber);
 
     res.json({
       success: true,
@@ -238,12 +238,19 @@ router.get('/packages', async (req, res) => {
   try {
     const packages = CreditService.getAvailablePackages();
     const actionCosts = CreditService.getActionCosts();
+    const isEnabled = CreditService.isCreditsModuleEnabled();
+    const mode = CreditService.getCreditsMode();
 
     res.json({
       success: true,
       data: {
         packages,
-        actionCosts
+        actionCosts,
+        isEnabled,
+        mode,
+        message: isEnabled 
+          ? 'Module de crédits activé - utilisateurs doivent acheter des crédits'
+          : 'Module de crédits désactivé - utilisateurs ont accès gratuit'
       }
     });
   } catch (error) {

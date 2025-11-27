@@ -1,12 +1,45 @@
+// Charger les variables d'environnement EN PREMIER
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
-require('dotenv').config();
+const { createAdapter } = require('@socket.io/redis-adapter');
+const redisManager = require('./config/redis');
+const { Notification } = require('./models');
+
+// Configuration par défaut pour le déploiement #8
+const defaultConfig = {
+  NODE_ENV: 'development', // Par défaut en développement
+  PORT: 3001,
+  DATABASE_URL: 'postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop', // Pour production
+  JWT_SECRET: 'production_secret_key_very_secure',
+  CORS_ORIGIN: 'https://livelink.store,https://space.livelink.store',
+  CLOUDINARY_CLOUD_NAME: 'dp2838ewe',
+  CLOUDINARY_API_KEY: '837659378846734',
+  CLOUDINARY_API_SECRET: 'udbbN6TXXOkdwXJ271cSRPVIaq8'
+};
+
+// Appliquer les valeurs par défaut si pas définies
+Object.keys(defaultConfig).forEach(key => {
+  if (!process.env[key]) {
+    process.env[key] = defaultConfig[key];
+  }
+});
+
+console.log('🔧 Configuration appliquée:');
+console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('🔧 FRONTEND_URL:', process.env.FRONTEND_URL ? '✅ Configurée' : '❌ Manquante');
+console.log('🔧 VENDOR_URL:', process.env.VENDOR_URL ? '✅ Configurée' : '❌ Manquante');
 
 const { sequelize, testConnection } = require('./config/database');
 const { Seller, Product, Order } = require('./models');
+
+// Import du middleware de debug
+const debugMiddleware = require('./middleware/debugMiddleware');
 
 // Import des routes
 const authRoutes = require('./routes/auth');
@@ -16,28 +49,146 @@ const publicRoutes = require('./routes/public');
 const liveRoutes = require('./routes/lives');
 const notificationRoutes = require('./routes/notifications');
 const creditRoutes = require('./routes/credits');
+// const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
+const adminSettingsRoutes = require('./routes/admin-settings');
 const sellerRoutes = require('./routes/sellers');
 const uploadRoutes = require('./routes/upload');
+const pushRoutes = require('./routes/push');
 
 const notificationService = require('./services/notificationService');
 
+console.log('🚀 Démarrage de LiveShop Link API...');
+console.log('=====================================');
+console.log('📋 Informations système :');
+console.log('- Node.js version:', process.version);
+console.log('- Plateforme:', process.platform);
+console.log('- Architecture:', process.arch);
+console.log('- Répertoire de travail:', process.cwd());
+console.log('- Variables d\'environnement chargées:', Object.keys(process.env).filter(key => key.includes('DB') || key.includes('NODE_ENV')).length);
+console.log('');
+
 const app = express();
 const server = http.createServer(app);
+
+// Configuration Socket.IO avec origines sécurisées
+const allowedOrigins = [
+  'https://livelink.store',
+  'https://space.livelink.store',
+  'https://api.livelink.store'
+];
+
+if (process.env.NODE_ENV === 'development') {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000');
+}
+
 const io = socketIo(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
+// Middleware CORS sécurisé
+const corsOptions = {
+  origin: function (origin, callback) {
+    console.log('🌐 CORS - Origine demandée:', origin);
+    console.log('🌐 CORS - NODE_ENV:', process.env.NODE_ENV);
+    console.log('🌐 CORS - Origines autorisées:', allowedOrigins);
+    
+    // Autoriser les requêtes sans origine (Postman, curl, etc.)
+    if (!origin) {
+      console.log('✅ CORS - Requête sans origine (autorisée)');
+      callback(null, true);
+      return;
+    }
+    
+    // Vérifier si l'origine est autorisée
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ CORS - Origine autorisée:', origin);
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS - Origine refusée:', origin);
+      console.log('💡 CORS - Essayez d\'ajouter cette origine à allowedOrigins');
+      // En production, autoriser quand même mais logger
+      if (origin.includes('livelink.store')) {
+        console.log('⚠️  CORS - Origine livelink.store autorisée par fallback');
+        callback(null, true);
+      } else {
+        callback(new Error('CORS non autorisé'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With']
+};
+
+// Headers CORS manuels (avant le middleware cors)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Autoriser tous les domaines livelink.store
+  const isLocalhost = origin && origin.startsWith('http://localhost');
+  const isAllowedOrigin = origin && (origin.includes('livelink.store') || (process.env.NODE_ENV === 'development' && isLocalhost));
+
+  if (isAllowedOrigin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
+    res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With');
+  }
+
+  // Répondre correctement aux pre-flight (OPTIONS)
+  if (req.method === 'OPTIONS') {
+    if (isAllowedOrigin) {
+      return res.sendStatus(200);
+    }
+    // Si origine non explicitement autorisée ici, déléguer au middleware `cors`
+    return cors(corsOptions)(req, res, next);
+  }
+
+  next();
+});
+
+// Appliquer CORS middleware
+app.use(cors(corsOptions));
+
+// Pre-flight requests
+app.options('*', cors(corsOptions));
+
+// Middleware de debug pour logger les requêtes
+app.use(debugMiddleware.requestLogger());
+
+// Middleware de gestion d'erreurs global
+app.use((err, req, res, next) => {
+  console.error('🚨 ERREUR GLOBALE:', err);
+  console.error('🚨 URL:', req.url);
+  console.error('🚨 Méthode:', req.method);
+  console.error('🚨 Headers:', req.headers);
+  
+  if (err.message === 'CORS non autorisé') {
+    return res.status(403).json({ 
+      error: 'CORS Error', 
+      message: 'Origine non autorisée',
+      origin: req.headers.origin 
+    });
+  }
+  
+  res.status(500).json({ 
+    error: 'Internal Server Error', 
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -45,7 +196,28 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Servir les fichiers statiques (uploads)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Stockage des connexions WebSocket par vendeur
+// Route de test simple
+app.get('/api/test', (req, res) => {
+  console.log('🧪 Test route appelée');
+  res.json({ 
+    message: 'API fonctionne !', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown'
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  console.log('🏥 Health check appelé');
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown',
+    cors: 'enabled'
+  });
+});
+
+// Stockage des connexions WebSocket par vendeur (Set de socket IDs)
+// Permet de gérer plusieurs connexions simultanées par vendeur (plusieurs onglets)
 const sellerConnections = new Map();
 
 // Gestion des connexions WebSocket
@@ -90,7 +262,7 @@ io.on('connection', (socket) => {
       }
       sellerConnections.get(seller.id).add(socket.id);
 
-      console.log(`Vendeur ${seller.name} (ID: ${seller.id}) connecté via WebSocket`);
+      console.log(`✅ Vendeur ${seller.name} (ID: ${seller.id}) connecté via WebSocket (Total connexions: ${sellerConnections.get(seller.id).size})`);
       socket.emit('authenticated', { 
         message: 'Authentification réussie',
         seller: {
@@ -99,6 +271,8 @@ io.on('connection', (socket) => {
           public_link_id: seller.public_link_id
         }
       });
+
+
 
     } catch (error) {
       console.error('❌ Erreur d\'authentification WebSocket:', error);
@@ -112,17 +286,82 @@ io.on('connection', (socket) => {
     socket.emit('pong', Date.now() - startTime);
   });
 
+  // ACK de réception de notification
+  socket.on('notification_ack', async (data) => {
+    try {
+      const { notificationId } = data;
+      if (!notificationId) return;
+
+      console.log(`✅ ACK reçu pour notification ${notificationId} du vendeur ${socket.sellerId}`);
+      
+      // Pour l'instant, on log juste l'ACK (à implémenter plus tard avec colonnes DB)
+      console.log(`📝 ACK traité pour notification ${notificationId} du vendeur ${socket.sellerId}`);
+    } catch (error) {
+      console.error('❌ Erreur traitement ACK notification:', error);
+    }
+  });
+
+  // Récupération delta au reconnect
+  socket.on('request_missed_notifications', async (data, callback) => {
+    try {
+      const { lastNotificationId } = data;
+      console.log(`🔄 [MISSED-REQ] Demande notifications manquées depuis ID ${lastNotificationId} pour vendeur ${socket.sellerId}`);
+      
+      if (!socket.sellerId) {
+        console.error('❌ [MISSED-AUTH] Pas de sellerId sur la socket');
+        callback({ success: false, error: 'not_ready', message: 'Socket non authentifiée' });
+        return;
+      }
+      
+      // Vérifier que lastNotificationId est un nombre valide
+      const lastId = parseInt(lastNotificationId) || 0;
+      if (isNaN(lastId) || lastId < 0) {
+        console.error('❌ [MISSED-PARAM] lastNotificationId invalide:', lastNotificationId);
+        callback({ success: false, error: 'invalid_param', message: 'lastNotificationId invalide' });
+        return;
+      }
+      
+      const { Op } = require('sequelize');
+      console.log(`🔍 [MISSED-QUERY] Recherche notifications pour vendeur ${socket.sellerId} avec ID > ${lastId}`);
+      
+      const missedNotifications = await Notification.findAll({
+        where: {
+          seller_id: socket.sellerId,
+          id: { [Op.gt]: lastId }
+        },
+        order: [['id', 'ASC']],
+        limit: 50
+      });
+
+      console.log(`📤 [MISSED-FOUND] ${missedNotifications.length} notifications trouvées:`, 
+        missedNotifications.map(n => ({ id: n.id, type: n.type, title: n.title, sent: n.sent })));
+      
+      callback({ 
+        success: true, 
+        notifications: missedNotifications,
+        lastId: lastId,
+        count: missedNotifications.length
+      });
+    } catch (error) {
+      console.error('❌ Erreur récupération notifications manquées:', error);
+      callback({ success: false, error: error.message });
+    }
+  });
+
   // Déconnexion
   socket.on('disconnect', (reason) => {
     if (socket.sellerId) {
       const connections = sellerConnections.get(socket.sellerId);
       if (connections) {
         connections.delete(socket.id);
-        if (connections.size === 0) {
+        const remainingConnections = connections.size;
+        if (remainingConnections === 0) {
           sellerConnections.delete(socket.sellerId);
+          console.log(`🔌 Vendeur ${socket.sellerId} complètement déconnecté (${reason})`);
+        } else {
+          console.log(`🔌 Socket déconnectée pour vendeur ${socket.sellerId} (${reason}) - ${remainingConnections} connexion(s) restante(s)`);
         }
       }
-      console.log(`Vendeur ${socket.sellerId} déconnecté (${reason})`);
     }
   });
 });
@@ -143,24 +382,72 @@ setInterval(() => {
   console.log(`📊 WebSocket Stats: ${activeSellers} vendeurs actifs, ${totalConnections} connexions totales`);
 }, 60000); // Toutes les minutes
 
-// Fonction pour envoyer des notifications aux vendeurs
-const notifySeller = (sellerId, event, data) => {
-  const connections = sellerConnections.get(sellerId);
-  if (connections && connections.size > 0) {
-    io.to(`seller_${sellerId}`).emit(event, data);
-    console.log(`Notification envoyée au vendeur ${sellerId}:`, event);
-  }
-};
+    // Fonction pour notifier un vendeur spécifique avec ACK
+    global.notifySeller = (sellerId, type, data) => {
+      return new Promise((resolve) => {
+        const connections = sellerConnections.get(sellerId);
+        
+        if (!connections || connections.size === 0) {
+          console.log(`❌ [NOTIF-EMIT] Vendeur ${sellerId} non connecté (aucune socket active)`);
+          resolve(false);
+          return;
+        }
+        
+        const notificationId = data.notification?.id;
+        console.log(`📤 [NOTIF-EMIT] Envoi notification ${type} (ID: ${notificationId}) au vendeur ${sellerId} (${connections.size} connexion(s))`);
+        
+        // Envoyer à TOUTES les sockets du vendeur via Room
+        // Cela garantit que tous les onglets/connexions reçoivent la notification
+        io.to(`seller_${sellerId}`).emit(type, data);
+        
+        // Attendre l'ACK d'AU MOINS UNE socket avec timeout court
+        // Pour ne pas bloquer le système, on résout à true après 1 seconde (fallback)
+        let ackReceived = false;
+        
+        const timeout = setTimeout(() => {
+          if (!ackReceived) {
+            // Considérer comme succès car envoyé via Room (fiable)
+            console.log(`✅ [NOTIF-FALLBACK] Notification ${type} (ID: ${notificationId}) envoyée au vendeur ${sellerId} via Room`);
+            resolve(true);
+          }
+        }, 1000);
+        
+        // Écouter l'ACK de la première socket qui répond
+        if (notificationId) {
+          connections.forEach(socketId => {
+            const socket = io.sockets.sockets.get(socketId);
+            if (socket && !ackReceived) {
+              // Listener temporaire pour ACK
+              const ackHandler = (ackData) => {
+                if (ackData.notificationId === notificationId && !ackReceived) {
+                  ackReceived = true;
+                  clearTimeout(timeout);
+                  console.log(`✅ [NOTIF-ACK] ACK reçu pour notification ${notificationId} de vendeur ${sellerId}`);
+                  resolve(true);
+                  // Nettoyer les listeners
+                  connections.forEach(sid => {
+                    const s = io.sockets.sockets.get(sid);
+                    if (s) s.off('notification_ack', ackHandler);
+                  });
+                }
+              };
+              
+              socket.once('notification_ack', ackHandler);
+            }
+          });
+        } else {
+          // Pas d'ID de notification, résoudre immédiatement
+          clearTimeout(timeout);
+          resolve(true);
+        }
+      });
+    };
 
-// Fonction pour envoyer des notifications à tous les vendeurs connectés
-const notifyAllSellers = (event, data) => {
-  io.emit(event, data);
-  console.log('Notification envoyée à tous les vendeurs:', event);
-};
-
-// Rendre les fonctions de notification disponibles globalement
-global.notifySeller = notifySeller;
-global.notifyAllSellers = notifyAllSellers;
+    // Fonction pour envoyer des notifications à tous les vendeurs connectés
+    global.notifyAllSellers = (event, data) => {
+      io.emit(event, data);
+      console.log('Notification envoyée à tous les vendeurs:', event);
+    };
 
 // Routes API
 app.use('/api/auth', authRoutes);
@@ -170,19 +457,17 @@ app.use('/api/public', publicRoutes);
 app.use('/api/lives', liveRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/credits', creditRoutes);
+// app.use('/api/comments', commentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/push', pushRoutes);
 
-// Route de santé
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'LiveShop Link API is running',
-    timestamp: new Date().toISOString(),
-    connectedSellers: sellerConnections.size
-  });
-});
+// Initialiser le middleware de debug après l'enregistrement des routes
+if (debugMiddleware.init) {
+  debugMiddleware.init(app, sequelize);
+}
 
 // Servir le frontend (pour la production)
 if (process.env.NODE_ENV === 'production') {
@@ -201,6 +486,7 @@ app.use('*', (req, res) => {
 });
 
 // Gestion globale des erreurs
+app.use(debugMiddleware.errorLogger());
 app.use((error, req, res, next) => {
   console.error('Erreur globale:', error);
   res.status(500).json({
@@ -218,8 +504,43 @@ const startServer = async () => {
     await sequelize.sync({ force: false });
     console.log('✅ Base de données synchronisée');
     
-    // Démarrer le processeur de retry des notifications
+    // Initialiser Redis adapter pour Socket.IO (mode scalable)
+    try {
+      const redisClients = await redisManager.connect();
+      if (redisClients) {
+        io.adapter(createAdapter(redisClients.pubClient, redisClients.subClient));
+        console.log('✅ Socket.IO Redis Adapter configuré - Mode multi-instances activé');
+      } else {
+        console.warn('⚠️  Socket.IO en mode local - Pas de Redis disponible');
+      }
+    } catch (error) {
+      console.warn('⚠️  Impossible de configurer Redis adapter:', error.message);
+      console.warn('⚠️  Socket.IO fonctionnera en mode local uniquement');
+    }
+    
+    // Initialiser le service de notifications avec BullMQ
+    console.log('🔔 Initialisation du service de notifications...');
+    await notificationService.initializeQueue();
+    
+    // Démarrer le processeur de retry
     notificationService.startRetryProcessor();
+    console.log('🔄 Processeur de retry démarré');
+    
+    // Initialiser la configuration des crédits
+    const { initializeCreditsConfig } = require('./services/initializationService');
+    try {
+      await initializeCreditsConfig();
+    } catch (error) {
+      console.error('❌ Erreur initialisation crédits:', error);
+    }
+    
+    // Initialiser le compte superadmin au démarrage
+    const { initSuperAdmin } = require('./scripts/initSuperAdmin');
+    try {
+      await initSuperAdmin();
+    } catch (error) {
+      console.error('❌ Erreur initialisation superadmin:', error);
+    }
     
     // Nettoyer les anciennes notifications (une fois par jour)
     setInterval(async () => {
@@ -230,17 +551,29 @@ const startServer = async () => {
       }
     }, 24 * 60 * 60 * 1000); // 24 heures
     
-    // Démarrage du serveur
-    server.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Serveur LiveShop Link démarré sur le port ${PORT}`);
-      console.log(`📡 WebSocket disponible sur ws://localhost:${PORT}`);
-      console.log(`📱 API disponible sur: http://localhost:${PORT}/api`);
+    // Endpoint de test pour notifications hors ligne
+    app.post('/api/test/create-notification', async (req, res) => {
+      try {
+        const notification = await Notification.create(req.body);
+        console.log('🧪 Notification de test créée:', notification.id);
+        res.json({ success: true, notification });
+      } catch (error) {
+        console.error('❌ Erreur création notification test:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+    
+    // Démarrer le serveur
+    const PORT = process.env.PORT || 3001;
+    server.listen(PORT, () => {
+      console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+      console.log(`📱 URL locale: http://localhost:${PORT}`);
+      console.log(`🌐 CORS autorisé pour: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
       console.log(`🔍 Health check: http://localhost:${PORT}/api/health`);
     });
     
   } catch (error) {
     console.error('❌ Erreur lors du démarrage du serveur:', error);
-    process.exit(1);
   }
 };
 
@@ -250,6 +583,12 @@ process.on('SIGINT', async () => {
   try {
     // Arrêter le processeur de retry
     notificationService.stopRetryProcessor();
+    
+    // Déconnecter Redis
+    await redisManager.disconnect();
+    
+    // Fermer Socket.IO
+    io.close();
     
     await sequelize.close();
     console.log('✅ Connexion à la base de données fermée');
