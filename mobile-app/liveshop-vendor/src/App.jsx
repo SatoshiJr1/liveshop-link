@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { CreditsProvider } from './contexts/CreditsContext';
 import notificationStore from './stores/notificationStore';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
@@ -211,9 +212,11 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="App">
-          <AppContent />
-        </div>
+        <CreditsProvider>
+          <div className="App">
+            <AppContent />
+          </div>
+        </CreditsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

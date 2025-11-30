@@ -19,6 +19,13 @@ const sendWhatsAppOTP = async (phone, otp) => otpService.sendOTP(phone, otp);
 router.post('/register', async (req, res) => {
   const { name, phone_number } = req.body;
   if (!name || !phone_number) return res.status(400).json({ error: 'Nom et numéro requis' });
+  
+  // Vérifier si le numéro est déjà enregistré
+  const existingSeller = await Seller.findOne({ where: { phone_number } });
+  if (existingSeller) {
+    return res.status(409).json({ error: 'Ce numéro est déjà enregistré. Utilisez la connexion.' });
+  }
+  
   // Limitation d'envoi OTP inscription
   const limitCheck = OtpRateLimiter.canSend(phone_number);
   if (!limitCheck.ok) {

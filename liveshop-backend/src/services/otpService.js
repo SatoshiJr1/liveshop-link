@@ -84,16 +84,14 @@ class OtpService {
     return true;
   }
 
-  // Nexteranga (custom OTP API)
+  // Nexteranga (custom WhatsApp API - message personnalisé)
   async sendViaNexteranga(originalPhone, otp) {
-    // Mode direct sans .env (pour test rapide); bascule vers env si présent
-    const DIRECT_API_URL = 'https://wa.nexteranga.com/send-otp';
+    // Configuration (env ou valeurs par défaut pour dev)
+    const DIRECT_API_URL = 'https://wa.nexteranga.com/send';
     const DIRECT_SECRET = 'e9c64f0193ce38099a5e59cfe15faa107325d92fddc655007f62914170e17645';
-    const DIRECT_BUSINESS_NAME = 'Liveshop';
 
     const apiUrl = process.env.NEXTERANGA_API_URL || DIRECT_API_URL;
     const secret = process.env.NEXTERANGA_SECRET || DIRECT_SECRET;
-    const businessName = (process.env.NEXTERANGA_BUSINESS_NAME || DIRECT_BUSINESS_NAME).trim();
 
     if (!secret) {
       console.warn('⚠️ NEXTERANGA_SECRET manquant, fallback console');
@@ -104,18 +102,20 @@ class OtpService {
     // Nexteranga attend un numéro sans +, avec indicatif (ex: 221771234567)
     const phoneForApi = String(originalPhone).replace(/^\+/, '');
 
+    // Message professionnel personnalisé
+    const message = `🔐 *LiveShop Link*\n\nVotre code de vérification est : *${otp}*\n\nCe code expire dans 5 minutes.\nNe partagez jamais ce code avec personne.`;
+
     const payload = {
       phone: phoneForApi,
-      code: String(otp),
-      businessName
+      message: message
     };
 
     try {
-      // Log sécurisé (sans exposer le secret). Le message WhatsApp est formaté par Nexteranga à partir de `code` et `businessName`.
+      // Log sécurisé (sans exposer le secret)
       const maskedSecret = secret ? `${String(secret).slice(0,4)}...${String(secret).slice(-4)}` : 'none';
       console.log('📤 Envoi OTP via Nexteranga:', {
         url: apiUrl,
-        payload,
+        phone: phoneForApi,
         headers: { 'X-WA-SECRET': maskedSecret }
       });
 
