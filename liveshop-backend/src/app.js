@@ -29,6 +29,28 @@ Object.keys(defaultConfig).forEach(key => {
   }
 });
 
+// Diagnostic des fichiers .env présents et des variables OTP
+try {
+  const fs = require('fs');
+  const envCandidates = [
+    path.join(process.cwd(), '.env'),
+    path.join(process.cwd(), '.env.local'),
+    path.join(process.cwd(), '.env.development'),
+    path.join(process.cwd(), '.env.production'),
+    path.join(process.cwd(), '.env.sqlite.dev'),
+  ];
+  const existingEnvFiles = envCandidates.filter(p => {
+    try { return fs.existsSync(p); } catch { return false; }
+  });
+  console.log('🗃️  Fichiers .env détectés dans le répertoire courant:', existingEnvFiles.map(f => path.basename(f)));
+  console.log('🔐 OTP_PROVIDER:', process.env.OTP_PROVIDER || '(non défini)');
+  console.log('🔐 NEXTERANGA_API_URL:', process.env.NEXTERANGA_API_URL ? '✅ Défini' : '❌ Manquant');
+  console.log('🔐 NEXTERANGA_BUSINESS_NAME:', process.env.NEXTERANGA_BUSINESS_NAME ? '✅ Défini' : '❌ Manquant');
+  console.log('🔐 NEXTERANGA_SECRET:', process.env.NEXTERANGA_SECRET ? '✅ Présent' : '❌ Manquant');
+} catch (e) {
+  console.log('⚠️  Impossible de lister les fichiers .env:', e.message);
+}
+
 console.log('🔧 Configuration appliquée:');
 console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
 console.log('🔧 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurée' : '❌ Manquante');

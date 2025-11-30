@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const { authenticateToken } = require('../middleware/auth');
 const CreditService = require('../services/creditService');
+// Debug uniquement: envoyer un OTP de test et retourner l'état
 const OtpRateLimiter = require('../services/otpRateLimiter');
 
 // sendWhatsAppOTP maintenant délégué au service unifié
@@ -313,6 +314,30 @@ router.get('/profile', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
+
+// DEBUG ROUTES (optionnelles) - exposées uniquement en développement
+if (process.env.NODE_ENV !== 'production') {
+  // GET /api/auth/debug/send-otp?phone_number=+22177...&code=123456
+  router.get('/debug/send-otp', async (req, res) => {
+    try {
+      const { phone_number, code } = req.query;
+      if (!phone_number) return res.status(400).json({ error: 'phone_number requis' });
+      const otp = code && /^\d{4,6}$/.test(code) ? String(code) : Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Envoi via service unifié
+      const sent = await sendWhatsAppOTP(phone_number, otp);
+      return res.json({
+        message: sent ? 'OTP envoyé (debug)' : 'Échec envoi OTP (debug)',
+        phone_number,
+        otp,
+        provider: process.env.OTP_PROVIDER || 'nexteranga'
+      });
+    } catch (err) {
+      console.error('❌ Debug send-otp error:', err.message);
+      return res.status(500).json({ error: 'Erreur debug envoi OTP' });
+    }
+  });
+}
 
 module.exports = router;
 
