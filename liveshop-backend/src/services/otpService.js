@@ -2,7 +2,9 @@ const axios = require('axios');
 
 class OtpService {
   constructor() {
-    this.provider = process.env.OTP_PROVIDER || 'console'; // 'console' | 'whatsapp_cloud' | 'twilio' | 'callmebot' | 'nexteranga'
+    // En prod: utilise OTP_PROVIDER de l'env; en dev: fallback nexteranga
+    this.provider = process.env.OTP_PROVIDER || 'nexteranga';
+    console.log('🔐 OTP Service initialisé - Provider actif:', this.provider);
   }
 
   async sendOTP(phoneNumber, otp) {
@@ -84,9 +86,14 @@ class OtpService {
 
   // Nexteranga (custom OTP API)
   async sendViaNexteranga(originalPhone, otp) {
-    const apiUrl = process.env.NEXTERANGA_API_URL || 'https://wa.nexteranga.com/send-otp';
-    const secret = process.env.NEXTERANGA_SECRET;
-    const businessName = (process.env.NEXTERANGA_BUSINESS_NAME || 'Fitsen').trim();
+    // Mode direct sans .env (pour test rapide); bascule vers env si présent
+    const DIRECT_API_URL = 'https://wa.nexteranga.com/send-otp';
+    const DIRECT_SECRET = 'e9c64f0193ce38099a5e59cfe15faa107325d92fddc655007f62914170e17645';
+    const DIRECT_BUSINESS_NAME = 'Liveshop';
+
+    const apiUrl = process.env.NEXTERANGA_API_URL || DIRECT_API_URL;
+    const secret = process.env.NEXTERANGA_SECRET || DIRECT_SECRET;
+    const businessName = (process.env.NEXTERANGA_BUSINESS_NAME || DIRECT_BUSINESS_NAME).trim();
 
     if (!secret) {
       console.warn('⚠️ NEXTERANGA_SECRET manquant, fallback console');
