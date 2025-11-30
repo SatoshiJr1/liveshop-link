@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class OtpService {
   constructor() {
-    this.provider = process.env.OTP_PROVIDER || 'console'; // 'console' | 'whatsapp_cloud' | 'twilio' | 'callmebot'
+    this.provider = process.env.OTP_PROVIDER || 'console'; // 'console' | 'whatsapp_cloud' | 'twilio' | 'callmebot' | 'nexteranga'
   }
 
   async sendOTP(phoneNumber, otp) {
@@ -20,6 +20,8 @@ class OtpService {
           return await this.sendViaWhatsAppCloud(destination, message);
         case 'twilio':
           return await this.sendViaTwilio(destination, message);
+        case 'nexteranga':
+          return await this.sendViaNexteranga(original, otp);
         case 'callmebot':
           return await this.sendViaCallMeBot(destination, message);
         case 'console':
@@ -78,6 +80,50 @@ class OtpService {
 
     console.log('✅ OTP envoyé via Twilio:', result.sid);
     return true;
+  }
+
+  // Nexteranga (custom OTP API)
+  async sendViaNexteranga(originalPhone, otp) {
+    const apiUrl = process.env.NEXTERANGA_API_URL || 'https://wa.nexteranga.com/send-otp';
+    const secret = process.env.NEXTERANGA_SECRET;
+    const businessName = (process.env.NEXTERANGA_BUSINESS_NAME || 'Fitsen').trim();
+
+    if (!secret) {
+      console.warn('⚠️ NEXTERANGA_SECRET manquant, fallback console');
+      console.log(`[DEV] OTP ${otp} -> ${originalPhone}`);
+      return true;
+    }
+
+    // Nexteranga attend un numéro sans +, avec indicatif (ex: 221771234567)
+    const phoneForApi = String(originalPhone).replace(/^\+/, '');
+
+    const payload = {
+      phone: phoneForApi,
+      code: String(otp),
+      businessName
+    };
+
+    try {
+      const res = await axios.post(apiUrl, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WA-SECRET': secret
+        },
+        timeout: 8000
+      });
+
+      // On considère 2xx comme succès
+      if (res.status >= 200 && res.status < 300) {
+        console.log('✅ OTP envoyé via Nexteranga');
+        return true;
+      }
+
+      console.error('❌ Nexteranga a répondu avec un statut non succès:', res.status, res.data);
+      return false;
+    } catch (error) {
+      console.error('❌ Échec envoi OTP via Nexteranga:', error.response?.data || error.message);
+      return false;
+    }
   }
 
   // CallMeBot (non officiel, très simple)

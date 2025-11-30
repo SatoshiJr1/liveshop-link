@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const { authenticateToken } = require('../middleware/auth');
 const CreditService = require('../services/creditService');
+const OtpRateLimiter = require('../services/otpRateLimiter');
 
 // sendWhatsAppOTP maintenant délégué au service unifié
 const sendWhatsAppOTP = async (phone, otp) => otpService.sendOTP(phone, otp);
@@ -17,6 +18,15 @@ const sendWhatsAppOTP = async (phone, otp) => otpService.sendOTP(phone, otp);
 router.post('/register', async (req, res) => {
   const { name, phone_number } = req.body;
   if (!name || !phone_number) return res.status(400).json({ error: 'Nom et numéro requis' });
+  // Limitation d'envoi OTP inscription
+  const limitCheck = OtpRateLimiter.canSend(phone_number);
+  if (!limitCheck.ok) {
+    return res.status(429).json({
+      error: 'Limite envoi OTP atteinte',
+      code: limitCheck.code,
+      retry_after_seconds: limitCheck.retry_after_seconds
+    });
+  }
   // Générer OTP 6 chiffres
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   // Stocker OTP
@@ -27,7 +37,10 @@ router.post('/register', async (req, res) => {
   // Envoyer OTP WhatsApp
   const sent = await sendWhatsAppOTP(phone_number, otp);
   if (!sent) return res.status(500).json({ error: 'Erreur envoi OTP' });
-  res.json({ message: 'OTP envoyé', otp });
+  OtpRateLimiter.registerSend(phone_number);
+  // Ne plus renvoyer l'OTP dans la réponse (masqué pour sécurité)
+  // Pour tester en développement, consulter les logs serveur.
+  res.json({ message: 'OTP envoyé' });
 });
 
 // POST /api/auth/verify-otp
@@ -49,6 +62,11 @@ router.post('/verify-otp', async (req, res) => {
   });
   
   if (!otpEntry) {
+    const attemptCheck = OtpRateLimiter.canAttempt(phone_number, 'register');
+    if (!attemptCheck.ok) {
+      return res.status(429).json({ error: 'Trop de tentatives OTP', code: attemptCheck.code });
+    }
+    OtpRateLimiter.registerAttempt(phone_number, 'register', false);
     console.log('❌ OTP non trouvé ou invalide');
     // Debug: afficher tous les OTPs pour ce numéro
     const allOtps = await OTP.findAll({ 
@@ -68,6 +86,7 @@ router.post('/verify-otp', async (req, res) => {
   console.log('✅ OTP trouvé et valide');
   otpEntry.used = true;
   await otpEntry.save();
+  OtpRateLimiter.registerAttempt(phone_number, 'register', true);
   
   res.json({ 
     message: 'OTP validé avec succès',
@@ -199,6 +218,15 @@ router.post('/login', async (req, res) => {
 router.post('/forgot-pin', async (req, res) => {
   const { phone_number } = req.body;
   if (!phone_number) return res.status(400).json({ error: 'Numéro requis' });
+  // Limitation d'envoi OTP reset
+  const limitCheck = OtpRateLimiter.canSend(phone_number);
+  if (!limitCheck.ok) {
+    return res.status(429).json({
+      error: 'Limite envoi OTP atteinte',
+      code: limitCheck.code,
+      retry_after_seconds: limitCheck.retry_after_seconds
+    });
+  }
   // Générer OTP 6 chiffres
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   // Stocker OTP
@@ -206,6 +234,7 @@ router.post('/forgot-pin', async (req, res) => {
   // Envoyer OTP WhatsApp
   const sent = await sendWhatsAppOTP(phone_number, otp);
   if (!sent) return res.status(500).json({ error: 'Erreur envoi OTP' });
+  OtpRateLimiter.registerSend(phone_number);
   res.json({ message: 'OTP envoyé' });
 });
 
@@ -221,10 +250,19 @@ router.post('/reset-pin', async (req, res) => {
       otp,
       type: 'reset',
       used: false,
-      expires_at: { $gt: new Date() }
+      // Utilisation correcte de l'opérateur Sequelize pour la date d'expiration
+      expires_at: { [Op.gt]: new Date() }
     }
   });
-  if (!otpEntry) return res.status(400).json({ error: 'OTP invalide ou expiré' });
+  if (!otpEntry) {
+    const attemptCheck = OtpRateLimiter.canAttempt(phone_number, 'reset');
+    if (!attemptCheck.ok) {
+      return res.status(429).json({ error: 'Trop de tentatives OTP', code: attemptCheck.code });
+    }
+    OtpRateLimiter.registerAttempt(phone_number, 'reset', false);
+    return res.status(400).json({ error: 'OTP invalide ou expiré' });
+  }
+  OtpRateLimiter.registerAttempt(phone_number, 'reset', true);
   otpEntry.used = true;
   await otpEntry.save();
   // Mettre à jour le PIN
