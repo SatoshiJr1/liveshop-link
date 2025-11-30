@@ -104,6 +104,14 @@ class OtpService {
     };
 
     try {
+      // Log sécurisé (sans exposer le secret). Le message WhatsApp est formaté par Nexteranga à partir de `code` et `businessName`.
+      const maskedSecret = secret ? `${String(secret).slice(0,4)}...${String(secret).slice(-4)}` : 'none';
+      console.log('📤 Envoi OTP via Nexteranga:', {
+        url: apiUrl,
+        payload,
+        headers: { 'X-WA-SECRET': maskedSecret }
+      });
+
       const res = await axios.post(apiUrl, payload, {
         headers: {
           'Content-Type': 'application/json',
