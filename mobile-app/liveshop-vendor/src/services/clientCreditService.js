@@ -168,12 +168,17 @@ class ClientCreditService {
    */
   static async useCreditsForAction(actionType) {
     try {
-      // D'abord vérifier si le module de crédits est activé
-      const packagesData = await this.getPackages();
-      const isModuleEnabled = packagesData?.isEnabled ?? true; // Par défaut true si pas d'info
+      // D'abord vérifier l'état du module via la route /credits/packages
+      const packagesResponse = await this._request('/credits/packages');
+      // La structure est: { data: { success, data: { isEnabled, ... } } }
+      const packagesData = packagesResponse.data;
+      const isModuleEnabled = packagesData?.data?.isEnabled;
       
-      // Si le module est désactivé, l'action est gratuite
-      if (!isModuleEnabled) {
+      console.log('🔍 État du module de crédits:', { isModuleEnabled, packagesData });
+      
+      // Si le module est explicitement désactivé (false), l'action est gratuite
+      if (isModuleEnabled === false) {
+        console.log('✅ Module désactivé - action gratuite');
         return {
           success: true,
           creditsConsumed: 0,
@@ -181,10 +186,11 @@ class ClientCreditService {
           message: 'Module de crédits désactivé - action gratuite'
         };
       }
-
-      // D'abord vérifier si on a les crédits
+      
+      // Sinon, vérifier et consommer les crédits
       const check = await this.checkCredits(actionType);
       if (!check.hasCredits) {
+        console.warn('❌ Crédits insuffisants:', check);
         return {
           success: false,
           insufficientCredits: true,
@@ -199,6 +205,7 @@ class ClientCreditService {
       const consumption = await this.consumeCredits(actionType);
       return consumption;
     } catch (error) {
+      console.error('❌ Erreur dans useCreditsForAction:', error);
       throw this._handleError(error);
     }
   }
