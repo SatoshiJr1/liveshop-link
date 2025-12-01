@@ -171,7 +171,7 @@ const ProductsPage = () => {
         console.log('➕ Création d\'un nouveau produit');
         
         // Vérifier les crédits avant de créer le produit
-        const result = await useCreditsForAction('add_product', 'ajouter ce produit');
+        const result = await useCreditsForAction('ADD_PRODUCT', 'ajouter ce produit');
         
         if (!result.success) {
           // Le modal s'affiche automatiquement si crédits insuffisants
@@ -217,7 +217,7 @@ const ProductsPage = () => {
   const handleTogglePin = async (productId) => {
     try {
       // Utiliser les crédits via le contexte
-      const result = await useCreditsForAction('pin_product', 'épingler ce produit');
+      const result = await useCreditsForAction('PIN_PRODUCT', 'épingler ce produit');
       
       if (!result.success) {
         // Le modal s'affiche automatiquement si crédits insuffisants

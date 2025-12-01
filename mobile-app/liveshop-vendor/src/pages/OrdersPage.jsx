@@ -187,7 +187,7 @@ const OrdersPage = () => {
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
       // Utiliser les crédits via le contexte
-      const result = await useCreditsForAction('process_order', 'traiter cette commande');
+      const result = await useCreditsForAction('PROCESS_ORDER', 'traiter cette commande');
       
       if (!result.success) {
         // Le modal s'affiche automatiquement si crédits insuffisants
