@@ -236,6 +236,9 @@ router.get('/stats', authenticateToken, async (req, res) => {
  */
 router.get('/packages', async (req, res) => {
   try {
+    // Recharger la config depuis la DB pour s'assurer que les modifications du SuperAdmin sont prises en compte
+    await CreditService.loadConfigFromDatabase();
+    
     const packages = CreditService.getAvailablePackages();
     const actionCosts = CreditService.getActionCosts();
     const isEnabled = CreditService.isCreditsModuleEnabled();
