@@ -103,6 +103,22 @@ class ClientCreditService {
    */
   static async checkCredits(actionType) {
     try {
+      // D'abord vérifier l'état du module
+      const packagesResponse = await this._request('/credits/packages');
+      const packagesData = packagesResponse.data;
+      const isModuleEnabled = packagesData?.data?.isEnabled;
+      
+      // Si le module est désactivé, pas besoin de vérifier les crédits
+      if (isModuleEnabled === false) {
+        return {
+          hasCredits: true,
+          currentBalance: 0,
+          requiredCredits: 0,
+          actionType,
+          message: 'Module de crédits désactivé - action gratuite'
+        };
+      }
+
       // Récupérer le solde actuel (route: GET /credits, pas /credits/balance)
       const balanceResponse = await this._request('/credits');
       const currentBalance = balanceResponse.data?.data?.balance || balanceResponse.data?.balance || 0;
