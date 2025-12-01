@@ -342,6 +342,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // PATCH /api/products/:id/pin - Épingler/Désépingler un produit
 router.patch('/:id/pin', authenticateToken, async (req, res) => {
   try {
+    const CreditService = require('../services/creditService');
+    
+    // Recharger la config pour s'assurer qu'on a l'état actuel du module
+    await CreditService.loadConfigFromDatabase();
+    
     const product = await Product.findOne({
       where: { 
         id: req.params.id,
@@ -353,11 +358,9 @@ router.patch('/:id/pin', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Produit non trouvé' });
     }
 
-    // Si on épingle (pas déjà épinglé), vérifier et consommer les crédits
+    // Si on épingle (pas déjà épinglé), vérifier et consommer les crédits SEULEMENT si module activé
     if (!product.is_pinned) {
-      const CreditService = require('../services/creditService');
-      
-      // Vérifier les crédits
+      // Vérifier les crédits (le service gère le bypass si module désactivé)
       const creditCheck = await CreditService.hasEnoughCredits(req.seller.id, 'PIN_PRODUCT');
       if (!creditCheck.hasEnough) {
         return res.status(403).json({
@@ -372,7 +375,7 @@ router.patch('/:id/pin', authenticateToken, async (req, res) => {
         });
       }
 
-      // Consommer les crédits
+      // Consommer les crédits (le service gère le bypass si module désactivé)
       await CreditService.consumeCredits(req.seller.id, 'PIN_PRODUCT', {
         productId: req.params.id,
         productName: product.name
