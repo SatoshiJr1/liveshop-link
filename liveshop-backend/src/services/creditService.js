@@ -89,6 +89,16 @@ class CreditService {
         throw new Error('Vendeur non trouvé');
       }
 
+      // Bypass complet si le module est désactivé
+      if (!cachedConfig.ENABLED) {
+        return {
+          hasEnough: true,
+          currentBalance: seller.credit_balance,
+          requiredCredits: 0,
+          remainingCredits: seller.credit_balance
+        };
+      }
+
       const requiredCredits = cachedConfig.ACTION_COSTS[actionType];
       if (requiredCredits === undefined || requiredCredits === null) {
         console.error(`❌ Action type non reconnue: ${actionType}. ACTION_COSTS disponibles:`, cachedConfig.ACTION_COSTS);
@@ -119,6 +129,18 @@ class CreditService {
       const seller = await Seller.findByPk(sellerId, { transaction });
       if (!seller) {
         throw new Error('Vendeur non trouvé');
+      }
+
+      // Bypass consommation si module désactivé (aucune écriture DB, aucune transaction)
+      if (!cachedConfig.ENABLED) {
+        await transaction.rollback(); // Annuler la transaction ouverte inutilement
+        return {
+          success: true,
+          transaction: null,
+          newBalance: seller.credit_balance,
+          consumedCredits: 0,
+          bypassed: true
+        };
       }
 
       const requiredCredits = cachedConfig.ACTION_COSTS[actionType];

@@ -3,7 +3,7 @@ import ClientCreditService from '../services/clientCreditService';
 
 /**
  * Contexte global pour les crédits
- * Permet à toute l'application d'accéder aux informations de crédits
+ * Gère l'état du module et l'affichage du modal de crédits insuffisants
  */
 const CreditsContext = createContext();
 
@@ -15,8 +15,8 @@ export const CreditsProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [moduleInfo, setModuleInfo] = useState({
-    isEnabled: true,
-    mode: 'paid'
+    isEnabled: false, // Par défaut désactivé (comportement sûr)
+    actionCosts: {}
   });
   const [insufficientCreditsModal, setInsufficientCreditsModal] = useState({
     isOpen: false,
@@ -47,16 +47,25 @@ export const CreditsProvider = ({ children }) => {
    */
   const loadModuleInfo = useCallback(async () => {
     try {
-      const data = await ClientCreditService.getPackages();
+      const state = await ClientCreditService.getModuleState();
       setModuleInfo({
-        isEnabled: data?.isEnabled || true,
-        mode: data?.mode || 'paid',
-        message: data?.message || ''
+        isEnabled: state.isEnabled,
+        actionCosts: state.actionCosts
       });
     } catch (err) {
       console.error('Erreur lors du chargement des infos du module:', err);
+      // En cas d'erreur, considérer le module comme désactivé
+      setModuleInfo({ isEnabled: false, actionCosts: {} });
     }
   }, []);
+
+  /**
+   * Rafraîchir toutes les données
+   */
+  const refreshCredits = useCallback(async () => {
+    ClientCreditService.invalidateCache();
+    await Promise.all([loadBalance(), loadModuleInfo()]);
+  }, [loadBalance, loadModuleInfo]);
 
   /**
    * Afficher le modal de crédits insuffisants
@@ -88,14 +97,13 @@ export const CreditsProvider = ({ children }) => {
     try {
       const result = await ClientCreditService.useCreditsForAction(actionType);
       
-      // Si le module est désactivé, success = true
+      // Si module désactivé ou crédits suffisants
       if (result.success) {
-        await loadBalance();
         return result;
       }
       
-      if (!result.success && result.insufficientCredits) {
-        // Afficher le modal
+      // Crédits insuffisants - afficher le modal
+      if (result.insufficientCredits) {
         showInsufficientCreditsModal(
           result.currentBalance,
           result.requiredCredits,
@@ -109,17 +117,12 @@ export const CreditsProvider = ({ children }) => {
         };
       }
       
-      if (result.success) {
-        // Rafraîchir le solde
-        await loadBalance();
-      }
-      
       return result;
     } catch (err) {
       console.error('Erreur lors de l\'utilisation des crédits:', err);
       throw err;
     }
-  }, [showInsufficientCreditsModal, loadBalance]);
+  }, [showInsufficientCreditsModal]);
 
   /**
    * Acheter des crédits
@@ -136,6 +139,7 @@ export const CreditsProvider = ({ children }) => {
       if (result.success) {
         setBalance(result.data?.newBalance || 0);
         closeInsufficientCreditsModal();
+        await refreshCredits();
       }
       
       return result;
@@ -145,7 +149,7 @@ export const CreditsProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [closeInsufficientCreditsModal]);
+  }, [closeInsufficientCreditsModal, refreshCredits]);
 
   /**
    * Initialiser au montage
@@ -162,16 +166,18 @@ export const CreditsProvider = ({ children }) => {
     error,
     moduleInfo,
     insufficientCreditsModal,
+    
+    // Utilitaires
+    isModuleEnabled: moduleInfo.isEnabled,
 
     // Méthodes
     loadBalance,
     loadModuleInfo,
+    refreshCredits,
     useCreditsForAction,
     buyCredits,
     showInsufficientCreditsModal,
     closeInsufficientCreditsModal,
-    
-    // Utilitaires
     clearError: () => setError(null)
   };
 

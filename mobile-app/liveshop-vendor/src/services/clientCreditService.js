@@ -2,8 +2,17 @@ import apiService from './api';
 
 /**
  * Service client pour gérer les crédits
- * Inclut la vérification des crédits avant les actions
+ * Le backend gère la logique complète (bypass si module désactivé)
+ * Le frontend se contente de récupérer l'état et gérer l'affichage
  */
+
+// Cache pour éviter les appels répétés
+let moduleStateCache = {
+  isEnabled: null,
+  lastFetch: 0,
+  ttl: 30000 // 30 secondes de cache
+};
+
 class ClientCreditService {
   /**
    * Helper pour effectuer les requêtes avec fetch
@@ -20,22 +29,61 @@ class ClientCreditService {
     const data = await response.json();
 
     if (!response.ok) {
-      // Attacher le statut à l'erreur pour la gestion ultérieure (ex: 402)
       const error = new Error(data.error || data.message || 'Erreur API');
       error.status = response.status;
-      error.response = { data, status: response.status }; // Mimic axios structure for compatibility
+      error.response = { data, status: response.status };
       throw error;
     }
 
-    return { data }; // Mimic axios structure
+    return { data };
+  }
+
+  /**
+   * Récupérer l'état du module (avec cache)
+   * @returns {Promise<{isEnabled: boolean, actionCosts: Object}>}
+   */
+  static async getModuleState() {
+    const now = Date.now();
+    
+    // Utiliser le cache si valide
+    if (moduleStateCache.isEnabled !== null && (now - moduleStateCache.lastFetch) < moduleStateCache.ttl) {
+      return {
+        isEnabled: moduleStateCache.isEnabled,
+        actionCosts: moduleStateCache.actionCosts
+      };
+    }
+    
+    try {
+      const response = await this._request('/credits/packages');
+      const data = response.data?.data || response.data;
+      
+      moduleStateCache = {
+        isEnabled: data?.isEnabled === true,
+        actionCosts: data?.actionCosts || {},
+        lastFetch: now,
+        ttl: 30000
+      };
+      
+      return {
+        isEnabled: moduleStateCache.isEnabled,
+        actionCosts: moduleStateCache.actionCosts
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'état du module:', error);
+      // En cas d'erreur, considérer le module comme désactivé (comportement sûr)
+      return { isEnabled: false, actionCosts: {} };
+    }
+  }
+
+  /**
+   * Invalider le cache (à appeler après achat de crédits ou changement de config)
+   */
+  static invalidateCache() {
+    moduleStateCache.lastFetch = 0;
   }
 
   /**
    * Acheter des crédits
-   * @param {string} packageType - Type de package (BASIC, STANDARD, PREMIUM, UNLIMITED)
-   * @param {string} paymentMethod - Méthode de paiement (WAVE, ORANGE_MONEY)
-   * @param {string} phoneNumber - Numéro de téléphone pour le paiement
-   * @returns {Promise<Object>} Résultat de l'achat
    */
   static async purchaseCredits(packageType, paymentMethod, phoneNumber) {
     try {
@@ -47,6 +95,7 @@ class ClientCreditService {
           phoneNumber
         })
       });
+      this.invalidateCache();
       return response.data;
     } catch (error) {
       throw this._handleError(error);
@@ -55,13 +104,10 @@ class ClientCreditService {
 
   /**
    * Récupérer le solde actuel de crédits
-   * @returns {Promise<Object>} Informations sur les crédits
    */
   static async getBalance() {
     try {
-      // Route GET /credits (pas /credits/balance)
       const response = await this._request('/credits');
-      // La réponse est { success: true, data: { balance, sellerName, sellerId } }
       return response.data?.data || response.data;
     } catch (error) {
       throw this._handleError(error);
@@ -70,12 +116,11 @@ class ClientCreditService {
 
   /**
    * Récupérer les packages disponibles
-   * @returns {Promise<Object>} Liste des packages avec pricing
    */
   static async getPackages() {
     try {
       const response = await this._request('/credits/packages');
-      return response.data;
+      return response.data?.data || response.data;
     } catch (error) {
       throw this._handleError(error);
     }
@@ -83,8 +128,6 @@ class ClientCreditService {
 
   /**
    * Récupérer l'historique des transactions
-   * @param {Object} options - Options de filtrage
-   * @returns {Promise<Array>} Liste des transactions
    */
   static async getTransactionHistory(options = {}) {
     try {
@@ -98,40 +141,28 @@ class ClientCreditService {
 
   /**
    * Vérifier si l'utilisateur a assez de crédits pour une action
-   * @param {string} actionType - Type d'action (ADD_PRODUCT, PROCESS_ORDER, etc.)
-   * @returns {Promise<Object>} { hasCredits: boolean, currentBalance: number, requiredCredits: number }
+   * Utilise le cache du module pour éviter les appels inutiles
    */
   static async checkCredits(actionType) {
     try {
-      // D'abord vérifier l'état du module
-      const packagesResponse = await this._request('/credits/packages');
-      const packagesData = packagesResponse.data;
-      const isModuleEnabled = packagesData?.data?.isEnabled;
+      const moduleState = await this.getModuleState();
       
-      // Si le module est désactivé, pas besoin de vérifier les crédits
-      if (isModuleEnabled === false) {
+      // Si module désactivé, pas besoin de vérifier
+      if (!moduleState.isEnabled) {
         return {
           hasCredits: true,
           currentBalance: 0,
           requiredCredits: 0,
           actionType,
+          moduleDisabled: true,
           message: 'Module de crédits désactivé - action gratuite'
         };
       }
 
-      // Récupérer le solde actuel (route: GET /credits, pas /credits/balance)
-      const balanceResponse = await this._request('/credits');
-      const currentBalance = balanceResponse.data?.data?.balance || balanceResponse.data?.balance || 0;
-
-      // Récupérer les coûts des actions (à ajouter dans l'API)
-      const actionCosts = {
-        ADD_PRODUCT: 1,
-        PROCESS_ORDER: 2,
-        PIN_PRODUCT: 3,
-        GENERATE_CUSTOMER_CARD: 2
-      };
-
-      const requiredCredits = actionCosts[actionType] || 0;
+      // Module activé: récupérer le solde et vérifier
+      const balance = await this.getBalance();
+      const currentBalance = balance?.balance || 0;
+      const requiredCredits = moduleState.actionCosts[actionType] || 0;
       const hasCredits = currentBalance >= requiredCredits;
 
       return {
@@ -139,9 +170,10 @@ class ClientCreditService {
         currentBalance,
         requiredCredits,
         actionType,
+        moduleDisabled: false,
         message: hasCredits
           ? `Vous avez ${currentBalance} crédits`
-          : `Crédits insuffisants: vous en avez ${currentBalance} mais ${requiredCredits} sont nécessaires`
+          : `Crédits insuffisants: ${currentBalance}/${requiredCredits}`
       };
     } catch (error) {
       console.error('Erreur lors de la vérification des crédits:', error);
@@ -150,63 +182,28 @@ class ClientCreditService {
   }
 
   /**
-   * Consommer des crédits pour une action
-   * @param {string} actionType - Type d'action
-   * @returns {Promise<Object>} Résultat de la consommation
-   */
-  static async consumeCredits(actionType) {
-    try {
-      const response = await this._request('/credits/consume', {
-        method: 'POST',
-        body: JSON.stringify({ actionType })
-      });
-      return response.data;
-    } catch (error) {
-      // Si 402 Payment Required, retourner l'information
-      if (error.status === 402 || error.response?.status === 402) {
-        return {
-          success: false,
-          insufficientCredits: true,
-          error: error.response?.data?.error,
-          message: error.response?.data?.message,
-          creditsInfo: error.response?.data?.creditsInfo
-        };
-      }
-      throw this._handleError(error);
-    }
-  }
-
-  /**
    * Utiliser des crédits pour effectuer une action
-   * Combine vérification et consommation
-   * @param {string} actionType - Type d'action
-   * @returns {Promise<Object>} Résultat
+   * Le backend gère tout (bypass si module désactivé, consommation si activé)
+   * Cette méthode est appelée AVANT l'action pour pré-vérifier côté frontend
    */
   static async useCreditsForAction(actionType) {
     try {
-      // D'abord vérifier l'état du module via la route /credits/packages
-      const packagesResponse = await this._request('/credits/packages');
-      // La structure est: { data: { success, data: { isEnabled, ... } } }
-      const packagesData = packagesResponse.data;
-      const isModuleEnabled = packagesData?.data?.isEnabled;
+      const moduleState = await this.getModuleState();
       
-      console.log('🔍 État du module de crédits:', { isModuleEnabled, packagesData });
-      
-      // Si le module est explicitement désactivé (false), l'action est gratuite
-      if (isModuleEnabled === false) {
-        console.log('✅ Module désactivé - action gratuite');
+      // Si module désactivé, succès immédiat (le backend fera le bypass aussi)
+      if (!moduleState.isEnabled) {
         return {
           success: true,
           creditsConsumed: 0,
-          newBalance: 0,
+          moduleDisabled: true,
           message: 'Module de crédits désactivé - action gratuite'
         };
       }
       
-      // Sinon, vérifier et consommer les crédits
+      // Module activé: vérifier les crédits côté frontend avant l'action
       const check = await this.checkCredits(actionType);
+      
       if (!check.hasCredits) {
-        console.warn('❌ Crédits insuffisants:', check);
         return {
           success: false,
           insufficientCredits: true,
@@ -217,11 +214,17 @@ class ClientCreditService {
         };
       }
 
-      // Ensuite consommer les crédits
-      const consumption = await this.consumeCredits(actionType);
-      return consumption;
+      // Crédits suffisants - l'action peut continuer
+      // La consommation sera faite par le backend via le middleware
+      return {
+        success: true,
+        preCheck: true,
+        currentBalance: check.currentBalance,
+        requiredCredits: check.requiredCredits,
+        message: 'Crédits vérifiés - action autorisée'
+      };
     } catch (error) {
-      console.error('❌ Erreur dans useCreditsForAction:', error);
+      console.error('Erreur dans useCreditsForAction:', error);
       throw this._handleError(error);
     }
   }
@@ -232,22 +235,20 @@ class ClientCreditService {
    */
   static _handleError(error) {
     if (error.response) {
-      // Erreur HTTP
       return {
         success: false,
         status: error.response.status,
         error: error.response.data?.error || 'Erreur serveur',
-        message: error.response.data?.message || error.message
+        message: error.response.data?.message || error.message,
+        details: error.response.data?.details
       };
     } else if (error.request) {
-      // Pas de réponse du serveur
       return {
         success: false,
         error: 'Pas de réponse du serveur',
         message: 'Vérifiez votre connexion internet'
       };
     } else {
-      // Erreur client
       return {
         success: false,
         error: 'Erreur client',
