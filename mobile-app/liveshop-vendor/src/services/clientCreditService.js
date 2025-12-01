@@ -168,6 +168,20 @@ class ClientCreditService {
    */
   static async useCreditsForAction(actionType) {
     try {
+      // D'abord vérifier si le module de crédits est activé
+      const packagesData = await this.getPackages();
+      const isModuleEnabled = packagesData?.isEnabled ?? true; // Par défaut true si pas d'info
+      
+      // Si le module est désactivé, l'action est gratuite
+      if (!isModuleEnabled) {
+        return {
+          success: true,
+          creditsConsumed: 0,
+          newBalance: 0,
+          message: 'Module de crédits désactivé - action gratuite'
+        };
+      }
+
       // D'abord vérifier si on a les crédits
       const check = await this.checkCredits(actionType);
       if (!check.hasCredits) {
