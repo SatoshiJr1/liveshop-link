@@ -59,8 +59,10 @@ class ClientCreditService {
    */
   static async getBalance() {
     try {
-      const response = await this._request('/credits/balance');
-      return response.data;
+      // Route GET /credits (pas /credits/balance)
+      const response = await this._request('/credits');
+      // La réponse est { success: true, data: { balance, sellerName, sellerId } }
+      return response.data?.data || response.data;
     } catch (error) {
       throw this._handleError(error);
     }
@@ -101,9 +103,9 @@ class ClientCreditService {
    */
   static async checkCredits(actionType) {
     try {
-      // Récupérer le solde actuel
-      const balanceResponse = await this._request('/credits/balance');
-      const currentBalance = balanceResponse.data?.balance || 0;
+      // Récupérer le solde actuel (route: GET /credits, pas /credits/balance)
+      const balanceResponse = await this._request('/credits');
+      const currentBalance = balanceResponse.data?.data?.balance || balanceResponse.data?.balance || 0;
 
       // Récupérer les coûts des actions (à ajouter dans l'API)
       const actionCosts = {
