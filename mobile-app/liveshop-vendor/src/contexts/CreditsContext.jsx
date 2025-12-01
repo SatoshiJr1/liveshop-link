@@ -86,21 +86,13 @@ export const CreditsProvider = ({ children }) => {
    */
   const useCreditsForAction = useCallback(async (actionType, actionName = 'cette action') => {
     try {
-      // D'abord vérifier l'état du module
-      const packagesData = await ClientCreditService.getPackages();
-      const isModuleEnabled = packagesData?.isEnabled ?? true;
-      
-      // Si le module est désactivé, l'action est gratuite
-      if (!isModuleEnabled) {
-        return {
-          success: true,
-          creditsConsumed: 0,
-          newBalance: 0,
-          message: 'Module de crédits désactivé - action gratuite'
-        };
-      }
-      
       const result = await ClientCreditService.useCreditsForAction(actionType);
+      
+      // Si le module est désactivé, success = true
+      if (result.success) {
+        await loadBalance();
+        return result;
+      }
       
       if (!result.success && result.insufficientCredits) {
         // Afficher le modal
