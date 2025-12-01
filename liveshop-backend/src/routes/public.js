@@ -4,6 +4,7 @@ const { Seller, Product, Order, Comment } = require('../models');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const notificationService = require('../services/notificationService');
+const whatsappService = require('../services/whatsappNotificationService');
 const { uploadPaymentProof } = require('../config/cloudinary');
 
 const router = express.Router();
@@ -310,6 +311,14 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
     } catch (error) {
       console.error('❌ Erreur lors de l\'envoi de la notification:', error);
       notificationSent = false;
+    }
+
+    // 📲 NOTIFICATIONS WHATSAPP - Nouvelle commande
+    try {
+      console.log(`📲 Envoi notifications WhatsApp pour commande #${order.id}`);
+      await whatsappService.notifyNewOrder(order, product, seller);
+    } catch (whatsappError) {
+      console.error('⚠️ Erreur WhatsApp (non bloquante):', whatsappError.message);
     }
 
     res.status(201).json({
