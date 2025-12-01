@@ -14,17 +14,36 @@ class WhatsAppNotificationService {
   }
 
   /**
-   * Normalise un numéro de téléphone pour l'API (sans le +)
+   * Normalise un numéro de téléphone pour l'API (sans le +, avec indicatif)
+   * Gère plusieurs formats: +221771234567, 221771234567, 771234567, 77 123 45 67
    */
   normalizePhone(phone) {
     if (!phone) return null;
-    return String(phone).replace(/^\+/, '').replace(/\s/g, '');
+    
+    // Nettoyer le numéro
+    let cleaned = String(phone).replace(/[\s\-\.\(\)]/g, '').trim();
+    
+    // Enlever le + au début
+    cleaned = cleaned.replace(/^\+/, '');
+    
+    // Si le numéro commence par 7 ou 6 (Sénégal sans indicatif), ajouter 221
+    if (/^[76]\d{8}$/.test(cleaned)) {
+      cleaned = '221' + cleaned;
+    }
+    
+    // Vérifier que c'est un numéro valide (au moins 9 chiffres)
+    if (!/^\d{9,15}$/.test(cleaned)) {
+      console.warn('⚠️ Format de numéro invalide après normalisation:', phone, '->', cleaned);
+      return null;
+    }
+    
+    return cleaned;
   }
 
   /**
-   * Envoie un message WhatsApp
+   * Envoie un message WhatsApp avec retry
    */
-  async sendMessage(phone, message) {
+  async sendMessage(phone, message, retries = 2) {
     if (!this.enabled) {
       console.log('📵 Notifications WhatsApp désactivées');
       return { success: false, reason: 'disabled' };
@@ -33,32 +52,41 @@ class WhatsAppNotificationService {
     const normalizedPhone = this.normalizePhone(phone);
     if (!normalizedPhone) {
       console.warn('⚠️ Numéro de téléphone invalide:', phone);
-      return { success: false, reason: 'invalid_phone' };
+      return { success: false, reason: 'invalid_phone', originalPhone: phone };
     }
 
-    try {
-      const res = await axios.post(this.apiUrl, {
-        phone: normalizedPhone,
-        message: message
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WA-SECRET': this.secret
-        },
-        timeout: 10000
-      });
+    console.log(`📤 Tentative envoi WhatsApp à ${normalizedPhone} (original: ${phone})`);
 
-      if (res.status >= 200 && res.status < 300) {
-        console.log('✅ WhatsApp envoyé à', normalizedPhone);
-        return { success: true };
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await axios.post(this.apiUrl, {
+          phone: normalizedPhone,
+          message: message
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WA-SECRET': this.secret
+          },
+          timeout: 15000
+        });
+
+        if (res.status >= 200 && res.status < 300) {
+          console.log(`✅ WhatsApp envoyé à ${normalizedPhone} (tentative ${attempt})`);
+          return { success: true, phone: normalizedPhone };
+        }
+
+        console.error(`❌ Erreur WhatsApp (tentative ${attempt}):`, res.status, res.data);
+      } catch (error) {
+        console.error(`❌ Échec envoi WhatsApp (tentative ${attempt}):`, error.message);
+        
+        if (attempt < retries) {
+          console.log(`🔄 Nouvelle tentative dans 1s...`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
-
-      console.error('❌ Erreur WhatsApp:', res.status, res.data);
-      return { success: false, reason: 'api_error' };
-    } catch (error) {
-      console.error('❌ Échec envoi WhatsApp:', error.message);
-      return { success: false, reason: error.message };
     }
+
+    return { success: false, reason: 'all_retries_failed', phone: normalizedPhone };
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -236,21 +264,52 @@ _${this.appName}_`;
    * Notifier une nouvelle commande (client + vendeur)
    */
   async notifyNewOrder(order, product, seller) {
+    console.log('═══════════════════════════════════════════');
+    console.log('📱 NOTIFICATION NOUVELLE COMMANDE #' + order?.id);
+    console.log('═══════════════════════════════════════════');
+    
     const results = { client: null, seller: null };
 
+    // Debug: afficher les données disponibles
+    console.log('📋 Données commande:', {
+      id: order?.id,
+      customer_name: order?.customer_name,
+      customer_phone: order?.customer_phone,
+      customerPhone: order?.customerPhone,
+      total_price: order?.total_price
+    });
+    console.log('📦 Produit:', product?.name || 'Non défini');
+    console.log('🏪 Vendeur:', seller?.name, '- Tel:', seller?.phone_number);
+
+    // Récupérer le téléphone du client (plusieurs noms possibles)
+    const clientPhone = order?.customer_phone || order?.customerPhone || order?.phone;
+    
     // Message au client
-    if (order.customer_phone) {
+    if (clientPhone) {
+      console.log('📤 Envoi au CLIENT:', clientPhone);
       const clientMessage = this.getOrderCreatedClientMessage(order, product, seller);
-      results.client = await this.sendMessage(order.customer_phone, clientMessage);
+      results.client = await this.sendMessage(clientPhone, clientMessage);
+      console.log('✉️ Résultat client:', results.client);
+    } else {
+      console.warn('⚠️ Pas de téléphone client disponible!');
+      results.client = { success: false, reason: 'no_client_phone' };
     }
 
     // Message au vendeur
-    if (seller?.phone_number) {
+    const sellerPhone = seller?.phone_number || seller?.phoneNumber || seller?.phone;
+    if (sellerPhone) {
+      console.log('📤 Envoi au VENDEUR:', sellerPhone);
       const sellerMessage = this.getOrderCreatedSellerMessage(order, product, order);
-      results.seller = await this.sendMessage(seller.phone_number, sellerMessage);
+      results.seller = await this.sendMessage(sellerPhone, sellerMessage);
+      console.log('✉️ Résultat vendeur:', results.seller);
+    } else {
+      console.warn('⚠️ Pas de téléphone vendeur disponible!');
+      results.seller = { success: false, reason: 'no_seller_phone' };
     }
 
-    console.log('📲 Notifications nouvelle commande:', results);
+    console.log('═══════════════════════════════════════════');
+    console.log('📲 RÉSUMÉ NOTIFICATIONS:', results);
+    console.log('═══════════════════════════════════════════');
     return results;
   }
 
@@ -258,14 +317,32 @@ _${this.appName}_`;
    * Notifier validation de commande (client uniquement)
    */
   async notifyOrderValidated(order, product, seller) {
-    if (!order.customer_phone) {
+    console.log('═══════════════════════════════════════════');
+    console.log('✅ NOTIFICATION COMMANDE VALIDÉE #' + order?.id);
+    console.log('═══════════════════════════════════════════');
+    
+    // Debug: afficher les données disponibles
+    console.log('📋 Données commande:', {
+      id: order?.id,
+      customer_name: order?.customer_name,
+      customer_phone: order?.customer_phone,
+      customerPhone: order?.customerPhone,
+      status: order?.status
+    });
+    
+    const clientPhone = order?.customer_phone || order?.customerPhone || order?.phone;
+    
+    if (!clientPhone) {
+      console.warn('⚠️ Pas de téléphone client pour notification validation!');
       return { success: false, reason: 'no_phone' };
     }
 
+    console.log('📤 Envoi notification validation au CLIENT:', clientPhone);
     const message = this.getOrderValidatedClientMessage(order, product, seller);
-    const result = await this.sendMessage(order.customer_phone, message);
+    const result = await this.sendMessage(clientPhone, message);
     
-    console.log('📲 Notification commande validée:', result);
+    console.log('📲 Résultat notification validée:', result);
+    console.log('═══════════════════════════════════════════');
     return result;
   }
 
@@ -273,14 +350,32 @@ _${this.appName}_`;
    * Notifier livraison de commande (client uniquement)
    */
   async notifyOrderDelivered(order, product, seller) {
-    if (!order.customer_phone) {
+    console.log('═══════════════════════════════════════════');
+    console.log('🚚 NOTIFICATION COMMANDE LIVRÉE #' + order?.id);
+    console.log('═══════════════════════════════════════════');
+    
+    // Debug: afficher les données disponibles
+    console.log('📋 Données commande:', {
+      id: order?.id,
+      customer_name: order?.customer_name,
+      customer_phone: order?.customer_phone,
+      customerPhone: order?.customerPhone,
+      status: order?.status
+    });
+    
+    const clientPhone = order?.customer_phone || order?.customerPhone || order?.phone;
+    
+    if (!clientPhone) {
+      console.warn('⚠️ Pas de téléphone client pour notification livraison!');
       return { success: false, reason: 'no_phone' };
     }
 
+    console.log('📤 Envoi notification livraison au CLIENT:', clientPhone);
     const message = this.getOrderDeliveredClientMessage(order, product, seller);
-    const result = await this.sendMessage(order.customer_phone, message);
+    const result = await this.sendMessage(clientPhone, message);
     
-    console.log('📲 Notification commande livrée:', result);
+    console.log('📲 Résultat notification livrée:', result);
+    console.log('═══════════════════════════════════════════');
     return result;
   }
 }
