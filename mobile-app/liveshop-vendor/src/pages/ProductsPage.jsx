@@ -67,7 +67,13 @@ const ProductsPage = () => {
   };
 
   // Gestion des événements temps réel
-  const handleProductCreated = (newProduct) => {
+  const handleProductCreated = (data) => {
+    // Le WebSocket envoie { product, seller_id, seller_name }
+    const newProduct = data?.product || data;
+    if (!newProduct?.id) {
+      console.warn('⚠️ Produit reçu sans ID valide:', data);
+      return;
+    }
     console.log('🆕 Nouveau produit créé:', newProduct);
     setProducts(prev => [newProduct, ...prev.slice(0, -1)]); // Ajouter au début, retirer le dernier
     setTotalProducts(prev => prev + 1);
@@ -76,7 +82,13 @@ const ProductsPage = () => {
     showNotification('Nouveau produit ajouté', 'success');
   };
 
-  const handleProductUpdated = (updatedProduct) => {
+  const handleProductUpdated = (data) => {
+    // Le WebSocket envoie { product, seller_id, seller_name }
+    const updatedProduct = data?.product || data;
+    if (!updatedProduct?.id) {
+      console.warn('⚠️ Produit mis à jour sans ID valide:', data);
+      return;
+    }
     console.log('✏️ Produit mis à jour:', updatedProduct);
     setProducts(prev => prev.map(product => 
       product.id === updatedProduct.id ? updatedProduct : product
@@ -86,9 +98,15 @@ const ProductsPage = () => {
     showNotification('Produit mis à jour', 'info');
   };
 
-  const handleProductDeleted = (deletedProduct) => {
-    console.log('🗑️ Produit supprimé:', deletedProduct);
-    setProducts(prev => prev.filter(product => product.id !== deletedProduct.id));
+  const handleProductDeleted = (data) => {
+    // Le WebSocket peut envoyer { product_id } ou { id }
+    const deletedId = data?.product_id || data?.id || data;
+    if (!deletedId) {
+      console.warn('⚠️ Suppression reçue sans ID valide:', data);
+      return;
+    }
+    console.log('🗑️ Produit supprimé:', deletedId);
+    setProducts(prev => prev.filter(product => product.id !== deletedId));
     setTotalProducts(prev => prev - 1);
     
     // Notification toast
@@ -201,6 +219,12 @@ const ProductsPage = () => {
   };
 
   const handleDelete = async (productId) => {
+    if (!productId) {
+      console.error('❌ Impossible de supprimer: ID du produit manquant');
+      alert('Erreur: ID du produit manquant. Veuillez rafraîchir la page.');
+      return;
+    }
+    
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
       return;
     }

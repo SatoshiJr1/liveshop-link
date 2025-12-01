@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { requireAndConsumeCredits } = require('../middleware/creditMiddleware');
 const { Op } = require('sequelize');
 const notificationService = require('../services/notificationService');
+const whatsappService = require('../services/whatsappNotificationService');
 
 const router = express.Router();
 
@@ -169,6 +170,21 @@ router.put('/:id/status', authenticateToken, ...requireAndConsumeCredits('PROCES
       console.log('✅ Notification de mise à jour de statut envoyée:', sent);
     } catch (error) {
       console.error('❌ Erreur lors de l\'envoi de la notification de mise à jour:', error);
+    }
+
+    // 📲 NOTIFICATIONS WHATSAPP - Changement de statut
+    try {
+      if (status === 'paid') {
+        // Commande validée
+        console.log(`📲 Envoi WhatsApp: Commande #${order.id} validée`);
+        await whatsappService.notifyOrderValidated(order, order.product, req.seller);
+      } else if (status === 'delivered') {
+        // Commande livrée
+        console.log(`📲 Envoi WhatsApp: Commande #${order.id} livrée`);
+        await whatsappService.notifyOrderDelivered(order, order.product, req.seller);
+      }
+    } catch (whatsappError) {
+      console.error('⚠️ Erreur WhatsApp (non bloquante):', whatsappError.message);
     }
 
     res.json({
