@@ -64,7 +64,6 @@ router.get('/:linkId/products', validatePublicLink, async (req, res) => {
         is_pinned: product.is_pinned,
         attributes: product.attributes,
         category: product.category,
-        product_code: product.product_code,
         created_at: product.created_at
       }))
     });
@@ -519,7 +518,7 @@ router.get('/:linkId/live/:liveSlug', validatePublicLink, async (req, res) => {
         model: Product,
         through: { attributes: [] }, // Ne pas inclure les attributs de la table de liaison
         where: { seller_id: seller.id },
-        attributes: ['id', 'name', 'price', 'description', 'image_url', 'images', 'stock_quantity', 'is_pinned', 'attributes', 'category', 'product_code', 'created_at']
+        attributes: ['id', 'name', 'price', 'description', 'image_url', 'images', 'stock_quantity', 'is_pinned', 'attributes', 'category', 'created_at']
       }]
     });
 

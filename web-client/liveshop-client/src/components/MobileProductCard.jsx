@@ -222,27 +222,25 @@ const MobileProductCard = ({ product, onOrder }) => {
             </p>
           )}
 
-          {/* Attributs du produit */}
+          {/* Attributs du produit - UX optimisée mobile */}
           {hasAttributes && (
             <div className="mb-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                {attributes.slice(0, showAttributes ? attributes.length : 2).map(([key, value]) => (
-                  <Badge 
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {attributes.slice(0, showAttributes ? attributes.length : 3).map(([key, value]) => (
+                  <span 
                     key={key}
-                    variant="secondary"
-                    className={`${getAttributeColor(key)} text-xs font-medium px-2 py-1 rounded-md`}
+                    className={`${getAttributeColor(key)} text-xs px-2 py-0.5 rounded-full inline-flex items-center`}
                   >
-                    <span className="font-semibold">{formatAttributeKey(key)}:</span> {value}
-                  </Badge>
+                    {value}
+                  </span>
                 ))}
                 
-                {attributes.length > 2 && (
+                {attributes.length > 3 && !showAttributes && (
                   <button
-                    onClick={() => setShowAttributes(!showAttributes)}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    onClick={() => setShowAttributes(true)}
+                    className="text-xs text-gray-500 hover:text-blue-600 px-1"
                   >
-                    <Info className="w-3 h-3" />
-                    {showAttributes ? 'Moins' : `+${attributes.length - 2} autres`}
+                    +{attributes.length - 3}
                   </button>
                 )}
               </div>
