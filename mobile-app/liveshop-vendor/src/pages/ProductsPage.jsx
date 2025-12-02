@@ -18,11 +18,14 @@ import {
   ChevronRight,
   Camera,
   Tag,
-  Maximize2
+  Maximize2,
+  Search,
+  X
 } from 'lucide-react';
 import ProductForm from '../components/ProductForm';
 import ImageLightbox from '../components/ImageLightbox';
 import InsufficientCreditsModal from '../components/InsufficientCreditsModal';
+import { Input } from '@/components/ui/input';
 
 const ProductsPage = () => {
   const { refreshCredits } = useAuth();
@@ -36,6 +39,9 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  
+  // État pour la recherche
+  const [searchQuery, setSearchQuery] = useState('');
   
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -185,6 +191,7 @@ const ProductsPage = () => {
         console.log('📝 Modification du produit:', editingProduct.id);
         await ApiService.updateProduct(editingProduct.id, productData);
         console.log('✅ Produit modifié avec succès');
+        showNotification('Produit modifié avec succès', 'success');
       } else {
         console.log('➕ Création d\'un nouveau produit');
         
@@ -196,8 +203,17 @@ const ProductsPage = () => {
           throw new Error('Crédits insuffisants pour ajouter un produit');
         }
         
-        await ApiService.createProduct(productData);
-        console.log('✅ Produit créé avec succès');
+        const response = await ApiService.createProduct(productData);
+        const createdProduct = response?.product || response;
+        console.log('✅ Produit créé avec succès:', createdProduct);
+        
+        // Afficher le code produit généré au vendeur
+        if (createdProduct?.product_code) {
+          alert(`✅ Produit créé avec succès !\n\n📦 Code produit: ${createdProduct.product_code}\n\nNotez ce numéro pour retrouver facilement ce produit pendant vos lives.`);
+        } else {
+          showNotification('Produit créé avec succès', 'success');
+        }
+        
         // Rafraîchir les crédits après création d'un produit
         await refreshCredits();
       }
@@ -285,6 +301,39 @@ const ProductsPage = () => {
     }
   };
 
+  // Filtrer les produits par recherche (code, nom, catégorie)
+  const filteredProducts = products.filter(product => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase().trim();
+    const queryNumber = query.replace('#', ''); // Pour recherche par numéro seul
+    
+    // Recherche par code produit (#001, #002, ou juste 1, 2)
+    if (product.product_code) {
+      const code = product.product_code.toLowerCase();
+      if (code.includes(query) || code.includes(`#${queryNumber}`)) {
+        return true;
+      }
+      // Recherche par numéro sans le #
+      const codeNumber = code.replace('#', '');
+      if (codeNumber === queryNumber || codeNumber.endsWith(queryNumber)) {
+        return true;
+      }
+    }
+    
+    // Recherche par nom
+    if (product.name?.toLowerCase().includes(query)) {
+      return true;
+    }
+    
+    // Recherche par catégorie
+    if (product.category?.toLowerCase().includes(query)) {
+      return true;
+    }
+    
+    return false;
+  });
+
   const renderProductCard = (product) => {
     // Traiter les images qui peuvent être une chaîne JSON
     let images = product.images;
@@ -323,6 +372,13 @@ const ProductsPage = () => {
     return (
       <Card key={product.id} className="relative group hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <div className="relative">
+          {/* Badge code produit */}
+          {product.product_code && (
+            <div className="absolute top-2 left-2 z-10 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded-md">
+              {product.product_code}
+            </div>
+          )}
+          
           {mainImageUrl ? (
             <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: mainImageUrl, name: product.name })}>
               <img
@@ -567,6 +623,41 @@ const ProductsPage = () => {
 
   return (
     <div className="space-y-3 md:space-y-6">
+      {/* Barre de recherche - Toujours visible */}
+      <div className="relative">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Rechercher par code (#001), nom ou catégorie..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10 py-2 w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {/* Indicateur de résultats de recherche */}
+        {searchQuery && (
+          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            {filteredProducts.length === 0 ? (
+              <span className="text-red-500">Aucun produit trouvé pour "{searchQuery}"</span>
+            ) : (
+              <span>{filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} trouvé{filteredProducts.length > 1 ? 's' : ''}</span>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Header avec titre et bouton d'ajout - Desktop seulement */}
       <div className="hidden md:flex md:items-center md:justify-between mb-6">
         <div>
@@ -687,7 +778,7 @@ const ProductsPage = () => {
       </div>
 
       {/* Grille de produits */}
-      {products.length === 0 ? (
+      {filteredProducts.length === 0 && !searchQuery ? (
         <Card className="text-center py-12 md:py-16 border-0 shadow-sm bg-gradient-to-br from-gray-50 to-gray-100">
           <CardContent className="px-4 md:px-6">
             <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
@@ -701,10 +792,24 @@ const ProductsPage = () => {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredProducts.length === 0 && searchQuery ? (
+        <Card className="text-center py-12 md:py-16 border-0 shadow-sm bg-gradient-to-br from-gray-50 to-gray-100">
+          <CardContent className="px-4 md:px-6">
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
+              <Search className="w-8 h-8 md:w-10 md:h-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">Aucun résultat</h3>
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 px-4">Aucun produit ne correspond à "{searchQuery}"</p>
+            <Button onClick={() => setSearchQuery('')} variant="outline" className="px-6 py-3 text-sm md:text-base">
+              <X className="w-4 h-4 md:w-4 md:h-4 mr-2" />
+              Effacer la recherche
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-6">
-            {products.map(renderProductCard)}
+            {filteredProducts.map(renderProductCard)}
           </div>
 
           {/* Pagination optimisée pour mobile */}
