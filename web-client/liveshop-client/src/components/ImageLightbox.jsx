@@ -153,7 +153,7 @@ const ImageLightbox = ({ imageUrl, images = [], productName, onClose, isOpen, in
 
       {/* Nom du produit */}
       <div className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg backdrop-blur-sm">
-        <p className="font-medium">{productName}</p>
+        <p className="font-medium">{String(productName || '')}</p>
       </div>
 
       {/* Miniatures en bas (si plusieurs images) */}
