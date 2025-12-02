@@ -70,11 +70,21 @@ const MobileProductCard = ({ product, onOrder }) => {
   const getProductAttributes = () => {
     if (!product.attributes) return [];
     
-    const attrs = typeof product.attributes === 'string' 
-      ? JSON.parse(product.attributes) 
-      : product.attributes;
-    
-    return Object.entries(attrs).filter(([key, value]) => value);
+    try {
+      const attrs = typeof product.attributes === 'string' 
+        ? JSON.parse(product.attributes) 
+        : product.attributes;
+      
+      if (!attrs || typeof attrs !== 'object') return [];
+      
+      // S'assurer que chaque valeur est une string
+      return Object.entries(attrs)
+        .filter(([key, value]) => value && typeof value !== 'object')
+        .map(([key, value]) => [key, String(value)]);
+    } catch (e) {
+      console.error('Erreur parsing attributs:', e);
+      return [];
+    }
   };
 
   const attributes = getProductAttributes();
@@ -231,7 +241,7 @@ const MobileProductCard = ({ product, onOrder }) => {
                     key={key}
                     className={`${getAttributeColor(key)} text-xs px-2 py-0.5 rounded-full inline-flex items-center`}
                   >
-                    {value}
+                    {String(value)}
                   </span>
                 ))}
                 
