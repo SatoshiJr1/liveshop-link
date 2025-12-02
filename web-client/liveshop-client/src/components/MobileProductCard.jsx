@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,9 @@ import {
   Plus,
   Minus,
   Maximize2,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import ImageLightbox from './ImageLightbox';
@@ -18,10 +20,43 @@ const MobileProductCard = ({ product, onOrder }) => {
   const { addToCart, items, updateQuantity } = useCart();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [showAttributes, setShowAttributes] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Vérifier si le produit est dans le panier
   const cartItem = items.find(item => item.id === product.id);
   const isInCart = !!cartItem;
+
+  // Construire le tableau d'images du produit
+  const productImages = useMemo(() => {
+    const imgs = [];
+    
+    // Ajouter les images du tableau images si disponible
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      product.images.forEach(img => {
+        const url = typeof img === 'string' ? img : img.url || img.optimizedUrl || img.thumbnailUrl;
+        if (url) imgs.push(url);
+      });
+    }
+    
+    // Fallback sur image_url si pas d'images multiples
+    if (imgs.length === 0 && product.image_url) {
+      imgs.push(product.image_url);
+    }
+    
+    return imgs;
+  }, [product.images, product.image_url]);
+
+  const hasMultipleImages = productImages.length > 1;
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex(prev => prev === 0 ? productImages.length - 1 : prev - 1);
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex(prev => prev === productImages.length - 1 ? 0 : prev + 1);
+  };
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -74,28 +109,73 @@ const MobileProductCard = ({ product, onOrder }) => {
     <>
     <Card className="bg-white border-0 shadow-sm rounded-2xl overflow-hidden">
       <CardContent className="p-0">
-        {/* Image du produit */}
+        {/* Image du produit avec galerie */}
         <div className="relative group">
-          {product.image_url ? (
+          {productImages.length > 0 ? (
             <div 
               className="aspect-square bg-gray-100 cursor-pointer relative overflow-hidden"
               onClick={() => setLightboxOpen(true)}
             >
               <img
-                src={product.image_url}
-                alt={product.name}
+                src={productImages[currentImageIndex]}
+                alt={`${product.name} - Image ${currentImageIndex + 1}`}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
               {/* Overlay hover avec icône zoom */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
                 <Maximize2 className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
+
+              {/* Flèches de navigation si plusieurs images */}
+              {hasMultipleImages && (
+                <>
+                  <button
+                    onClick={handlePrevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Points indicateurs si plusieurs images */}
+              {hasMultipleImages && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                  {productImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex(index);
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        index === currentImageIndex 
+                          ? 'bg-white scale-125' 
+                          : 'bg-white/50 hover:bg-white/80'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Badge nombre d'images */}
+              {hasMultipleImages && (
+                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                  {currentImageIndex + 1}/{productImages.length}
+                </div>
+              )}
             </div>
           ) : (
             <div className="aspect-square bg-gray-100 flex items-center justify-center">
               <Package className="w-12 h-12 text-gray-400" />
             </div>
-          )}
+          )}}
 
           {/* Badge épinglé */}
           {product.is_pinned && (
@@ -234,12 +314,14 @@ const MobileProductCard = ({ product, onOrder }) => {
       </CardContent>
     </Card>
 
-    {/* Lightbox pour visualiser l'image */}
+    {/* Lightbox pour visualiser les images */}
     <ImageLightbox
       imageUrl={product.image_url}
+      images={productImages}
       productName={product.name}
       isOpen={lightboxOpen}
       onClose={() => setLightboxOpen(false)}
+      initialIndex={currentImageIndex}
     />
     </>
   );

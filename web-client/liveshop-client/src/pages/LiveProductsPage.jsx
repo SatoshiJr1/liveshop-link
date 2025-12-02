@@ -411,11 +411,11 @@ const LiveProductsPageContent = () => {
           </div>
         ) : (
           <>
-            {/* Version mobile */}
-            <div className="md:hidden space-y-4">
+            {/* Version mobile - Grille 2 colonnes comme ProductsPage */}
+            <div className="md:hidden grid grid-cols-2 gap-3">
               {filteredProducts.map((product) => (
                 <MobileProductCard
-                key={product.id} 
+                  key={product.id} 
                   product={product}
                   onOrder={() => handleOrderProduct(product.id)}
                   onAddToCart={() => handleAddToCart(product)}
