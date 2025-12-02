@@ -175,7 +175,7 @@ const MobileProductCard = ({ product, onOrder }) => {
             <div className="aspect-square bg-gray-100 flex items-center justify-center">
               <Package className="w-12 h-12 text-gray-400" />
             </div>
-          )}}
+          )}
 
           {/* Badge épinglé */}
           {product.is_pinned && (
