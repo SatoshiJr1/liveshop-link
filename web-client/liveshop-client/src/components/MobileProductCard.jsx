@@ -20,6 +20,7 @@ const MobileProductCard = ({ product, onOrder }) => {
   const { addToCart, items, updateQuantity } = useCart();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showAttributes, setShowAttributes] = useState(false);
   
   // Vérifier si le produit est dans le panier
   const cartItem = items.find(item => item.id === product.id);

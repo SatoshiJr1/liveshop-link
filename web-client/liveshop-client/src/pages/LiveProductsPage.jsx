@@ -418,8 +418,6 @@ const LiveProductsPageContent = () => {
                   key={product.id} 
                   product={product}
                   onOrder={() => handleOrderProduct(product.id)}
-                  onAddToCart={() => handleAddToCart(product)}
-                  onView={() => handleViewProduct(product)}
                 />
               ))}
             </div>
