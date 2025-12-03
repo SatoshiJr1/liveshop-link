@@ -202,6 +202,16 @@ const ProductsPageContent = () => {
     showRealtimeNotification(`${product.name} ajouté au panier !`, 'success');
   };
 
+  const handleViewProduct = (product) => {
+    setSelectedProduct(product);
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setSelectedProduct(null);
+  };
+
   const shareShop = () => {
     const shopUrl = getPublicLink(linkId);
     if (navigator.share) {
