@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://livelink.store/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_internal/
+
+# Allow important pages
+Allow: /
+Allow: /features
+Allow: /pricing
+Allow: /testimonials
+Allow: /contact

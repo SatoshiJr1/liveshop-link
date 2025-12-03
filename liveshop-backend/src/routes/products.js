@@ -1,7 +1,7 @@
 const express = require('express');
 const { Product, ProductVariant } = require('../models');
 const { validateProductAttributes } = require('../config/productCategories');
-const supabaseRealtimeService = require('../services/supabaseRealtimeService');
+// Service Supabase supprimé - utilisation de WebSocket natif
 const router = express.Router();
 
 // Middleware d'authentification
@@ -175,6 +175,20 @@ router.post('/', authenticateToken, ...requireAndConsumeCredits('ADD_PRODUCT', (
       product: createdProduct,
       creditConsumption: res.locals.creditConsumption
     });
+
+    // 🔔 NOTIFICATION WEBSOCKET - Nouveau produit créé
+    try {
+      if (global.notifyAllSellers) {
+        global.notifyAllSellers('product_created', {
+          product: createdProduct,
+          seller_id: req.seller.public_link_id,  // ← Utiliser public_link_id au lieu de id
+          seller_name: req.seller.name
+        });
+        console.log('🔔 WebSocket: Notification "product_created" envoyée');
+      }
+    } catch (wsError) {
+      console.warn('⚠️ Erreur WebSocket (non critique):', wsError.message);
+    }
   } catch (error) {
     console.error('Erreur lors de la création du produit:', error);
     
@@ -261,6 +275,20 @@ router.put('/:id', authenticateToken, async (req, res) => {
     });
 
     res.json(updatedProduct);
+
+    // 🔔 NOTIFICATION WEBSOCKET - Produit modifié
+    try {
+      if (global.notifyAllSellers) {
+        global.notifyAllSellers('product_updated', {
+          product: updatedProduct,
+          seller_id: req.seller.public_link_id,  // ← Utiliser public_link_id au lieu de id
+          seller_name: req.seller.name
+        });
+        console.log('🔔 WebSocket: Notification "product_updated" envoyée');
+      }
+    } catch (wsError) {
+      console.warn('⚠️ Erreur WebSocket (non critique):', wsError.message);
+    }
   } catch (error) {
     console.error('Erreur lors de la mise à jour du produit:', error);
     
@@ -291,6 +319,20 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     await product.destroy();
     res.json({ message: 'Produit supprimé avec succès' });
+
+    // 🔔 NOTIFICATION WEBSOCKET - Produit supprimé
+    try {
+      if (global.notifyAllSellers) {
+        global.notifyAllSellers('product_deleted', {
+          product_id: req.params.id,
+          seller_id: req.seller.public_link_id,  // ← Utiliser public_link_id au lieu de id
+          seller_name: req.seller.name
+        });
+        console.log('🔔 WebSocket: Notification "product_deleted" envoyée');
+      }
+    } catch (wsError) {
+      console.warn('⚠️ Erreur WebSocket (non critique):', wsError.message);
+    }
   } catch (error) {
     console.error('Erreur lors de la suppression du produit:', error);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -300,6 +342,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // PATCH /api/products/:id/pin - Épingler/Désépingler un produit
 router.patch('/:id/pin', authenticateToken, async (req, res) => {
   try {
+    const CreditService = require('../services/creditService');
+    
+    // Recharger la config pour s'assurer qu'on a l'état actuel du module
+    await CreditService.loadConfigFromDatabase();
+    
     const product = await Product.findOne({
       where: { 
         id: req.params.id,
@@ -311,11 +358,50 @@ router.patch('/:id/pin', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Produit non trouvé' });
     }
 
+    // Si on épingle (pas déjà épinglé), vérifier et consommer les crédits SEULEMENT si module activé
+    if (!product.is_pinned) {
+      // Vérifier les crédits (le service gère le bypass si module désactivé)
+      const creditCheck = await CreditService.hasEnoughCredits(req.seller.id, 'PIN_PRODUCT');
+      if (!creditCheck.hasEnough) {
+        return res.status(403).json({
+          success: false,
+          error: 'Crédits insuffisants',
+          details: {
+            currentBalance: creditCheck.currentBalance,
+            requiredCredits: creditCheck.requiredCredits,
+            actionType: 'PIN_PRODUCT'
+          },
+          message: `Vous n'avez pas assez de crédits pour épingler ce produit. Solde actuel: ${creditCheck.currentBalance}, requis: ${creditCheck.requiredCredits}`
+        });
+      }
+
+      // Consommer les crédits (le service gère le bypass si module désactivé)
+      await CreditService.consumeCredits(req.seller.id, 'PIN_PRODUCT', {
+        productId: req.params.id,
+        productName: product.name
+      });
+    }
+
     await product.update({ is_pinned: !product.is_pinned });
     res.json({ 
       message: product.is_pinned ? 'Produit épinglé' : 'Produit désépinglé',
       is_pinned: product.is_pinned 
     });
+
+    // 🔔 NOTIFICATION WEBSOCKET - Produit épinglé/désépinglé
+    try {
+      if (global.notifyAllSellers) {
+        global.notifyAllSellers('product_pinned', {
+          product_id: product.id,
+          is_pinned: product.is_pinned,
+          seller_id: req.seller.public_link_id,  // ← Utiliser public_link_id au lieu de id
+          seller_name: req.seller.name
+        });
+        console.log('🔔 WebSocket: Notification "product_pinned" envoyée');
+      }
+    } catch (wsError) {
+      console.warn('⚠️ Erreur WebSocket (non critique):', wsError.message);
+    }
   } catch (error) {
     console.error('Erreur lors de l\'épinglage du produit:', error);
     res.status(500).json({ error: 'Erreur serveur' });

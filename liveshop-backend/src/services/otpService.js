@@ -2,7 +2,9 @@ const axios = require('axios');
 
 class OtpService {
   constructor() {
-    this.provider = process.env.OTP_PROVIDER || 'console'; // 'console' | 'whatsapp_cloud' | 'twilio' | 'callmebot'
+    // En prod: utilise OTP_PROVIDER de l'env; en dev: fallback nexteranga
+    this.provider = process.env.OTP_PROVIDER || 'nexteranga';
+    console.log('🔐 OTP Service initialisé - Provider actif:', this.provider);
   }
 
   async sendOTP(phoneNumber, otp) {
@@ -20,6 +22,8 @@ class OtpService {
           return await this.sendViaWhatsAppCloud(destination, message);
         case 'twilio':
           return await this.sendViaTwilio(destination, message);
+        case 'nexteranga':
+          return await this.sendViaNexteranga(original, otp);
         case 'callmebot':
           return await this.sendViaCallMeBot(destination, message);
         case 'console':
@@ -78,6 +82,63 @@ class OtpService {
 
     console.log('✅ OTP envoyé via Twilio:', result.sid);
     return true;
+  }
+
+  // Nexteranga (custom WhatsApp API - message personnalisé)
+  async sendViaNexteranga(originalPhone, otp) {
+    // Configuration (env ou valeurs par défaut pour dev)
+    const DIRECT_API_URL = 'https://wa.nexteranga.com/send';
+    const DIRECT_SECRET = 'e9c64f0193ce38099a5e59cfe15faa107325d92fddc655007f62914170e17645';
+ 
+    const apiUrl = process.env.NEXTERANGA_API_URL || DIRECT_API_URL;
+    const secret = process.env.NEXTERANGA_SECRET || DIRECT_SECRET;
+
+    if (!secret) {
+      console.warn('⚠️ NEXTERANGA_SECRET manquant, fallback console');
+      console.log(`[DEV] OTP ${otp} -> ${originalPhone}`);
+      return true;
+    }
+
+    // Nexteranga attend un numéro sans +, avec indicatif (ex: 221771234567)
+    const phoneForApi = String(originalPhone).replace(/^\+/, '');
+
+    // Message professionnel personnalisé
+    const message = `🔐 *LiveShop Link*\n\nVotre code de vérification est : *${otp}*\n\nCe code expire dans 5 minutes.\nNe partagez jamais ce code avec personne.`;
+
+    const payload = {
+      phone: phoneForApi,
+      message: message
+    };
+
+    try {
+      // Log sécurisé (sans exposer le secret)
+      const maskedSecret = secret ? `${String(secret).slice(0,4)}...${String(secret).slice(-4)}` : 'none';
+      console.log('📤 Envoi OTP via Nexteranga:', {
+        url: apiUrl,
+        phone: phoneForApi,
+        headers: { 'X-WA-SECRET': maskedSecret }
+      });
+
+      const res = await axios.post(apiUrl, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WA-SECRET': secret
+        },
+        timeout: 8000
+      });
+
+      // On considère 2xx comme succès
+      if (res.status >= 200 && res.status < 300) {
+        console.log('✅ OTP envoyé via Nexteranga');
+        return true;
+      }
+
+      console.error('❌ Nexteranga a répondu avec un statut non succès:', res.status, res.data);
+      return false;
+    } catch (error) {
+      console.error('❌ Échec envoi OTP via Nexteranga:', error.response?.data || error.message);
+      return false;
+    }
   }
 
   // CallMeBot (non officiel, très simple)

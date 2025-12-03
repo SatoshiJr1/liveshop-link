@@ -1,9 +1,10 @@
 const express = require('express');
-const { Order, Product, Seller } = require('../models');
+const { Order, Product, Seller, Comment } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
 const { requireAndConsumeCredits } = require('../middleware/creditMiddleware');
 const { Op } = require('sequelize');
 const notificationService = require('../services/notificationService');
+const whatsappService = require('../services/whatsappNotificationService');
 
 const router = express.Router();
 
@@ -23,11 +24,18 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const orders = await Order.findAll({
       where: whereClause,
-      include: [{
-        model: Product,
-        as: 'product',
-        attributes: ['id', 'name', 'price', 'image_url']
-      }],
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['id', 'name', 'price', 'image_url']
+        },
+        {
+          model: Comment,
+          as: 'client_comment',
+          attributes: ['id', 'content', 'customer_name', 'rating', 'created_at']
+        }
+      ],
       order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: offset
@@ -56,6 +64,13 @@ router.get('/', authenticateToken, async (req, res) => {
           name: order.product.name,
           price: order.product.price,
           image_url: order.product.image_url
+        } : null,
+        comment_data: order.client_comment ? {
+          id: order.client_comment.id,
+          content: order.client_comment.content,
+          customer_name: order.client_comment.customer_name,
+          rating: order.client_comment.rating,
+          created_at: order.client_comment.created_at
         } : null
       })),
       pagination: {
@@ -157,6 +172,21 @@ router.put('/:id/status', authenticateToken, ...requireAndConsumeCredits('PROCES
       console.error('❌ Erreur lors de l\'envoi de la notification de mise à jour:', error);
     }
 
+    // 📲 NOTIFICATIONS WHATSAPP - Changement de statut
+    try {
+      if (status === 'paid') {
+        // Commande validée
+        console.log(`📲 Envoi WhatsApp: Commande #${order.id} validée`);
+        await whatsappService.notifyOrderValidated(order, order.product, req.seller);
+      } else if (status === 'delivered') {
+        // Commande livrée
+        console.log(`📲 Envoi WhatsApp: Commande #${order.id} livrée`);
+        await whatsappService.notifyOrderDelivered(order, order.product, req.seller);
+      }
+    } catch (whatsappError) {
+      console.error('⚠️ Erreur WhatsApp (non bloquante):', whatsappError.message);
+    }
+
     res.json({
       message: 'Statut mis à jour avec succès',
       order: {
@@ -202,11 +232,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
         id: orderId, 
         seller_id: req.seller.id 
       },
-      include: [{
-        model: Product,
-        as: 'product',
-        attributes: ['id', 'name', 'price', 'image_url', 'description']
-      }]
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['id', 'name', 'price', 'image_url', 'description']
+        },
+        {
+          model: Comment,
+          as: 'client_comment',
+          attributes: ['id', 'content', 'customer_name', 'rating', 'created_at']
+        }
+      ]
     });
 
     if (!order) {
@@ -237,6 +274,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
           price: order.product.price,
           image_url: order.product.image_url,
           description: order.product.description
+        } : null,
+        comment_data: order.client_comment ? {
+          id: order.client_comment.id,
+          content: order.client_comment.content,
+          customer_name: order.client_comment.customer_name,
+          rating: order.client_comment.rating,
+          created_at: order.client_comment.created_at
         } : null
       }
     });
@@ -291,7 +335,9 @@ router.get('/stats/summary', authenticateToken, async (req, res) => {
 });
 
 // Route pour générer le ticket de livraison (privée - pour les vendeurs)
-router.get('/:orderId/delivery-ticket', authenticateToken, async (req, res) => {
+router.get('/:orderId/delivery-ticket', authenticateToken, ...requireAndConsumeCredits('GENERATE_CUSTOMER_CARD', (req) => ({
+  orderId: req.params.orderId
+})), async (req, res) => {
   try {
     console.log('🖨️ Génération de ticket pour la commande:', req.params.orderId);
     const { orderId } = req.params;
