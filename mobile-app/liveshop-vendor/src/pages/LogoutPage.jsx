@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,12 @@ const LogoutPage = () => {
   const { seller, logout } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Forcer le thème clair sur la page de déconnexion
+    document.documentElement.classList.remove('dark');
+    localStorage.removeItem('liveshop-theme');
+  }, []);
 
   const handleLogout = async () => {
     setLoading(true);
@@ -103,4 +109,4 @@ const LogoutPage = () => {
   );
 };
 
-export default LogoutPage; 
+export default LogoutPage;

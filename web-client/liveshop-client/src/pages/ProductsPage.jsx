@@ -202,16 +202,6 @@ const ProductsPageContent = () => {
     showRealtimeNotification(`${product.name} ajouté au panier !`, 'success');
   };
 
-  const handleViewProduct = (product) => {
-    setSelectedProduct(product);
-    setShowImageModal(true);
-  };
-
-  const closeImageModal = () => {
-    setShowImageModal(false);
-    setSelectedProduct(null);
-  };
-
   const shareShop = () => {
     const shopUrl = getPublicLink(linkId);
     if (navigator.share) {
@@ -433,7 +423,6 @@ const ProductsPageContent = () => {
                 key={product.id}
                 product={product}
                 onOrder={handleOrderProduct}
-                onView={handleViewProduct}
               />
             ))}
           </div>

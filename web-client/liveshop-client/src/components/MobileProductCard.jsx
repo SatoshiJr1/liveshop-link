@@ -17,10 +17,15 @@ import { useCart } from '../contexts/CartContext';
 import ImageLightbox from './ImageLightbox';
 
 const MobileProductCard = ({ product, onOrder }) => {
-  const { addToCart, items, updateQuantity } = useCart();
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [showAttributes, setShowAttributes] = useState(false);
+  const { addToCart } = useCart();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [showAdded, setShowAdded] = useState(false);
+  const [showFavorite, setShowFavorite] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
   
   // Vérifier si le produit est dans le panier
   const cartItem = items.find(item => item.id === product.id);
@@ -132,7 +137,10 @@ const MobileProductCard = ({ product, onOrder }) => {
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
               {/* Overlay hover avec icône zoom */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+              <div 
+                className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center"
+                onClick={() => hasMultipleImages && setLightboxOpen(true)}
+              >
                 <Maximize2 className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
