@@ -89,7 +89,7 @@ class OtpService {
     // Configuration (env ou valeurs par défaut pour dev)
     const DIRECT_API_URL = 'https://wa.nexteranga.com/send';
     const DIRECT_SECRET = 'e9c64f0193ce38099a5e59cfe15faa107325d92fddc655007f62914170e17645';
-
+ 
     const apiUrl = process.env.NEXTERANGA_API_URL || DIRECT_API_URL;
     const secret = process.env.NEXTERANGA_SECRET || DIRECT_SECRET;
 

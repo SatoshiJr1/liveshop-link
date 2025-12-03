@@ -20,6 +20,13 @@ const LoginPage = () => {
   const [activeTab, setActiveTab] = useState('login'); // 'login' ou 'register'
   const navigate = useNavigate();
 
+  // Enlever la classe 'dark' du HTML pour forcer le thème clair
+  useEffect(() => {
+    // Forcer le thème clair sur la page de connexion
+    document.documentElement.classList.remove('dark');
+    localStorage.removeItem('liveshop-theme');
+  }, []);
+
   // Fonction pour formater le numéro de téléphone
   const formatPhoneNumber = (value) => {
     // Supprimer tous les caractères non numériques sauf le +
