@@ -17,15 +17,9 @@ import { useCart } from '../contexts/CartContext';
 import ImageLightbox from './ImageLightbox';
 
 const MobileProductCard = ({ product, onOrder }) => {
-  const { addToCart } = useCart();
+  const { addToCart, items, updateQuantity } = useCart();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [showAdded, setShowAdded] = useState(false);
-  const [showFavorite, setShowFavorite] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isImageLoading, setIsImageLoading] = useState(true);
   
   // Vérifier si le produit est dans le panier
   const cartItem = items.find(item => item.id === product.id);
