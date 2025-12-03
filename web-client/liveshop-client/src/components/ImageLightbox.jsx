@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 const ImageLightbox = ({ imageUrl, images = [], productName, onClose, isOpen, initialIndex = 0 }) => {
   const [zoom, setZoom] = useState(1);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [touchStart, setTouchStart] = useState(null);
 
   // Construire le tableau d'images (priorité aux images multiples, sinon fallback sur imageUrl)
   const allImages = React.useMemo(() => {
@@ -27,6 +28,19 @@ const ImageLightbox = ({ imageUrl, images = [], productName, onClose, isOpen, in
     }
   }, [isOpen, initialIndex]);
 
+  // Handlers pour le swipe mobile
+  const handleTouchStart = (e) => setTouchStart(e.touches[0].clientX);
+  const handleTouchEnd = (e) => {
+    if (!touchStart || !hasMultipleImages) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) handleNext(e);
+      else handlePrevious(e);
+    }
+    setTouchStart(null);
+  };
+
   if (!isOpen || allImages.length === 0) return null;
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.5, 3));
@@ -42,20 +56,6 @@ const ImageLightbox = ({ imageUrl, images = [], productName, onClose, isOpen, in
     e.stopPropagation();
     setZoom(1);
     setCurrentIndex(prev => prev === allImages.length - 1 ? 0 : prev + 1);
-  };
-
-  // Gestion du swipe sur mobile
-  const [touchStart, setTouchStart] = useState(null);
-  const handleTouchStart = (e) => setTouchStart(e.touches[0].clientX);
-  const handleTouchEnd = (e) => {
-    if (!touchStart || !hasMultipleImages) return;
-    const touchEnd = e.changedTouches[0].clientX;
-    const diff = touchStart - touchEnd;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) handleNext(e);
-      else handlePrevious(e);
-    }
-    setTouchStart(null);
   };
 
   return (
