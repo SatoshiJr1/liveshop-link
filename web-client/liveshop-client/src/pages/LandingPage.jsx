@@ -485,9 +485,9 @@ const LandingPage = () => {
                 </h2>
                 <div className="space-y-6">
                   {[
-                    { title: "Capture automatique", desc: "L'IA détecte les commandes dans les commentaires instantanément." },
-                    { title: "Paiement sécurisé", desc: "Lien de paiement envoyé automatiquement en DM." },
-                    { title: "Gestion de stock", desc: "Mise à jour du stock en temps réel à chaque vente." }
+                    { title: "Gestion des commandes", desc: "Notifications instantanées et suivi des commandes via WhatsApp." },
+                    { title: "Rapports par session", desc: "Statistiques claires par vente en direct: commandes, produits, revenus." },
+                    { title: "Lien public partageable", desc: "Partage facile sur WhatsApp, Instagram et Facebook en un clic." }
                   ].map((item, i) => (
                     <motion.div 
                       key={i} 
