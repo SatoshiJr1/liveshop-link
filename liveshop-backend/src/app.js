@@ -471,6 +471,29 @@ setInterval(() => {
       console.log('Notification envoyée à tous les vendeurs:', event);
     };
 
+// Middleware pour détecter les scrapers (WhatsApp, Facebook, Twitter, etc.)
+// et servir du HTML avec meta tags au lieu de la SPA
+const isScraperBot = (userAgent) => {
+  if (!userAgent) return false;
+  const scrapers = [
+    'facebookexternalhit',
+    'whatsapp',
+    'twitterbot',
+    'linkedinbot',
+    'slurp',
+    'bingbot',
+    'googlebot',
+    'yandexbot',
+    'baiduspider',
+    'pinterestbot',
+    'discordbot',
+    'telegrambot',
+    'slackbot',
+    'vimeobot'
+  ];
+  return scrapers.some(bot => userAgent.toLowerCase().includes(bot));
+};
+
 // Routes API
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
