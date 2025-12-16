@@ -7,7 +7,7 @@ const axios = require('axios');
 class WhatsAppNotificationService {
   constructor() {
     this.apiUrl = process.env.NEXTERANGA_API_URL || 'https://wa.nexteranga.com/send';
-    this.secret = process.env.NEXTERANGA_SECRET || 'e9c64f0193ce38099a5e59cfe15faa107325d92fddc655007f62914170e17645';
+    this.secret = process.env.NEXTERANGA_SECRET || '12aa7287-452f-472d-8f3f-383c87c2e618';
     this.appName = 'LiveShop Link';
     this.appUrl = process.env.FRONTEND_URL || 'https://space.livelink.store';
     this.enabled = process.env.WHATSAPP_NOTIFICATIONS_ENABLED !== 'false';
@@ -97,45 +97,16 @@ class WhatsAppNotificationService {
    * 🆕 Nouvelle commande - Message au CLIENT
    */
   getOrderCreatedClientMessage(order, product, seller) {
-    const orderDate = new Date().toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return `✅ Commande #${order.id} reçue
 
-    return `🛍️ *${this.appName}*
+${product?.name || 'Produit'} (${order.quantity}x)
+Total: ${order.total_price?.toLocaleString()} FCFA
+Paiement: ${this.formatPaymentMethod(order.payment_method)}
 
-━━━━━━━━━━━━━━━━━━━━
-✅ *COMMANDE CONFIRMÉE*
-━━━━━━━━━━━━━━━━━━━━
+Livraison: ${order.customer_address || 'À confirmer'}
 
-Bonjour *${order.customer_name}* 👋
-
-Votre commande a bien été enregistrée !
-
-📋 *Détails de la commande*
-┌─────────────────────
-│ 🔢 N° : *#${order.id}*
-│ 📦 Article : ${product?.name || 'Produit'}
-│ 🔢 Quantité : ${order.quantity}
-│ 💰 Total : *${order.total_price?.toLocaleString()} FCFA*
-│ 💳 Paiement : ${this.formatPaymentMethod(order.payment_method)}
-└─────────────────────
-
-🏪 *Vendeur* : ${seller?.name || 'LiveShop'}
-
-📍 *Livraison*
-${order.customer_address || 'Adresse à confirmer'}
-
-⏳ *Statut* : En cours de traitement
-
-━━━━━━━━━━━━━━━━━━━━
-Vous recevrez une notification dès que votre commande sera validée.
-
-Merci pour votre confiance ! 🙏
-_${this.appName}_`;
+Le vendeur confirmera sous peu.
+Merci ! 🙏`;
   }
 
   /**
@@ -144,66 +115,31 @@ _${this.appName}_`;
   getOrderCreatedSellerMessage(order, product, customer) {
     const orderUrl = `${this.appUrl}/orders?highlight=${order.id}`;
     
-    return `🔔 *${this.appName}*
+    return `🔔 Commande #${order.id} - ${order.customer_name} | ${order.customer_phone}
 
-━━━━━━━━━━━━━━━━━━━━
-🆕 *NOUVELLE COMMANDE*
-━━━━━━━━━━━━━━━━━━━━
+${product?.name || 'Produit'} (${order.quantity}x) - ${order.total_price?.toLocaleString()} FCFA
+Paiement: ${this.formatPaymentMethod(order.payment_method)}
+Adresse: ${order.customer_address || 'À confirmer'}${order.comment ? `\nNote: ${order.comment}` : ''}
 
-Une nouvelle commande vient d'arriver ! 🎉
-
-📋 *Commande #${order.id}*
-┌─────────────────────
-│ 👤 Client : *${order.customer_name}*
-│ 📱 Tél : ${order.customer_phone}
-│ 📦 Article : ${product?.name || 'Produit'}
-│ 🔢 Quantité : ${order.quantity}
-│ 💰 Total : *${order.total_price?.toLocaleString()} FCFA*
-│ 💳 Mode : ${this.formatPaymentMethod(order.payment_method)}
-└─────────────────────
-
-📍 *Adresse de livraison*
-${order.customer_address || 'Non spécifiée'}
-
-${order.comment ? `💬 *Note client*\n${order.comment}\n` : ''}
-━━━━━━━━━━━━━━━━━━━━
-👉 *Voir la commande :*
-${orderUrl}
-
-⚡ Traitez cette commande rapidement !`;
+👉 ${orderUrl}`;
   }
 
   /**
    * ✅ Commande validée - Message au CLIENT
    */
   getOrderValidatedClientMessage(order, product, seller) {
-    return `🛍️ *${this.appName}*
+    return `✅ Commande #${order.id} validée
 
-━━━━━━━━━━━━━━━━━━━━
-✅ *COMMANDE VALIDÉE*
-━━━━━━━━━━━━━━━━━━━━
+${product?.name || 'Produit'} (${order.quantity}x)
+Total: ${order.total_price?.toLocaleString()} FCFA
 
-Bonjour *${order.customer_name}* 👋
+Vendeur: ${seller?.name || 'LiveShop'}
 
-Bonne nouvelle ! Votre commande a été validée ✨
+Votre commande est en préparation.
+Livraison à: ${order.customer_address || 'Adresse confirmée'}
 
-📋 *Commande #${order.id}*
-┌─────────────────────
-│ 📦 ${product?.name || 'Produit'}
-│ 💰 ${order.total_price?.toLocaleString()} FCFA
-│ ✅ Statut : *VALIDÉE*
-└─────────────────────
-
-🏪 *Vendeur* : ${seller?.name || 'LiveShop'}
-
-📍 Votre commande sera bientôt préparée pour la livraison à :
-${order.customer_address || 'Adresse confirmée'}
-
-━━━━━━━━━━━━━━━━━━━━
 Vous serez notifié lors de la livraison.
-
-Merci ! 🙏
-_${this.appName}_`;
+Merci ! 🙏`;
   }
 
   /**
