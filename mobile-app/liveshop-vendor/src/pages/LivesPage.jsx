@@ -351,7 +351,7 @@ export default function LivesPage() {
                 rel="noopener noreferrer"
                 className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm font-medium text-center whitespace-nowrap flex items-center gap-2"
               >
-                <Play className="w-4 h-4" />
+                <Eye className="w-4 h-4" />
                 Voir la page
               </a>
             </div>
