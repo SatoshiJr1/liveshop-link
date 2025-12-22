@@ -179,8 +179,8 @@ const StatsPage = () => {
                 <div className="space-y-1">
                   <p className="text-xs text-green-700 dark:text-green-300 font-medium">CA Payé</p>
                   <p className="text-lg font-bold text-green-900 dark:text-green-100">
-                    {stats?.paid_orders && stats?.total_orders ? 
-                      ((stats?.orders?.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.total_price || 0), 0)) || 0).toLocaleString() 
+                    {Array.isArray(orders) ? 
+                      (orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + (parseInt(o.total_price) || 0), 0)).toLocaleString() 
                       : '0'} FCFA
                   </p>
                   <p className="text-xs text-green-600 dark:text-green-400">{stats?.paid_orders || 0} commandes</p>
@@ -200,8 +200,8 @@ const StatsPage = () => {
                 <div className="space-y-1">
                   <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">En attente</p>
                   <p className="text-lg font-bold text-yellow-900 dark:text-yellow-100">
-                    {stats?.pending_orders ? 
-                      ((stats?.orders?.filter(o => o.status === 'pending').reduce((sum, o) => sum + (o.total_price || 0), 0)) || 0).toLocaleString() 
+                    {Array.isArray(orders) ? 
+                      (orders.filter(o => o.status === 'pending').reduce((sum, o) => sum + (parseInt(o.total_price) || 0), 0)).toLocaleString() 
                       : '0'} FCFA
                   </p>
                   <p className="text-xs text-yellow-600 dark:text-yellow-400">{stats?.pending_orders || 0} commandes</p>

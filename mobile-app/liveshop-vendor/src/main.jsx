@@ -31,3 +31,20 @@ if ('serviceWorker' in navigator) {
     // Ignorer les erreurs de service worker
   })
 }
+
+// Capturer les liens et ouvrir dans l'app installée (si supporté)
+if ('launchQueue' in window && 'setConsumer' in window.launchQueue) {
+  window.launchQueue.setConsumer((launchParams) => {
+    const target = launchParams?.targetURL;
+    if (!target) return;
+    try {
+      const url = new URL(target, window.location.origin);
+      // Naviguer vers la cible au sein de l'app
+      const path = url.pathname + url.search + url.hash;
+      window.history.pushState({}, '', path);
+    } catch {
+      // Fallback navigation
+      window.location.href = target;
+    }
+  });
+}
