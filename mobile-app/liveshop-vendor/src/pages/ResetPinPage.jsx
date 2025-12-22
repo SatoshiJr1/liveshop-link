@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ApiService from '@/services/api';
+import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ const ResetPinPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const api = new ApiService();
+  const apiService = api;
 
   // Étape 1 : Envoi OTP
   const handleSendOtp = async (e) => {
@@ -27,7 +27,7 @@ const ResetPinPage = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${api.baseURL}/auth/forgot-pin`, {
+      const res = await fetch(`${apiService.baseURL}/auth/forgot-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phone.trim() })
@@ -69,7 +69,7 @@ const ResetPinPage = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${api.baseURL}/auth/reset-pin`, {
+      const res = await fetch(`${apiService.baseURL}/auth/reset-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phone.trim(), otp: otp.trim(), new_pin: pin })
