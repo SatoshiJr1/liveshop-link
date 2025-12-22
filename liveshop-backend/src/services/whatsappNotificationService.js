@@ -113,7 +113,8 @@ Merci ! 🙏`;
    * 🆕 Nouvelle commande - Message au VENDEUR
    */
   getOrderCreatedSellerMessage(order, product, customer) {
-    const orderUrl = `${this.appUrl}/orders?highlight=${order.id}`;
+    // Deep link direct vers le détail de commande dans l'app
+    const orderUrl = `${this.appUrl}/orders/${order.id}`;
     
     return `🔔 Commande #${order.id} - ${order.customer_name} | ${order.customer_phone}
 

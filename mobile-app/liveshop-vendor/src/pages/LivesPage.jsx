@@ -9,23 +9,22 @@ import {
   Plus, 
   Edit2, 
   Trash2, 
-  Repeat,
   Share2,
   Eye,
-  Settings,
-  Play,
   Users,
   Calendar,
   Package,
   Link,
   Globe,
-  Video,
   Radio,
   Zap,
   Heart,
   MessageCircle,
   Send,
-  CheckCircle
+  CheckCircle,
+  ShoppingCart,
+  CopyPlus,
+  Cog
 } from 'lucide-react';
 import LiveIcon from '/images/diffusion-en-direct.png';
 import { getPublicLink } from '../config/domains';
@@ -260,10 +259,10 @@ export default function LivesPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-2 md:gap-4 ">
         <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-400 flex items-center gap-2">
           <div className="relative">
-            <Video className="w-8 h-8 text-red-500" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            <ShoppingCart className="w-8 h-8 text-purple-600" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
           </div>
-          Mes Sessions
+          Mes Sessions de Vente
         </h2>
         {/* Le bouton 'Créer un live' n'est plus ici sur mobile */}
         <div className="hidden md:flex flex-col gap-3 w-full md:w-auto">
@@ -364,8 +363,8 @@ export default function LivesPage() {
         <form onSubmit={handleCreateLive} className="space-y-5 mb-8 bg-purple-50 dark:bg-purple-900/20 p-6 rounded ">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
-              <Video className="w-4 h-4" />
-              Titre de la session
+              <ShoppingCart className="w-4 h-4" />
+              Titre de la session de vente
             </label>
             <input value={title} onChange={e => setTitle(e.target.value)} required
               className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white " />
@@ -432,9 +431,9 @@ export default function LivesPage() {
           onClick={() => setShowCreate(true)}
           className="fixed bottom-29 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
           style={{ boxShadow: '0 4px 24px rgba(80,0,120,0.18)' }}
-          title="Créer une session"
+          title="Créer une session de vente"
         >
-          <Video className="w-8 h-8" />
+          <ShoppingCart className="w-8 h-8" />
         </button>
       )}
       {/* Liste paginée des lives */}
@@ -446,11 +445,11 @@ export default function LivesPage() {
             <div key={live.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 w-full mb-2">
               {/* Ligne titre + icône live + badge */}
               <div className="flex items-center gap-3 mb-1">
-                {/* Icône live moderne */}
+                {/* Icône session de vente */}
                 <div className="relative">
-                  <Video className="w-8 h-8 text-red-500" />
+                  <ShoppingCart className="w-8 h-8 text-purple-600" />
                   {getLiveStatus(live) === 'En cours' && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
                   )}
                 </div>
                 <span className="font-bold text-lg text-gray-900 dark:text-white">{live.title}</span>
@@ -496,21 +495,21 @@ export default function LivesPage() {
                   title="Regarder la session" 
                   className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 p-2 rounded-full bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
                 >
-                  <Play className="w-5 h-5" />
+                  <Eye className="w-5 h-5" />
                 </a>
                 <button 
                   onClick={() => setSelectedLive(live)} 
                   title="Paramètres de la session" 
                   className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 p-2 rounded-full bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
                 >
-                  <Settings className="w-5 h-5" />
+                  <Cog className="w-5 h-5" />
                 </button>
                 <button 
                   onClick={() => handleDuplicateLive(live)} 
                   title="Dupliquer cette session" 
                   className="text-purple-400 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200 p-2 rounded-full bg-purple-100 dark:bg-purple-900/20 hover:bg-purple-200 dark:hover:bg-purple-900/30 transition-colors"
                 >
-                  <Repeat className="w-5 h-5" />
+                  <CopyPlus className="w-5 h-5" />
                 </button>
                 <button 
                   onClick={() => handleDeleteLive(live.id)} 
