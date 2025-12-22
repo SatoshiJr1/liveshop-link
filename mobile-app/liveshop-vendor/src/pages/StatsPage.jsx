@@ -139,10 +139,18 @@ const StatsPage = () => {
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
             <Activity className="w-5 h-5 mr-2 text-purple-500" />
-            Métriques de revenus
+            Chiffre d'affaires détaillé
           </h2>
+          
+          {/* Info banner - Clarification */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 mb-4">
+            <p className="text-xs text-blue-800 dark:text-blue-300">
+              <span className="font-semibold">💡 Comprendre votre CA:</span> Le CA affiché inclut uniquement les commandes <strong>payées et livrées</strong>. Les commandes en attente de paiement ne sont pas comptabilisées.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
-            {/* CA Brut */}
+            {/* CA Finalisé (Payé + Livré) */}
             <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -152,64 +160,70 @@ const StatsPage = () => {
                   <ArrowUpRight className="w-4 h-4 text-blue-500" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">CA Brut</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">CA Finalisé</p>
                   <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{stats?.total_revenue?.toLocaleString() || 0} FCFA</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">Chiffre d'affaires total</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">Payé + Livré</p>
                 </div>
           </CardContent>
         </Card>
 
-            {/* Commission */}
+            {/* CA Payé uniquement */}
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-green-500" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-green-700 dark:text-green-300 font-medium">CA Payé</p>
+                  <p className="text-lg font-bold text-green-900 dark:text-green-100">
+                    {stats?.paid_orders && stats?.total_orders ? 
+                      ((stats?.orders?.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.total_price || 0), 0)) || 0).toLocaleString() 
+                      : '0'} FCFA
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">{stats?.paid_orders || 0} commandes</p>
+                </div>
+          </CardContent>
+        </Card>
+
+            {/* CA En attente */}
             <Card className="border-0 shadow-sm bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center">
-                    <Target className="w-5 h-5 text-white" />
+                    <Clock className="w-5 h-5 text-white" />
                   </div>
                   <ArrowDownRight className="w-4 h-4 text-yellow-500" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">Commission</p>
-                  <p className="text-lg font-bold text-yellow-900 dark:text-yellow-100">0 FCFA</p>
-                  <p className="text-xs text-yellow-600 dark:text-yellow-400">Frais de plateforme</p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">En attente</p>
+                  <p className="text-lg font-bold text-yellow-900 dark:text-yellow-100">
+                    {stats?.pending_orders ? 
+                      ((stats?.orders?.filter(o => o.status === 'pending').reduce((sum, o) => sum + (o.total_price || 0), 0)) || 0).toLocaleString() 
+                      : '0'} FCFA
+                  </p>
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400">{stats?.pending_orders || 0} commandes</p>
                 </div>
           </CardContent>
         </Card>
 
             {/* Valeur Moyenne Commande */}
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-white" />
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-green-500" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-green-700 dark:text-green-300 font-medium">Valeur Moy. Comman...</p>
-                  <p className="text-lg font-bold text-green-900 dark:text-green-100">
-                    {stats?.total_orders > 0 ? Math.round((stats?.total_revenue || 0) / stats.total_orders).toLocaleString() : 0} FCFA
-                  </p>
-                  <p className="text-xs text-green-600 dark:text-green-400">Panier moyen</p>
-                </div>
-          </CardContent>
-        </Card>
-
-            {/* Taux de Réussite */}
             <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-white" />
+                    <ShoppingBag className="w-5 h-5 text-white" />
                   </div>
                   <ArrowUpRight className="w-4 h-4 text-purple-500" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Taux Réussite</p>
+                  <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Panier moyen</p>
                   <p className="text-lg font-bold text-purple-900 dark:text-purple-100">
-                    {stats?.total_orders > 0 ? Math.round((stats.paid_orders / stats.total_orders) * 100) : 0}%
+                    {stats?.total_orders > 0 ? Math.round((stats?.total_revenue || 0) / stats.total_orders).toLocaleString() : 0} FCFA
                   </p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">Commandes complétées</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400">Valeur moyenne</p>
                 </div>
           </CardContent>
         </Card>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Store, Smartphone, Lock, Key, ArrowRight } from 'lucide-react';
-import ApiService from '@/services/api';
+import api from '@/services/api';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
@@ -16,7 +16,7 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const apiService = new ApiService();
+  const apiService = api;
 
   // Étape 1 : Envoi OTP
   const handleSendOtp = async (e) => {
