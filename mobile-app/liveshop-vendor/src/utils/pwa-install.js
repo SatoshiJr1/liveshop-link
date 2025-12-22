@@ -3,6 +3,15 @@ let deferredPrompt;
 let installButton = null;
 let userDismissed = false; // Track si l'utilisateur a déjà refusé
 
+// Détection plateforme
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isAndroidChrome() {
+  return /Android/.test(navigator.userAgent) && /Chrome\//.test(navigator.userAgent);
+}
+
 // Vérifier la connectivité réelle
 function checkRealConnectivity() {
   return new Promise((resolve) => {
@@ -195,6 +204,14 @@ async function installPWA() {
     if (installButton) {
       installButton.remove();
     }
+  } else {
+    // Pas de deferredPrompt disponible
+    if (isIOS()) {
+      // Afficher instructions iOS
+      showIOSInstallGuide();
+    } else {
+      showNotification('Installation PWA non disponible. Utilisez Chrome/Android ou installez via le menu du navigateur.');
+    }
   }
 }
 
@@ -276,3 +293,33 @@ function checkPWAInstallability() {
 setTimeout(checkPWAInstallability, 3000);
 
 export { showInstallButton, installPWA };
+
+// Afficher un guide d'installation pour iOS (Safari)
+function showIOSInstallGuide() {
+  if (document.getElementById('ios-install-guide')) return;
+  const guide = document.createElement('div');
+  guide.id = 'ios-install-guide';
+  guide.style.cssText = `
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: #111827;
+    color: #fff;
+    padding: 14px 16px;
+    z-index: 1002;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.25);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  `;
+  guide.innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span style="font-weight:600;">Installer sur iPhone</span>
+      <button id="ios-guide-close" style="margin-left:auto;background:#374151;color:#fff;border:none;padding:6px 10px;border-radius:8px;">Fermer</button>
+    </div>
+    <div style="margin-top:8px;font-size:13px;opacity:0.9;">
+      1. Touchez l'icône <strong>Partager</strong> en bas de Safari.<br/>
+      2. Choisissez <strong>Ajouter à l'écran d'accueil</strong>.
+    </div>
+  `;
+  document.body.appendChild(guide);
+  document.getElementById('ios-guide-close').addEventListener('click', () => guide.remove());
+}
