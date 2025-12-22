@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Store, Smartphone, Lock, Key, ArrowRight } from 'lucide-react';
-import api from '../services/api';
+import ApiService from '@/services/api';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
@@ -16,6 +16,8 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const apiService = new ApiService();
+
   // Étape 1 : Envoi OTP
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ const RegisterPage = () => {
     }
     setLoading(true);
     try {
-      const data = await api.request('/auth/register', {
+      const data = await apiService.request('/auth/register', {
         method: 'POST',
         body: JSON.stringify({ name: name.trim(), phone_number: phone.trim() })
       });
@@ -47,7 +49,7 @@ const RegisterPage = () => {
     }
     setLoading(true);
     try {
-      const data = await api.request('/auth/verify-otp', {
+      const data = await apiService.request('/auth/verify-otp', {
         method: 'POST',
         body: JSON.stringify({ phone_number: phone.trim(), otp: otp.trim() })
       });
@@ -70,7 +72,7 @@ const RegisterPage = () => {
     }
     setLoading(true);
     try {
-      const data = await api.request('/auth/set-pin', {
+      const data = await apiService.request('/auth/set-pin', {
         method: 'POST',
         body: JSON.stringify({ phone_number: phone.trim(), name: name.trim(), pin })
       });
@@ -117,7 +119,7 @@ const RegisterPage = () => {
                   <Label htmlFor="phone">Numéro de téléphone</Label>
                   <div className="relative ">
                     <Smartphone className="absolute left-3 top-3 h-4 w-4 text-gray-400 " />
-                    <Input id="phone" type="tel" placeholder="Ex: +221771234567" value={phone} onChange={e => setPhone(e.target.value)} className="pl-10 " required />
+                    <Input id="phone" type="tel" placeholder="Ex: 771234567 (prefixe +221 ajouté)" value={phone} onChange={e => setPhone(e.target.value)} className="pl-10 " required />
                   </div>
                 </div>
                 <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 " disabled={loading}>

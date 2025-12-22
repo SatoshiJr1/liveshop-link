@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ApiService from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,8 @@ const ResetPinPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const api = new ApiService();
+
   // Étape 1 : Envoi OTP
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -24,7 +27,7 @@ const ResetPinPage = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-pin', {
+      const res = await fetch(`${api.baseURL}/auth/forgot-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phone.trim() })
@@ -66,7 +69,7 @@ const ResetPinPage = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/reset-pin', {
+      const res = await fetch(`${api.baseURL}/auth/reset-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phone.trim(), otp: otp.trim(), new_pin: pin })
@@ -109,7 +112,7 @@ const ResetPinPage = () => {
                   <Label htmlFor="phone">Numéro de téléphone</Label>
                   <div className="relative ">
                     <Smartphone className="absolute left-3 top-3 h-4 w-4 text-gray-400 " />
-                    <Input id="phone" type="tel" placeholder="Ex: +221771234567" value={phone} onChange={e => setPhone(e.target.value)} className="pl-10 " required />
+                    <Input id="phone" type="tel" placeholder="Ex: 771234567 (prefixe +221 ajouté)" value={phone} onChange={e => setPhone(e.target.value)} className="pl-10 " required />
                   </div>
                 </div>
                 <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 " disabled={loading}>

@@ -40,8 +40,21 @@ class OtpService {
   normalizePhone(phone) {
     if (!phone) return phone;
     const trimmed = String(phone).trim();
+    // Déjà au format E.164
     if (trimmed.startsWith('+')) return trimmed;
-    if (/^\d+$/.test(trimmed)) return `+${trimmed}`;
+    // Numéro uniquement numérique
+    if (/^\d+$/.test(trimmed)) {
+      // Cas Sénégal: 9 chiffres commençant par 7 ou 6 -> préfixer +221
+      if (/^[76]\d{8}$/.test(trimmed)) {
+        return `+221${trimmed}`;
+      }
+      // Si déjà inclut un indicatif (ex: 221771234567)
+      if (/^\d{11,15}$/.test(trimmed)) {
+        return `+${trimmed}`;
+      }
+      // Fallback: ajouter simplement +
+      return `+${trimmed}`;
+    }
     return trimmed;
   }
 
