@@ -1,12 +1,31 @@
 const { Notification } = require('../models');
 const { sequelize } = require('../config/database');
+const notificationQueue = require('./notificationQueue');
+const webPushService = require('./webPushService');
 
 class NotificationService {
   constructor() {
-    this.retryQueue = new Map();
+    this.retryQueue = new Map(); // Fallback si BullMQ indisponible
     this.maxRetries = 3;
     this.retryDelay = 5000; // 5 secondes
     this.isProcessing = false;
+    this.useBullMQ = false; // Flag pour savoir si BullMQ est actif
+  }
+
+  // Initialiser avec BullMQ
+  async initializeQueue() {
+    try {
+      await notificationQueue.initialize(this);
+      this.useBullMQ = notificationQueue.isInitialized;
+      if (this.useBullMQ) {
+        console.log('✅ NotificationService utilise BullMQ pour les retries');
+      } else {
+        console.log('⚠️  NotificationService utilise la queue en mémoire (fallback)');
+      }
+    } catch (error) {
+      console.error('❌ Erreur initialisation queue:', error);
+      this.useBullMQ = false;
+    }
   }
 
   // Créer une notification persistante
@@ -35,9 +54,10 @@ class NotificationService {
   // Envoyer une notification en temps réel
   async sendRealtimeNotification(sellerId, type, data) {
     try {
-      console.log(`🔔 Tentative d'envoi notification: ${type} pour vendeur ${sellerId}`);
+      console.log(`🔔 [NOTIF-START] Tentative d'envoi notification: ${type} pour vendeur ${sellerId}`);
       
-      // Créer la notification persistante
+      // Créer la notification persistante AVANT tout envoi
+      console.log(`💾 [NOTIF-DB] Création notification en base...`);
       const notification = await this.createNotification(
         sellerId,
         type,
@@ -45,9 +65,11 @@ class NotificationService {
         this.getMessage(type, data),
         data
       );
+      console.log(`✅ [NOTIF-DB] Notification créée avec ID: ${notification.id}`);
 
       // Tenter l'envoi en temps réel
-      const sent = await this.attemptRealtimeSend(sellerId, type, data);
+      console.log(`📡 [NOTIF-SEND] Tentative envoi temps réel...`);
+      const sent = await this.attemptRealtimeSend(sellerId, type, data, notification);
       
       if (sent) {
         // Marquer comme envoyée
@@ -55,11 +77,38 @@ class NotificationService {
           sent: true,
           sent_at: new Date()
         });
-        console.log(`✅ Notification envoyée en temps réel: ${type} (ID: ${notification.id})`);
+        console.log(`✅ [NOTIF-SUCCESS] Notification envoyée en temps réel: ${type} (ID: ${notification.id})`);
       } else {
-        // Ajouter à la queue de retry
-        this.addToRetryQueue(notification);
-        console.log(`⏳ Notification ajoutée à la queue de retry: ${type} (ID: ${notification.id})`);
+        // Vendeur offline - Essayer Web Push en fallback
+        console.log(`📱 [NOTIF-OFFLINE] Vendeur ${sellerId} offline, tentative Web Push...`);
+        const pushSent = await webPushService.sendPushNotification(sellerId, notification);
+        
+        if (pushSent) {
+          console.log(`✅ [NOTIF-PUSH] Notification envoyée via Web Push: ${type} (ID: ${notification.id})`);
+          await notification.update({ sent: true, sent_at: new Date() });
+        } else {
+          // Ajouter à la queue de retry (priorité BullMQ)
+          console.log(`⏳ [NOTIF-QUEUE] Ajout à la queue de retry...`);
+          try {
+            if (this.useBullMQ && notificationQueue?.isInitialized) {
+              await notificationQueue.addNotification(
+                notification.id,
+                sellerId,
+                type,
+                data,
+                type === 'new_order' ? 'high' : 'normal'
+              );
+              console.log(`✅ [NOTIF-BULLMQ] Notification ${notification.id} ajoutée à BullMQ`);
+            } else {
+              console.log(`⚠️ [NOTIF-FALLBACK] BullMQ non disponible, utilisation queue mémoire`);
+              this.addToRetryQueue(notification);
+              console.log(`✅ [NOTIF-MEMORY] Notification ${notification.id} ajoutée à la queue mémoire`);
+            }
+          } catch (queueError) {
+            console.error('❌ [NOTIF-QUEUE-ERROR] Erreur ajout à la queue, fallback mémoire:', queueError);
+            this.addToRetryQueue(notification);
+          }
+        }
       }
 
       // Envoyer des événements de mise à jour spécifiques
@@ -122,15 +171,38 @@ class NotificationService {
   }
 
   // Tenter l'envoi en temps réel
-  async attemptRealtimeSend(sellerId, type, data) {
+  async attemptRealtimeSend(sellerId, type, data, notification = null) {
     try {
       console.log(`🔍 Vérification global.notifySeller pour vendeur ${sellerId}...`);
       
       if (global.notifySeller) {
-        console.log(`📡 Envoi via WebSocket pour vendeur ${sellerId}...`);
-        global.notifySeller(sellerId, type, data);
-        console.log(`✅ Notification WebSocket envoyée pour vendeur ${sellerId}`);
-        return true;
+        console.log(`📡 [NOTIF-WS] Envoi via WebSocket pour vendeur ${sellerId}...`);
+        
+        // Ajouter l'ID de notification aux données si disponible
+        let dataToSend = data;
+        if (notification) {
+          dataToSend = {
+            ...data,
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              created_at: notification.created_at
+            }
+          };
+        }
+        
+        // Attendre l'ACK du client
+        const ackReceived = await global.notifySeller(sellerId, type, dataToSend);
+        
+        if (ackReceived) {
+          console.log(`✅ [NOTIF-WS] Notification WebSocket confirmée pour vendeur ${sellerId}${notification ? ` (ID: ${notification.id})` : ''}`);
+          return true;
+        } else {
+          console.error(`❌ [NOTIF-WS] Pas d'ACK reçu pour vendeur ${sellerId}${notification ? ` (ID: ${notification.id})` : ''}`);
+          return false;
+        }
       } else {
         console.log(`❌ global.notifySeller non disponible pour vendeur ${sellerId}`);
         return false;
@@ -305,30 +377,62 @@ class NotificationService {
   }
 
   // Démarrer le traitement de la queue
-  startRetryProcessor() {
-    this.retryInterval = setInterval(() => {
-      this.processRetryQueue();
-    }, 10000); // Toutes les 10 secondes
+  async startRetryProcessor() {
+    // Initialiser BullMQ
+    await this.initializeQueue();
 
-    console.log('🔄 Processeur de retry démarré (intervalle: 10s)');
+    // Démarrer le processeur fallback (au cas où BullMQ est indisponible)
+    if (!this.useBullMQ) {
+      this.retryInterval = setInterval(() => {
+        this.processRetryQueue();
+      }, 10000); // Toutes les 10 secondes
+      console.log('🔄 Processeur de retry fallback démarré (intervalle: 10s)');
+    }
+
+    // Nettoyage périodique des anciens jobs BullMQ
+    if (this.useBullMQ) {
+      this.cleanupInterval = setInterval(async () => {
+        await notificationQueue.cleanOldJobs();
+        await notificationQueue.logStats();
+      }, 60 * 60 * 1000); // Toutes les heures
+      console.log('🔄 Nettoyage automatique BullMQ activé (intervalle: 1h)');
+    }
   }
 
   // Arrêter le traitement de la queue
-  stopRetryProcessor() {
+  async stopRetryProcessor() {
     if (this.retryInterval) {
       clearInterval(this.retryInterval);
       this.retryInterval = null;
+    }
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    if (this.useBullMQ) {
+      await notificationQueue.close();
     }
     console.log('🛑 Processeur de retry arrêté');
   }
 
   // Obtenir le statut du service
-  getStatus() {
-    return {
+  async getStatus() {
+    const baseStatus = {
       isProcessing: this.isProcessing,
       queueSize: this.retryQueue.size,
-      retryInterval: !!this.retryInterval
+      retryInterval: !!this.retryInterval,
+      useBullMQ: this.useBullMQ
     };
+
+    if (this.useBullMQ) {
+      const bullMQStats = await notificationQueue.getStats();
+      return {
+        ...baseStatus,
+        bullMQ: bullMQStats
+      };
+    }
+
+    return baseStatus;
   }
 }
 

@@ -7,6 +7,9 @@ const CreditService = require('../services/creditService');
 const requireCredits = (actionType) => {
   return async (req, res, next) => {
     try {
+      // Recharger la config depuis la DB pour avoir l'état actuel du module
+      await CreditService.loadConfigFromDatabase();
+      
       const sellerId = req.seller.id; // Assurez-vous que req.seller est défini par le middleware d'auth
 
       if (!sellerId) {
@@ -14,6 +17,11 @@ const requireCredits = (actionType) => {
           success: false,
           error: 'Vendeur non authentifié'
         });
+      }
+
+      // Si module désactivé, bypass complet
+      if (!CreditService.isModuleEnabled()) {
+        return next();
       }
 
       // Vérifier si l'utilisateur a assez de crédits
@@ -63,6 +71,18 @@ const consumeCredits = (actionType, metadataExtractor = null) => {
       
       // Extraire les métadonnées si une fonction est fournie
       const metadata = metadataExtractor ? metadataExtractor(req) : {};
+      
+      // Si module désactivé, ne rien consommer
+      if (!CreditService.isModuleEnabled()) {
+        res.locals.creditConsumption = {
+          success: true,
+          consumedCredits: 0,
+          newBalance: undefined,
+          actionType,
+          bypassed: true
+        };
+        return next();
+      }
 
       // Consommer les crédits
       const result = await CreditService.consumeCredits(sellerId, actionType, metadata);

@@ -7,6 +7,8 @@ const LiveProduct = require('./LiveProduct');
 const OTP = require('./OTP');
 const Notification = require('./Notification');
 const CreditTransaction = require('./CreditTransaction');
+const Comment = require('./Comment');
+const AdminSetting = require('./AdminSetting');
 
 // Définition des associations
 Seller.hasMany(Product, { 
@@ -70,6 +72,29 @@ CreditTransaction.belongsTo(Seller, {
   as: 'seller'
 });
 
+// Associations pour les commentaires
+Order.hasOne(Comment, {
+  foreignKey: 'order_id',
+  as: 'client_comment',
+  onDelete: 'CASCADE'
+});
+
+Comment.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order'
+});
+
+Comment.belongsTo(Seller, {
+  foreignKey: 'seller_id',
+  as: 'seller'
+});
+
+Seller.hasMany(Comment, {
+  foreignKey: 'seller_id',
+  as: 'comments',
+  onDelete: 'CASCADE'
+});
+
 module.exports = {
   Seller,
   Product,
@@ -79,6 +104,8 @@ module.exports = {
   LiveProduct,
   OTP,
   Notification,
-  CreditTransaction
+  CreditTransaction,
+  Comment,
+  AdminSetting
 };
 
