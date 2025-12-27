@@ -259,7 +259,7 @@ export default function LivesPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-2 md:gap-4 ">
         <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-400 flex items-center gap-2">
           <div className="relative">
-            <ShoppingCart className="w-8 h-8 text-purple-600" />
+            <Zap className="w-8 h-8 text-purple-600" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
           </div>
           Mes Sessions de Vente
@@ -363,7 +363,7 @@ export default function LivesPage() {
         <form onSubmit={handleCreateLive} className="space-y-5 mb-8 bg-purple-50 dark:bg-purple-900/20 p-6 rounded ">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4" />
+              <Zap className="w-4 h-4" />
               Titre de la session de vente
             </label>
             <input value={title} onChange={e => setTitle(e.target.value)} required
@@ -447,7 +447,7 @@ export default function LivesPage() {
               <div className="flex items-center gap-3 mb-1">
                 {/* Icône session de vente */}
                 <div className="relative">
-                  <ShoppingCart className="w-8 h-8 text-purple-600" />
+                  <Zap className="w-8 h-8 text-purple-600" />
                   {getLiveStatus(live) === 'En cours' && (
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
                   )}
