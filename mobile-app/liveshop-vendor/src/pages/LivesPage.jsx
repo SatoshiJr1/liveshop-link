@@ -257,11 +257,7 @@ export default function LivesPage() {
   return (
     <div className="w-full max-w-full md:max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-8 mt-4 md:mt-8 min-h-screen flex flex-col pb-20 sm:pb-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-2 md:gap-4 ">
-        <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-400 flex items-center gap-2">
-          <div className="relative">
-            <Zap className="w-8 h-8 text-purple-600" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
-          </div>
+        <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-400">
           Mes Sessions de Vente
         </h2>
         {/* Le bouton 'Créer un live' n'est plus ici sur mobile */}
@@ -362,8 +358,7 @@ export default function LivesPage() {
       {showCreate && (
         <form onSubmit={handleCreateLive} className="space-y-5 mb-8 bg-purple-50 dark:bg-purple-900/20 p-6 rounded ">
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
-              <Zap className="w-4 h-4" />
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Titre de la session de vente
             </label>
             <input value={title} onChange={e => setTitle(e.target.value)} required
@@ -429,11 +424,11 @@ export default function LivesPage() {
       {!showCreate && (
         <button
           onClick={() => setShowCreate(true)}
-          className="fixed bottom-29 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
-          style={{ boxShadow: '0 4px 24px rgba(80,0,120,0.18)' }}
+          className="fixed bottom-29 right-6 z-40 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-xl md:hidden animate-fade-in-up"
+          style={{ boxShadow: '0 4px 24px rgba(202, 138, 4, 0.3)' }}
           title="Créer une session de vente"
         >
-          <ShoppingCart className="w-8 h-8" />
+          <Zap className="w-8 h-8" />
         </button>
       )}
       {/* Liste paginée des lives */}
@@ -445,13 +440,6 @@ export default function LivesPage() {
             <div key={live.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 w-full mb-2">
               {/* Ligne titre + icône live + badge */}
               <div className="flex items-center gap-3 mb-1">
-                {/* Icône session de vente */}
-                <div className="relative">
-                  <Zap className="w-8 h-8 text-purple-600" />
-                  {getLiveStatus(live) === 'En cours' && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
-                  )}
-                </div>
                 <span className="font-bold text-lg text-gray-900 dark:text-white">{live.title}</span>
                 {getLiveStatus(live) === 'En cours' && (
                   <span className="ml-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-live-pulse flex items-center gap-1">
