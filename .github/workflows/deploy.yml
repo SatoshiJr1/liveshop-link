@@ -30,14 +30,17 @@ jobs:
 
       - name: Build Backend Docker image
         run: |
+          cd /srv/projects/livelink
           docker build -t livelink/livelink-back:latest ./liveshop-backend
       
       - name: Build Frontend Docker image
         run: |
+          cd /srv/projects/livelink
           docker build -t livelink/livelink-front:latest ./web-client/liveshop-client
       
       - name: Build Mobile Docker image
         run: |
+          cd /srv/projects/livelink
           docker build -t livelink/livelink-mobile:latest ./mobile-app/liveshop-vendor
       
       - name: Validate resource limits

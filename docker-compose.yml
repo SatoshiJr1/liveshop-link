@@ -1,6 +1,4 @@
 # Docker Compose pour déploiement production
-version: '3.8'
-
 services:
   backend:
     build: ./liveshop-backend
