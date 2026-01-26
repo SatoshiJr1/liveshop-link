@@ -1,63 +1,132 @@
-# Docker Compose v2 - version obsolète supprimée
+# Docker Compose pour déploiement production
+version: '3.8'
+
 services:
   backend:
     build: ./liveshop-backend
+    container_name: livelink-backend
+    restart: unless-stopped
+    
+    mem_limit: 333m
+    cpus: 0.3333333333333333
+    
+    networks:
+      - livelink-network
+    
     environment:
       - VIRTUAL_HOST=api.livelink.store
-      - NGINX_PROXY_CONTAINER=1
-      - VIRTUAL_PORT=3001
-      - VIRTUAL_PROTO=http
       - LETSENCRYPT_HOST=api.livelink.store
-      - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
+      - LETSENCRYPT_EMAIL=mansournirou246@gmail.com
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://liveshop_user:motdepassefort@fitsen-postgresql:5432/liveshop
+      - DATABASE_URL=postgresql://livelink_user:0UuJiS9C1YKfALpT@db:5432/livelink_db
+    
+    env_file:
+      - .env
+    
     volumes:
-      # Volumes Docker nommés pour une vraie persistance
-      - liveshop_database:/app/database
-      - liveshop_uploads:/app/uploads
-      - liveshop_logs:/app/logs
-      # Volume pour les données utilisateur
-      - liveshop_userdata:/app/userdata
-    networks:
-      - nginx-proxy
-      - fitsen-backend_fitsen-network
-    restart: unless-stopped
+      - livelink-back-logs:/app/logs
+    
+    depends_on:
+      - db
 
   dashboard:
     build: ./web-client/liveshop-client
+    container_name: livelink-dashboard
+    restart: unless-stopped
+    
+    mem_limit: 333m
+    cpus: 0.3333333333333333
+    
+    networks:
+      - livelink-network
+    
     environment:
       - VIRTUAL_HOST=livelink.store
       - LETSENCRYPT_HOST=livelink.store
-      - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
-      - NGINX_PROXY_CONTAINER=1
-    networks:
-      - nginx-proxy
-    restart: unless-stopped
+      - LETSENCRYPT_EMAIL=mansournirou246@gmail.com
+      - NODE_ENV=production
+      - REACT_APP_API_URL=https://api.livelink.store
+    
+    env_file:
+      - .env
+    
+    volumes:
+      - livelink-front-logs:/app/logs
 
   mobile:
     build: ./mobile-app/liveshop-vendor
+    container_name: livelink-mobile
+    restart: unless-stopped
+    
+    mem_limit: 333m
+    cpus: 0.3333333333333333
+    
+    networks:
+      - livelink-network
+    
     environment:
       - VIRTUAL_HOST=space.livelink.store
       - LETSENCRYPT_HOST=space.livelink.store
-      - LETSENCRYPT_EMAIL=skhadimsall@gmail.com
-      - NGINX_PROXY_CONTAINER=1
-    networks:
-      - nginx-proxy
-    restart: unless-stopped
+      - LETSENCRYPT_EMAIL=mansournirou246@gmail.com
+      - NODE_ENV=production
+    
+    env_file:
+      - .env
+    
+    volumes:
+      - livelink-mobile-logs:/app/logs
 
-# Volumes Docker nommés pour la persistance
-volumes:
-  liveshop_database:
-    driver: local
-  liveshop_uploads:
-    driver: local
-  liveshop_logs:
-    driver: local
-  liveshop_userdata:
-    driver: local
+  # Database PostgreSQL (1/4 of total)
+  db:
+    image: postgres:15-alpine
+    container_name: livelink-db
+    restart: unless-stopped
+    
+    mem_limit: 250m
+    cpus: 0.25
+    
+    networks:
+      - livelink-network
+    
+    environment:
+      - POSTGRES_DB=livelink_db
+      - POSTGRES_USER=livelink_user
+      - POSTGRES_PASSWORD=0UuJiS9C1YKfALpT
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=C
+    
+    volumes:
+      - livelink-db-data:/var/lib/postgresql/data
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U livelink_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache (optional - uncomment to enable)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: livelink-redis
+  #   restart: unless-stopped
+  #   mem_limit: 64m
+  #   cpus: 0.1
+  #   networks:
+  #     - livelink-network
+  #   volumes:
+  #     - livelink-redis-data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
 networks:
-  nginx-proxy:
+  livelink-network:
     external: true
-  fitsen-backend_fitsen-network:
-    external: true
+
+volumes:
+  livelink-back-logs:
+  livelink-front-logs:
+  livelink-mobile-logs:
+  livelink-db-data:
+  # livelink-redis-data:
