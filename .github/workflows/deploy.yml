@@ -9,9 +9,24 @@ jobs:
   deploy:
     runs-on: self-hosted
     
-    steps:  
+    steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      
+      - name: Create .env file
+        run: |
+          cat > .env <<EOF
+          VIRTUAL_HOST=${{ secrets.VIRTUAL_HOST }}
+          LETSENCRYPT_HOST=${{ secrets.VIRTUAL_HOST }}
+          LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }}
+          NODE_ENV=production
+          DB_HOST=db
+          DB_PORT=5432
+          DB_NAME=livelink_db
+          DB_USER=livelink_user
+          DB_PASSWORD=0UuJiS9C1YKfALpT
+          REACT_APP_API_URL=https://api.${{ secrets.VIRTUAL_HOST }}
+          EOF
 
       - name: Build Backend Docker image
         run: |
