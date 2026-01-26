@@ -9,7 +9,7 @@ services:
     cpus: 0.3333333333333333
     
     networks:
-      - livelink-network
+      - nginx-proxy
     
     environment:
       - VIRTUAL_HOST=api.livelink.store
@@ -36,7 +36,7 @@ services:
     cpus: 0.3333333333333333
     
     networks:
-      - livelink-network
+      - nginx-proxy
     
     environment:
       - VIRTUAL_HOST=livelink.store
@@ -60,7 +60,7 @@ services:
     cpus: 0.3333333333333333
     
     networks:
-      - livelink-network
+      - nginx-proxy
     
     environment:
       - VIRTUAL_HOST=space.livelink.store
@@ -84,6 +84,7 @@ services:
     cpus: 0.25
     
     networks:
+      - nginx-proxy
       - livelink-network
     
     environment:
@@ -120,6 +121,7 @@ services:
 
 networks:
   livelink-network:
+  nginx-proxy:
     external: true
 
 volumes:
