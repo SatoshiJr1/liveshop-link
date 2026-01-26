@@ -87,9 +87,6 @@ jobs:
       - name: Deploy with Docker Compose
         run: |
           cd /srv/projects/livelink
-          cp $GITHUB_WORKSPACE/.env .
-          cp $GITHUB_WORKSPACE/docker-compose.yml .
-          docker compose pull || true
           docker compose up -d --build
       
       - name: Wait for services to be healthy
