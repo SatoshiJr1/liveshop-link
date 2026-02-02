@@ -7,7 +7,7 @@ const axios = require('axios');
 class WhatsAppNotificationService {
   constructor() {
     this.apiUrl = process.env.NEXTERANGA_API_URL || 'https://konekt.nexteranga.com/send';
-    this.secret = process.env.NEXTERANGA_SECRET || 'b221b120-876e-4591-8e79-621f713ab057';
+    this.secret = process.env.NEXTERANGA_SECRET || 'e191d2e9-5c68-4e83-8232-2ea3aaad7ce0';
     this.appName = 'LiveShop Link';
     this.appUrl = process.env.FRONTEND_URL || 'https://space.livelink.store';
     this.enabled = process.env.WHATSAPP_NOTIFICATIONS_ENABLED !== 'false';
