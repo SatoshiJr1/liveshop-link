@@ -1,37 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Send, MessageCircle, Star, Package } from 'lucide-react';
 
 const CommentsPage = () => {
-  const { linkId } = useParams();
+  const { linkId, orderId: urlOrderId } = useParams();
   const navigate = useNavigate();
   
   const [comment, setComment] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [orderId, setOrderId] = useState(urlOrderId || '');
+  const [rating, setRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadComments();
+  }, [linkId]);
+
+  const loadComments = async () => {
+    try {
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/comments`
+        : `http://localhost:3001/api/public/${linkId}/comments`;
+      
+      const response = await fetch(apiUrl);
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data.comments || []);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des commentaires:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!comment.trim()) {
-      setError('Veuillez saisir un commentaire');
+    if (!comment.trim() || !customerName.trim() || (!orderId.trim() && !urlOrderId)) {
+      setError('Veuillez remplir tous les champs obligatoires');
       return;
     }
+
+    // Utiliser l'orderId de l'URL s'il est disponible
+    const finalOrderId = urlOrderId || orderId.trim();
 
     try {
       setSubmitting(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:3001/api/public/${linkId}/comments`, {
+      const apiUrl = window.location.hostname.includes('livelink.store') 
+        ? `https://api.livelink.store/api/public/${linkId}/comments`
+        : `http://localhost:3001/api/public/${linkId}/comments`;
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ comment: comment.trim() })
+        body: JSON.stringify({
+          comment: comment.trim(),
+          customerName: customerName.trim(),
+          orderId: finalOrderId,
+          rating: rating
+        })
       });
 
       if (!response.ok) {
@@ -41,6 +81,12 @@ const CommentsPage = () => {
 
       setSuccess(true);
       setComment('');
+      setCustomerName('');
+      setOrderId('');
+      setRating(5);
+      
+      // Recharger les commentaires
+      await loadComments();
       
       // Réinitialiser le message de succès après 3 secondes
       setTimeout(() => {
@@ -52,6 +98,17 @@ const CommentsPage = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`w-4 h-4 ${
+          i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+        }`}
+      />
+    ));
   };
 
   return (
@@ -70,60 +127,120 @@ const CommentsPage = () => {
           
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              💬 Commentaires Live
+              💬 Commentaires et Avis
             </h1>
             <p className="text-gray-600">
-              Partagez vos questions ou commentaires avec le vendeur
+              Partagez votre expérience après votre commande
             </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Live Comments Widget */}
-        <Card className="mb-8">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Formulaire de commentaire */}
+          <Card className="h-fit">
           <CardHeader>
             <CardTitle className="flex items-center">
               <MessageCircle className="w-5 h-5 text-blue-500 mr-2" />
-              Widget de commentaires en direct
+                Ajouter un commentaire
             </CardTitle>
             <CardDescription>
-              Envoyez un message qui sera visible par le vendeur en temps réel
+                Vous devez avoir commandé pour pouvoir commenter
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
-                  {error}
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm">{error}</p>
                 </div>
               )}
 
               {success && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">
-                  ✅ Votre commentaire a été envoyé avec succès !
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-600 text-sm">Commentaire ajouté avec succès !</p>
                 </div>
               )}
 
-              <div className="space-y-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom complet *
+                  </label>
+                  <Input
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Votre nom"
+                    required
+                  />
+                </div>
+
+                {!urlOrderId && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Numéro de commande *
+                    </label>
+                    <Input
+                      value={orderId}
+                      onChange={(e) => setOrderId(e.target.value)}
+                      placeholder="ID de votre commande"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Trouvez cet ID dans votre confirmation de commande
+                    </p>
+                  </div>
+                )}
+
+                {urlOrderId && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">
+                        Commande #{urlOrderId}
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Vous commentez cette commande spécifique
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Note (optionnel)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {renderStars(rating)}
+                    <span className="text-sm text-gray-600 ml-2">{rating}/5</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={rating}
+                    onChange={(e) => setRating(parseInt(e.target.value))}
+                    className="w-full mt-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Votre commentaire *
+                  </label>
                 <Textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Tapez votre commentaire ou question ici..."
+                    placeholder="Partagez votre expérience, questions ou suggestions..."
                   rows={4}
-                  className="resize-none"
-                  maxLength={500}
+                    required
                 />
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <span>Votre message sera visible par le vendeur</span>
-                  <span>{comment.length}/500</span>
-                </div>
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3"
-                disabled={submitting || !comment.trim()}
+                  disabled={submitting}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
               >
                 {submitting ? (
                   <>
@@ -141,68 +258,57 @@ const CommentsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Information Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Comment ça marche ?</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">
-                1
+          {/* Liste des commentaires */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Avis des clients
+            </h2>
+            
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Écrivez votre message</h4>
-                <p className="text-sm text-gray-600">
-                  Posez une question sur un produit, demandez des informations ou laissez un commentaire.
-                </p>
+            ) : comments.length === 0 ? (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Aucun commentaire
+                  </h3>
+                  <p className="text-gray-500">
+                    Soyez le premier à partager votre expérience !
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              comments.map((comment) => (
+                <Card key={comment.id} className="border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-500">
+                          Commande #{comment.order?.id}
+                        </span>
               </div>
+                      {comment.rating && (
+                        <div className="flex items-center gap-1">
+                          {renderStars(comment.rating)}
+            </div>
+                      )}
             </div>
 
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">
-                2
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Envoi instantané</h4>
-                <p className="text-sm text-gray-600">
-                  Votre message est envoyé directement au vendeur en temps réel.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">
-                3
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Réponse rapide</h4>
-                <p className="text-sm text-gray-600">
-                  Le vendeur peut voir votre message sur son tableau de bord et vous répondre rapidement.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <p className="text-sm text-purple-800">
-                <strong>💡 Astuce:</strong> Utilisez cette fonctionnalité pendant les lives pour poser des questions 
-                en direct ou demander des détails sur les produits présentés.
-              </p>
+                    <p className="text-gray-900 mb-2">{comment.content}</p>
+                    
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>Par {comment.customer_name}</span>
+                      <span>{new Date(comment.created_at).toLocaleDateString('fr-FR')}</span>
             </div>
           </CardContent>
         </Card>
-
-        {/* Quick Actions */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-600 mb-4">
-            Vous voulez passer une commande ?
-          </p>
-          <Button 
-            onClick={() => navigate(`/${linkId}`)}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            Voir tous les produits
-          </Button>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

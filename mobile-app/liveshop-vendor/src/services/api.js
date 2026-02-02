@@ -1,5 +1,11 @@
 // URL dynamique basée sur l'environnement
 const getApiBaseUrl = () => {
+  // FORCER LA PRODUCTION si on est sur livelink.store
+  if (typeof window !== 'undefined' && window.location.hostname.includes('livelink.store')) {
+    console.log('🌐 API Service - Forçage production pour livelink.store');
+    return 'https://api.livelink.store/api';
+  }
+
   // Support d'override via Vite
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) ? import.meta.env.VITE_BACKEND_URL : null;
   const envPort = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_PORT) ? import.meta.env.VITE_BACKEND_PORT : null;
@@ -30,6 +36,9 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+console.log('🔗 API Service - URL de base:', API_BASE_URL);
+console.log('🔗 API Service - Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'unknown');
 
 class ApiService {
   constructor() {
@@ -403,6 +412,46 @@ class ApiService {
     return this.request(`/sellers/qr-code/${paymentMethod}`, {
       method: 'DELETE'
     });
+  }
+
+  // Admin Credits Settings
+  async getCreditsModuleStatus() {
+    return this.request('/admin/settings/credits/status');
+  }
+
+  async getCreditsSettings() {
+    return this.request('/admin/settings/credits');
+  }
+
+  async updateCreditsSettings(settings) {
+    return this.request('/admin/settings/credits', {
+      method: 'PUT',
+      body: JSON.stringify(settings)
+    });
+  }
+
+  async toggleCreditsModule() {
+    return this.request('/admin/settings/credits/toggle', {
+      method: 'POST'
+    });
+  }
+
+  async updateCreditPackage(packageType, data) {
+    return this.request(`/admin/settings/credits/package/${packageType}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateActionCost(actionType, cost) {
+    return this.request(`/admin/settings/credits/action-cost/${actionType}`, {
+      method: 'PUT',
+      body: JSON.stringify({ cost })
+    });
+  }
+
+  async getCreditsStats() {
+    return this.request('/admin/settings/credits/stats');
   }
 }
 

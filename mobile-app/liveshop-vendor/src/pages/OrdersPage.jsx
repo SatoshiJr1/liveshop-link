@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useAuth } from '../contexts/AuthContext';
+import { useCreditsContext } from '../contexts/CreditsContext';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -19,12 +20,13 @@ import {
   DollarSign,
   Package,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ApiService from '../services/api';
-import webSocketService from '../services/websocket';
 import QRCodeModal from '../components/QRCodeModal';
+import InsufficientCreditsModal from '../components/InsufficientCreditsModal';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +41,11 @@ import {
 
 const OrdersPage = () => {
   const { refreshCredits } = useAuth();
+  const { 
+    useCreditsForAction, 
+    insufficientCreditsModal, 
+    closeInsufficientCreditsModal 
+  } = useCreditsContext();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,37 +61,38 @@ const OrdersPage = () => {
   const [ordersPerPage] = useState(6); // Utiliser la limite par défaut de l'API
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
+  
+  // Debounce pour éviter les appels multiples
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     fetchOrders();
     
-    // Rafraîchissement automatique toutes les 30 secondes
-    const interval = setInterval(() => {
-      fetchOrders();
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    // Pas de rafraîchissement automatique - WebSocket gère le temps réel
+    // Les données se mettent à jour automatiquement via WebSocket
   }, []);
 
-  // Écouter les nouvelles commandes en temps réel
+  // Écouter les événements globaux pour mise à jour de la liste
   useEffect(() => {
     // Écouter les nouvelles commandes
-    webSocketService.onNewOrder((data) => {
-      console.log('🔄 Nouvelle commande reçue, mise à jour de la liste...');
-      // Rafraîchir immédiatement les données
+    const handleNewOrder = () => {
+      console.log('🔄 [ORDERS] Nouvelle commande détectée, mise à jour de la liste...');
       fetchOrders();
-    });
+    };
 
     // Écouter les mises à jour de statut
-    webSocketService.onOrderStatusUpdate((data) => {
-      console.log('🔄 Statut mis à jour, mise à jour de la liste...');
-      // Rafraîchir immédiatement les données
+    const handleOrderStatusUpdate = () => {
+      console.log('🔄 [ORDERS] Statut mis à jour, mise à jour de la liste...');
       fetchOrders();
-    });
+    };
+
+    // Écouter les événements globaux (pas WebSocket direct)
+    window.addEventListener('newNotifications', handleNewOrder);
+    window.addEventListener('orderStatusUpdated', handleOrderStatusUpdate);
 
     return () => {
-      webSocketService.off('new_order');
-      webSocketService.off('order_status_update');
+      window.removeEventListener('newNotifications', handleNewOrder);
+      window.removeEventListener('orderStatusUpdated', handleOrderStatusUpdate);
     };
   }, []);
 
@@ -94,7 +102,14 @@ const OrdersPage = () => {
   }, [currentPage, activeTab]);
 
   const fetchOrders = async () => {
+    // Éviter les appels multiples simultanés
+    if (isFetching) {
+      console.log('🔄 Appel API déjà en cours, ignoré');
+      return;
+    }
+    
     try {
+      setIsFetching(true);
       setLoading(true);
       
       // Déterminer le statut à filtrer
@@ -131,6 +146,7 @@ const OrdersPage = () => {
       console.error('Erreur lors du chargement des commandes:', error);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
@@ -170,11 +186,11 @@ const OrdersPage = () => {
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      // Vérifier les crédits avant de traiter la commande
-      const creditCheck = await ApiService.checkCredits('PROCESS_ORDER');
+      // Utiliser les crédits via le contexte
+      const result = await useCreditsForAction('PROCESS_ORDER', 'traiter cette commande');
       
-      if (!creditCheck.data.hasEnough) {
-        alert(`Crédits insuffisants ! Vous avez ${creditCheck.data.currentBalance} crédits, mais il en faut ${creditCheck.data.requiredCredits} pour traiter une commande.`);
+      if (!result.success) {
+        // Le modal s'affiche automatiquement si crédits insuffisants
         return;
       }
       
@@ -235,11 +251,10 @@ const OrdersPage = () => {
       }
 
       // URL dynamique basée sur l'environnement
-      const protocol = window.location.protocol;
-      const hostname = window.location.hostname;
-      const port = '3001';
-      
-      const ticketUrl = `${protocol}//${hostname}:${port}/api/orders/${orderId}/delivery-ticket`;
+      // Construire l'URL en prod ou dev
+      const isProd = window.location.hostname.includes('livelink.store');
+      const baseUrl = isProd ? 'https://api.livelink.store' : `${window.location.protocol}//${window.location.hostname}:3001`;
+      const ticketUrl = `${baseUrl}/api/orders/${orderId}/delivery-ticket`;
       console.log('🖨️ Téléchargement du ticket:', ticketUrl);
       
       // Créer un lien temporaire avec le token
@@ -384,11 +399,11 @@ const OrdersPage = () => {
 
   return (
     <div className="space-y-6 ">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ">
+      {/* Header (titre masqué sur mobile) */}
+      <div className="hidden sm:flex sm:flex-row justify-between items-center gap-4 ">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 ">Commandes</h1>
-          <p className="text-gray-600 ">Gérez toutes vos commandes en un seul endroit</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Commandes</h1>
+          <p className="text-gray-600 dark:text-gray-300">Gérez toutes vos commandes en un seul endroit</p>
         </div>
         
         <Button
@@ -403,7 +418,7 @@ const OrdersPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 ">
+      <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 ">
         <button
           onClick={() => {
             setActiveTab('all');
@@ -479,16 +494,16 @@ const OrdersPage = () => {
           ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
           {orders.map((order) => (
-                <Card key={order.id} className="hover: transition-shadow ">
+                <Card key={order.id} className="hover: transition-shadow dark:bg-[#0f1a2a] dark:border-[#1c2638]">
               <CardHeader className="pb-3 ">
                 <div className="flex items-center justify-between ">
-                  <CardTitle className="text-lg ">Commande #{order.id}</CardTitle>
+                  <CardTitle className="text-lg dark:text-white">Commande #{order.id}</CardTitle>
                       <Badge className={getStatusColor(order.status)}>
                         {getStatusIcon(order.status)}
                         <span className="ml-1 ">{getStatusLabel(order.status)}</span>
                       </Badge>
                     </div>
-                <p className="text-sm text-gray-500 ">
+                <p className="text-sm text-gray-500 dark:text-gray-400 ">
                   {new Date(order.created_at).toLocaleDateString('fr-FR', {
                     day: 'numeric',
                     month: 'long',
@@ -502,18 +517,35 @@ const OrdersPage = () => {
               <CardContent className="space-y-4 ">
                 {/* Customer Info */}
                       <div>
-                  <h4 className="font-semibold text-gray-900 ">{order.customer_name}</h4>
-                  <p className="text-sm text-gray-600 ">{order.customer_phone}</p>
-                  <p className="text-sm text-gray-500 truncate ">{order.customer_address}</p>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">{order.customer_name}</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{order.customer_phone}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate ">{order.customer_address}</p>
                       </div>
 
                 {/* Product Info */}
                       <div>
-                  <p className="font-medium text-gray-900 ">{order.product?.name}</p>
-                  <p className="text-sm text-gray-600 ">
+                  <p className="font-medium text-gray-900 dark:text-white">{order.product?.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 ">
                     Quantité: {order.quantity} | {order.total_price.toLocaleString()} FCFA
                   </p>
                     </div>
+
+                {/* Commentaire client (si existe) */}
+                {order.comment_data && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <MessageCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      Commentaire client
+                    </span>
+                    {order.comment_data.rating && (
+                      <div className="flex items-center gap-1 ml-auto">
+                        <span className="text-xs text-blue-600 font-bold">
+                          {order.comment_data.rating}/5
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2 ">
@@ -637,10 +669,10 @@ const OrdersPage = () => {
 
       {/* Order Detail Dialog */}
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="max-w-2xl ">
+        <DialogContent className="max-w-2xl dark:bg-[#0f1a2a] dark:text-gray-100">
           <DialogHeader>
-            <DialogTitle>Détails de la commande #{selectedOrder?.id}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="dark:text-white">Détails de la commande #{selectedOrder?.id}</DialogTitle>
+            <DialogDescription className="dark:text-gray-300">
               Commande passée le {selectedOrder && new Date(selectedOrder.created_at).toLocaleDateString('fr-FR')}
             </DialogDescription>
           </DialogHeader>
@@ -671,7 +703,7 @@ const OrdersPage = () => {
               {/* Customer Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
                     <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 ">Informations client</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 ">Informations client</h4>
                   <div className="space-y-1 text-sm ">
                     <p><span className="font-medium ">Nom:</span> {selectedOrder.customer_name}</p>
                     <p><span className="font-medium ">Téléphone:</span> {selectedOrder.customer_phone}</p>
@@ -680,7 +712,7 @@ const OrdersPage = () => {
                     </div>
                 
                     <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 ">Détails commande</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 ">Détails commande</h4>
                   <div className="space-y-1 text-sm ">
                     <p><span className="font-medium ">Produit:</span> {selectedOrder.product?.name}</p>
                     <p><span className="font-medium ">Quantité:</span> {selectedOrder.quantity}</p>
@@ -692,14 +724,14 @@ const OrdersPage = () => {
 
               {/* Payment Info */}
                   <div>
-                <h4 className="font-semibold text-gray-900 mb-2 ">Paiement</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2 ">Paiement</h4>
                 <div className="space-y-1 text-sm ">
                   <p><span className="font-medium ">Méthode:</span> {selectedOrder.payment_method}</p>
                   {selectedOrder.payment_proof_url && (
                     <p>
                       <span className="font-medium ">Preuve:</span>{' '}
                       <a 
-                        href={`http://localhost:3001/api/upload${selectedOrder.payment_proof_url}`}
+                        href={selectedOrder.payment_proof_url?.startsWith('http') ? selectedOrder.payment_proof_url : `http://localhost:3001${selectedOrder.payment_proof_url}`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-purple-600 hover:underline "
@@ -741,7 +773,7 @@ const OrdersPage = () => {
               </div>
 
               {/* Delete Action */}
-              <div className="pt-4 border-t border-gray-200 ">
+              <div className="pt-4 border-t border-gray-200 dark:border-[#1c2638] ">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -782,6 +814,15 @@ const OrdersPage = () => {
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
         orderId={selectedOrderForQR}
+      />
+
+      {/* Modal de crédits insuffisants */}
+      <InsufficientCreditsModal
+        isOpen={insufficientCreditsModal.isOpen}
+        onClose={closeInsufficientCreditsModal}
+        currentBalance={insufficientCreditsModal.currentBalance}
+        requiredCredits={insufficientCreditsModal.requiredCredits}
+        actionName={insufficientCreditsModal.actionName}
       />
     </div>
   );

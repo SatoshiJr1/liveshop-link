@@ -1,9 +1,11 @@
 const express = require('express');
 const { Parser } = require('json2csv');
-const { Seller, Product, Order } = require('../models');
+const { Seller, Product, Order, Comment } = require('../models');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const notificationService = require('../services/notificationService');
+const whatsappService = require('../services/whatsappNotificationService');
+const { uploadPaymentProof } = require('../config/cloudinary');
 
 const router = express.Router();
 
@@ -57,8 +59,11 @@ router.get('/:linkId/products', validatePublicLink, async (req, res) => {
         price: product.price,
         description: product.description,
         image_url: product.image_url,
+        images: product.images || [],
         stock_quantity: product.stock_quantity,
         is_pinned: product.is_pinned,
+        attributes: product.attributes,
+        category: product.category,
         created_at: product.created_at
       }))
     });
@@ -86,16 +91,32 @@ router.get('/:linkId/payment-methods', validatePublicLink, async (req, res) => {
       });
     }
 
+    // Normaliser payment_methods_enabled (peut être JSON ou string JSON)
+    let enabledMethods = seller.payment_methods_enabled || [];
+    if (typeof enabledMethods === 'string') {
+      try {
+        enabledMethods = JSON.parse(enabledMethods);
+      } catch (e) {
+        enabledMethods = [];
+      }
+    }
+
+    const paymentSettings = seller.payment_settings || {};
+    const wavePhone = paymentSettings.wave?.phone || null;
+    const omPhone = paymentSettings.orange_money?.phone || null;
+
     const paymentMethods = {
-      wave: seller.wave_qr_code_url ? {
-        available: true,
-        qr_code_url: seller.wave_qr_code_url
-      } : { available: false },
-      orange_money: seller.orange_money_qr_code_url ? {
-        available: true,
-        qr_code_url: seller.orange_money_qr_code_url
-      } : { available: false },
-      manual: { available: true } // Toujours disponible
+      wave: {
+        available: Boolean(enabledMethods.includes('wave') || wavePhone || seller.wave_qr_code_url),
+        phone: wavePhone,
+        qr_code_url: seller.wave_qr_code_url || null
+      },
+      orange_money: {
+        available: Boolean(enabledMethods.includes('orange_money') || omPhone || seller.orange_money_qr_code_url),
+        phone: omPhone,
+        qr_code_url: seller.orange_money_qr_code_url || null
+      },
+      manual: { available: true }
     };
 
     res.json({
@@ -279,31 +300,28 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
         message: `Nouvelle commande de ${customer_name.trim()} - ${product.name}`
       };
 
-      // Créer la notification directement
-      const notification = await notificationService.createNotification(
+      // Utiliser le nouveau système de notifications
+      console.log(`🔔 Envoi notification pour commande #${order.id} au vendeur ${seller.id}`);
+      
+      const { sent } = await notificationService.sendRealtimeNotification(
         seller.id,
         'new_order',
-        `Nouvelle commande #${order.id}`,
-        `Nouvelle commande de ${customer_name.trim()} - ${product.name}`,
         notificationData
       );
-
-      // Tenter l'envoi en temps réel si global.notifySeller est disponible
-      if (global.notifySeller) {
-        try {
-          global.notifySeller(seller.id, 'new_order', notificationData);
-          await notification.update({ sent: true, sent_at: new Date() });
-          notificationSent = true;
-          console.log('✅ Notification envoyée en temps réel');
-        } catch (wsError) {
-          console.log('⚠️ Erreur WebSocket, notification sauvegardée seulement:', wsError.message);
-        }
-      } else {
-        console.log('⚠️ WebSocket non disponible, notification sauvegardée seulement');
-      }
+      
+      notificationSent = sent;
+      console.log(`${sent ? '✅' : '📱'} Notification ${sent ? 'envoyée en temps réel' : 'stockée pour récupération'} pour commande #${order.id}`);
     } catch (error) {
       console.error('❌ Erreur lors de l\'envoi de la notification:', error);
       notificationSent = false;
+    }
+
+    // 📲 NOTIFICATIONS WHATSAPP - Nouvelle commande
+    try {
+      console.log(`📲 Envoi notifications WhatsApp pour commande #${order.id}`);
+      await whatsappService.notifyNewOrder(order, product, seller);
+    } catch (whatsappError) {
+      console.error('⚠️ Erreur WhatsApp (non bloquante):', whatsappError.message);
     }
 
     res.status(201).json({
@@ -334,15 +352,15 @@ router.post('/:linkId/orders', validatePublicLink, async (req, res) => {
   }
 });
 
-// Ajouter un commentaire live
+// Ajouter un commentaire pour une commande
 router.post('/:linkId/comments', validatePublicLink, async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { comment } = req.body;
+    const { comment, customerName, orderId, rating } = req.body;
 
-    if (!comment) {
+    if (!comment || !customerName || !orderId) {
       return res.status(400).json({
-        error: 'Commentaire requis'
+        error: 'Commentaire, nom du client et ID de commande requis'
       });
     }
 
@@ -356,18 +374,103 @@ router.post('/:linkId/comments', validatePublicLink, async (req, res) => {
       });
     }
 
-    // Pour le MVP, on retourne simplement une confirmation
-    // Dans une version complète, on pourrait stocker les commentaires
-    // et les diffuser en temps réel via WebSocket
+    // Vérifier que la commande existe et appartient à ce vendeur
+    const order = await Order.findOne({
+      where: { 
+        id: orderId,
+        seller_id: seller.id
+      }
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        error: 'Commande non trouvée ou non autorisée'
+      });
+    }
+
+    // Vérifier qu'il n'y a pas déjà un commentaire pour cette commande
+    const existingComment = await Comment.findOne({
+      where: { order_id: orderId }
+    });
+
+    if (existingComment) {
+      return res.status(400).json({
+        error: 'Un commentaire existe déjà pour cette commande'
+      });
+    }
+
+    // Créer le commentaire
+    const newComment = await Comment.create({
+      order_id: orderId,
+      seller_id: seller.id,
+      customer_name: customerName.trim(),
+      content: comment.trim(),
+      rating: rating || null,
+      is_public: true
+    });
 
     res.status(201).json({
-      message: 'Commentaire envoyé avec succès',
-      comment: comment.trim(),
-      timestamp: new Date().toISOString()
+      message: 'Commentaire ajouté avec succès',
+      comment: {
+        id: newComment.id,
+        content: newComment.content,
+        customer_name: newComment.customer_name,
+        rating: newComment.rating,
+        timestamp: newComment.created_at
+      }
     });
 
   } catch (error) {
     console.error('Erreur lors de l\'ajout du commentaire:', error);
+    res.status(500).json({
+      error: 'Erreur interne du serveur'
+    });
+  }
+});
+
+// Récupérer les commentaires d'un vendeur (public)
+router.get('/:linkId/comments', validatePublicLink, async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const seller = await Seller.findOne({
+      where: { public_link_id: linkId }
+    });
+
+    if (!seller) {
+      return res.status(404).json({
+        error: 'Vendeur non trouvé'
+      });
+    }
+
+    const offset = (page - 1) * limit;
+    
+    const comments = await Comment.findAndCountAll({
+      where: {
+        seller_id: seller.id,
+        is_public: true
+      },
+      include: [{
+        model: Order,
+        as: 'order',
+        attributes: ['id', 'product_id', 'created_at']
+      }],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset,
+      attributes: ['id', 'content', 'customer_name', 'rating', 'created_at']
+    });
+
+    res.json({
+      comments: comments.rows,
+      total: comments.count,
+      page: parseInt(page),
+      totalPages: Math.ceil(comments.count / limit)
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des commentaires:', error);
     res.status(500).json({
       error: 'Erreur interne du serveur'
     });
@@ -415,7 +518,7 @@ router.get('/:linkId/live/:liveSlug', validatePublicLink, async (req, res) => {
         model: Product,
         through: { attributes: [] }, // Ne pas inclure les attributs de la table de liaison
         where: { seller_id: seller.id },
-        attributes: ['id', 'name', 'price', 'description', 'image_url', 'stock_quantity', 'is_pinned', 'created_at']
+        attributes: ['id', 'name', 'price', 'description', 'image_url', 'images', 'stock_quantity', 'is_pinned', 'attributes', 'category', 'created_at']
       }]
     });
 
@@ -693,6 +796,106 @@ router.get('/orders/:orderId/delivery-ticket', async (req, res) => {
   } catch (error) {
     console.error('❌ Erreur lors de la génération du ticket:', error);
     res.status(500).json({ error: 'Erreur lors de la génération du ticket' });
+  }
+});
+
+// Endpoint pour vérifier la configuration de la base de données
+router.get('/database-info', async (req, res) => {
+  try {
+    const { sequelize } = require('../config/database');
+    
+    // Vérifier la connexion
+    await sequelize.authenticate();
+    
+    // Obtenir les informations de la base
+    const [results] = await sequelize.query('SELECT current_database() as db_name, current_user as user, version() as version');
+    
+    // Compter les produits
+    const [productCount] = await sequelize.query('SELECT COUNT(*) as count FROM products');
+    
+    // Compter les vendeurs
+    const [sellerCount] = await sequelize.query('SELECT COUNT(*) as count FROM sellers');
+    
+    res.json({
+      status: 'OK',
+      database: {
+        name: results[0].db_name,
+        user: results[0].user,
+        version: results[0].version.split(' ')[0],
+        isProduction: process.env.NODE_ENV === 'production',
+        isSupabase: results[0].db_name === 'postgres' && process.env.NODE_ENV === 'production'
+      },
+      data: {
+        products: productCount[0].count,
+        sellers: sellerCount[0].count
+      },
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: error.message,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  }
+});
+
+// Endpoint pour vérifier le statut d'une commande (retour PayDunya)
+router.get('/orders/:orderId/status', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findOne({
+      where: { id: orderId },
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['name', 'price']
+        }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Commande non trouvée' });
+    }
+
+    res.json({
+      order_id: order.id,
+      status: order.status,
+      total_price: order.total_price,
+      customer_name: order.customer_name,
+      product_name: order.product?.name
+    });
+
+  } catch (error) {
+    console.error('Erreur vérification statut commande:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Upload public de preuve de paiement (sans auth) - Cloudinary
+router.post('/upload/payment-proof', uploadPaymentProof.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucune image fournie' });
+    }
+
+    const imageData = {
+      url: req.file.path,
+      publicId: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      format: req.file.format,
+      width: req.file.width,
+      height: req.file.height
+    };
+
+    console.log('✅ Preuve de paiement uploadée sur Cloudinary:', imageData);
+    res.json({ success: true, image: imageData });
+  } catch (error) {
+    console.error('Erreur upload public preuve paiement:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'upload de la preuve' });
   }
 });
 

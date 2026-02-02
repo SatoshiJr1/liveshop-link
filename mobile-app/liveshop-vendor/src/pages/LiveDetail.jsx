@@ -88,17 +88,17 @@ export default function LiveDetail({ live, onClose }) {
   };
 
   const handleDeleteLive = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce live ? Cette action est irréversible.')) {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette session ? Cette action est irréversible.')) {
       return;
     }
     
     try {
       setLoading(true);
       await api.deleteLive(live.id);
-      alert('Live supprimé avec succès !');
+      alert('Session supprimée avec succès !');
       onClose();
     } catch (error) {
-      alert('Erreur lors de la suppression du live.');
+      alert('Erreur lors de la suppression de la session.');
       console.error('Erreur suppression live:', error);
     } finally {
       setLoading(false);
@@ -131,13 +131,13 @@ export default function LiveDetail({ live, onClose }) {
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-purple-600 text-xl">&times;</button>
-        <h2 className="text-xl sm:text-2xl font-bold text-purple-700 dark:text-purple-400 mb-2 pr-8">Détail du live : {live.title}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-purple-700 dark:text-purple-400 mb-2 pr-8">Détail de la session : {live.title}</h2>
         <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">{new Date(live.date).toLocaleString()}</div>
         {loading ? <div>Chargement...</div> : (
           <>
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                <h3 className="font-semibold dark:text-white">Produits du live</h3>
+                <h3 className="font-semibold dark:text-white">Produits de la session</h3>
                 <div className="flex gap-2">
                   <button onClick={() => setShowAssoc(!showAssoc)}
                     className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded text-sm font-medium border border-purple-200">
@@ -145,7 +145,7 @@ export default function LiveDetail({ live, onClose }) {
                   </button>
                   <button onClick={handleDeleteLive}
                     className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded text-sm font-medium border border-red-200">
-                    Supprimer le live
+                    Supprimer la session
                   </button>
                 </div>
               </div>
@@ -177,10 +177,10 @@ export default function LiveDetail({ live, onClose }) {
             
             {/* Statistiques */}
             <div className="mb-6">
-              <h3 className="font-semibold mb-4 text-purple-700 dark:text-purple-400">📊 Statistiques du Live</h3>
+              <h3 className="font-semibold mb-4 text-purple-700 dark:text-purple-400">📊 Statistiques de la Session</h3>
               
               {paidOrders.length === 0 ? (
-                <div className="text-gray-400 dark:text-gray-500 text-center py-8">Aucune commande payée pour ce live.</div>
+                <div className="text-gray-400 dark:text-gray-500 text-center py-8">Aucune commande payée pour cette session.</div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Statistiques générales */}

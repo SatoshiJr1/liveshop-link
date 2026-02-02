@@ -3,23 +3,48 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const notificationService = require('../services/notificationService');
 
-// Récupérer les notifications d'un vendeur
+// Récupérer les notifications d'un vendeur (avec support delta)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { limit = 50, offset = 0 } = req.query;
+    const { limit = 50, offset = 0, sinceId, sinceTimestamp } = req.query;
     const { Notification } = require('../models');
+    const { Op } = require('sequelize');
+    
+    const whereClause = { seller_id: req.seller.id };
+    
+    // Support pour récupération delta (nouvelles notifications depuis un ID)
+    if (sinceId) {
+      whereClause.id = { [Op.gt]: parseInt(sinceId) };
+      console.log(`🔄 Récupération delta depuis ID: ${sinceId}`);
+    }
+    
+    // Support pour récupération delta (nouvelles notifications depuis un timestamp)
+    if (sinceTimestamp && !sinceId) {
+      whereClause.created_at = { [Op.gt]: new Date(sinceTimestamp) };
+      console.log(`🔄 Récupération delta depuis timestamp: ${sinceTimestamp}`);
+    }
     
     const notifications = await Notification.findAll({
-      where: { seller_id: req.seller.id },
-      order: [['created_at', 'DESC']],
+      where: whereClause,
+      order: [['id', 'DESC']], // Tri par ID pour cohérence delta
       limit: parseInt(limit),
       offset: parseInt(offset)
+    });
+
+    // Compter les non lues
+    const unreadCount = await Notification.count({
+      where: {
+        seller_id: req.seller.id,
+        read: false
+      }
     });
 
     res.json({
       success: true,
       notifications,
-      count: notifications.length
+      count: notifications.length,
+      unreadCount,
+      lastId: notifications.length > 0 ? notifications[0].id : null
     });
   } catch (error) {
     console.error('❌ Erreur récupération notifications:', error);

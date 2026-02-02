@@ -9,7 +9,7 @@ import api from '../services/api';
 const RegisterSteps = ({ onDone }) => {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+221');
   const [otp, setOtp] = useState('');
   const [pin, setPin] = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
@@ -17,6 +17,33 @@ const RegisterSteps = ({ onDone }) => {
   const [error, setError] = useState('');
   const [debugOtp, setDebugOtp] = useState('');
   const [showOtpMsg, setShowOtpMsg] = useState(false);
+
+  // Fonction pour formater le numéro de téléphone
+  const formatPhoneNumber = (value) => {
+    let cleaned = value.replace(/[^\d+]/g, '');
+    
+    // Si ça ne commence pas par +221, l'ajouter automatiquement
+    if (!cleaned.startsWith('+221')) {
+      if (cleaned.startsWith('221')) {
+        cleaned = '+' + cleaned;
+      } else {
+        cleaned = '+221' + cleaned.replace(/^\+/, '');
+      }
+    }
+    
+    // Limiter à 13 caractères (+221 + 9 chiffres)
+    if (cleaned.length > 13) {
+      cleaned = cleaned.substring(0, 13);
+    }
+    
+    return cleaned;
+  };
+
+  // Fonction pour gérer le changement du numéro de téléphone
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+  };
 
   const handleSendOtp = async (e) => {
     e?.preventDefault?.();
@@ -95,13 +122,22 @@ const RegisterSteps = ({ onDone }) => {
             <Label htmlFor="name">Nom</Label>
             <Input id="name" type="text" placeholder="Votre nom" value={name} onChange={e => setName(e.target.value)} required />
           </div>
-          <div className="space-y-2 ">
-            <Label htmlFor="phone">Numéro de téléphone</Label>
-            <div className="relative ">
-              <Smartphone className="absolute left-3 top-3 h-4 w-4 text-gray-400 " />
-              <Input id="phone" type="tel" placeholder="Ex: +221771234567" value={phone} onChange={e => setPhone(e.target.value)} className="pl-10 " required />
+                      <div className="space-y-2 ">
+              <Label htmlFor="phone">Numéro de téléphone</Label>
+              <div className="relative ">
+                <Smartphone className="absolute left-3 top-3 h-4 w-4 text-gray-400 " />
+                <Input 
+                  id="phone" 
+                  type="tel" 
+                  placeholder="771234567" 
+                  value={phone} 
+                  onChange={handlePhoneChange} 
+                  className="pl-10 " 
+                  required 
+                />
+              </div>
+              <p className="text-xs text-gray-500">Le préfixe +221 est ajouté automatiquement</p>
             </div>
-          </div>
           <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 " disabled={loading}>
             {loading ? 'Envoi...' : 'Recevoir le code'}
           </Button>

@@ -18,7 +18,11 @@ import {
   Plus,
   Minus,
   Eye,
-  Edit
+  Edit,
+  MoreVertical,
+  CreditCard,
+  Activity,
+  Clock
 } from 'lucide-react';
 import apiService from '../services/api';
 
@@ -64,34 +68,37 @@ const AdminSellerDetailPage = () => {
   };
 
   const getStatusColor = (isActive) => {
-    return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    return isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200';
   };
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'superadmin': return 'bg-purple-500 text-white';
-      case 'admin': return 'bg-blue-500 text-white';
-      case 'seller': return 'bg-green-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'superadmin': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'admin': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'seller': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4 ">
-        <div className="flex items-center justify-center h-64 ">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 "></div>
-        </div>
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (!seller) {
     return (
-      <div className="container mx-auto p-4 ">
-        <div className="text-center ">
-          <h2 className="text-2xl font-bold text-gray-900 ">Vendeur non trouvé</h2>
-          <Button onClick={() => navigate('/admin/sellers')} className="mt-4 ">
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto">
+            <UserX className="w-8 h-8 text-gray-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Vendeur non trouvé</h2>
+          <p className="text-gray-500 dark:text-gray-400">Le vendeur que vous recherchez n'existe pas ou a été supprimé.</p>
+          <Button onClick={() => navigate('/admin/sellers')} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Retour à la liste
           </Button>
         </div>
@@ -100,283 +107,302 @@ const AdminSellerDetailPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6 ">
-      {/* Header */}
-      <div className="flex items-center justify-between ">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/admin/sellers')}
-          className="flex items-center space-x-2 "
-        >
-          <ArrowLeft className="w-4 h-4 " />
-          <span>Retour</span>
-        </Button>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900 p-4 md:p-8 space-y-8 font-sans">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate('/admin/sellers')}
+            className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+              {seller.name}
+              <Badge variant="outline" className={getStatusColor(seller.is_active)}>
+                {seller.is_active ? 'Actif' : 'Suspendu'}
+              </Badge>
+            </h1>
+            <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <span className="flex items-center gap-1">
+                <Phone className="w-3 h-3" />
+                {seller.phone_number}
+              </span>
+              <span>•</span>
+              <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                ID: {seller.public_link_id}
+              </span>
+            </div>
+          </div>
+        </div>
         
-        <div className="flex items-center space-x-2 ">
+        <div className="flex items-center gap-3">
           <Button
             onClick={() => setShowActions(!showActions)}
-            variant="outline"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
           >
-            <Edit className="w-4 h-4 mr-2 " />
-            Actions
+            <Edit className="w-4 h-4 mr-2" />
+            Gérer le compte
           </Button>
         </div>
       </div>
 
-      {/* Actions rapides */}
+      {/* Actions rapides Panel */}
       {showActions && (
-        <Card>
-          <CardContent className="p-6 ">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
-              <Button
-                onClick={handleToggleStatus}
-                variant={seller.is_active ? "destructive" : "default"}
-                className="flex items-center space-x-2 "
-              >
-                {seller.is_active ? (
-                  <>
-                    <UserX className="w-4 h-4 " />
-                    <span>Suspendre</span>
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="w-4 h-4 " />
-                    <span>Activer</span>
-                  </>
-                )}
-              </Button>
+        <div className="animate-in slide-in-from-top-4 duration-200">
+          <Card className="border-none shadow-lg bg-white dark:bg-gray-800 border-l-4 border-l-blue-500">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Actions d'administration</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Button
+                  onClick={handleToggleStatus}
+                  variant={seller.is_active ? "destructive" : "default"}
+                  className={`w-full justify-start ${seller.is_active ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200" : "bg-green-600 hover:bg-green-700 text-white"}`}
+                >
+                  {seller.is_active ? (
+                    <>
+                      <UserX className="w-4 h-4 mr-2" />
+                      Suspendre le compte
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Activer le compte
+                    </>
+                  )}
+                </Button>
 
-              <Button
-                onClick={() => handleUpdateCredits(100, 'Bonus admin')}
-                className="flex items-center space-x-2 "
-              >
-                <Plus className="w-4 h-4 " />
-                <span>+100 crédits</span>
-              </Button>
+                <Button
+                  onClick={() => handleUpdateCredits(100, 'Bonus admin')}
+                  variant="outline"
+                  className="w-full justify-start border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter 100 crédits
+                </Button>
 
-              <Button
-                onClick={() => handleUpdateCredits(-50, 'Sanction admin')}
-                variant="destructive"
-                className="flex items-center space-x-2 "
-              >
-                <Minus className="w-4 h-4 " />
-                <span>-50 crédits</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                <Button
+                  onClick={() => handleUpdateCredits(-50, 'Sanction admin')}
+                  variant="outline"
+                  className="w-full justify-start border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                >
+                  <Minus className="w-4 h-4 mr-2" />
+                  Retirer 50 crédits
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {/* TODO: Reset password logic */}}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Réinitialiser mot de passe
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Informations du vendeur */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ">
-        {/* Profil */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 ">
-              <User className="w-5 h-5 " />
-              <span>Profil</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 ">
-            <div className="flex items-center space-x-4 ">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xl ">
-                {seller.name.charAt(0).toUpperCase()}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Colonne de gauche : Stats & Info */}
+        <div className="space-y-6">
+          {/* Carte Solde */}
+          <Card className="border-none shadow-md bg-gradient-to-br from-blue-600 to-purple-700 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Coins className="w-24 h-24" />
+            </div>
+            <CardContent className="p-6 relative z-10">
+              <p className="text-blue-100 text-sm font-medium mb-1">Solde actuel</p>
+              <h3 className="text-4xl font-bold mb-4">{seller.credit_balance?.toLocaleString() || 0} <span className="text-xl font-normal text-blue-200">crédits</span></h3>
+              <div className="flex items-center gap-2 text-sm text-blue-100 bg-white/10 w-fit px-3 py-1 rounded-full backdrop-blur-sm">
+                <Activity className="w-4 h-4" />
+                <span>Dernière activité: {new Date(seller.updated_at || seller.created_at).toLocaleDateString()}</span>
               </div>
-              <div>
-                <h3 className="text-xl font-bold ">{seller.name}</h3>
-                <div className="flex items-center space-x-2 mt-1 ">
-                  <Badge className={getRoleColor(seller.role)}>
+            </CardContent>
+          </Card>
+
+          {/* Carte Info Profil */}
+          <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <User className="w-5 h-5 text-blue-500" />
+                Informations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl font-bold text-gray-600 dark:text-gray-300">
+                  {seller.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Rôle actuel</p>
+                  <Badge variant="outline" className={`mt-1 ${getRoleColor(seller.role)}`}>
                     {seller.role}
                   </Badge>
-                  <Badge className={getStatusColor(seller.is_active)}>
-                    {seller.is_active ? 'Actif' : 'Inactif'}
-                  </Badge>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2 ">
-              <div className="flex items-center space-x-2 ">
-                <Phone className="w-4 h-4 text-gray-500 " />
-                <span className="text-sm ">{seller.phone_number}</span>
-              </div>
-              <div className="flex items-center space-x-2 ">
-                <Shield className="w-4 h-4 text-gray-500 " />
-                <span className="text-sm ">ID: {seller.public_link_id}</span>
-              </div>
-              <div className="flex items-center space-x-2 ">
-                <Calendar className="w-4 h-4 text-gray-500 " />
-                <span className="text-sm ">
-                  Inscrit le {new Date(seller.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Statistiques */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 ">
-              <Coins className="w-5 h-5 " />
-              <span>Statistiques</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 ">
-            <div className="text-center ">
-              <div className="text-3xl font-bold text-purple-600 ">
-                {seller.credit_balance?.toLocaleString() || 0}
-              </div>
-              <p className="text-sm text-gray-600 ">Crédits disponibles</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 ">
-              <div className="text-center ">
-                <div className="text-2xl font-bold text-green-600 ">
-                  {seller.products?.length || 0}
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" /> Inscription
+                  </span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {new Date(seller.created_at).toLocaleDateString()}
+                  </span>
                 </div>
-                <p className="text-sm text-gray-600 ">Produits</p>
-              </div>
-              <div className="text-center ">
-                <div className="text-2xl font-bold text-blue-600 ">
-                  {seller.orders?.length || 0}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <Package className="w-4 h-4" /> Produits
+                  </span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {seller.products?.length || 0}
+                  </span>
                 </div>
-                <p className="text-sm text-gray-600 ">Commandes</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4" /> Commandes
+                  </span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {seller.orders?.length || 0}
+                  </span>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Actions rapides */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 ">
-              <Shield className="w-5 h-5 " />
-              <span>Actions</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 ">
-            <Button 
-              onClick={() => setShowActions(!showActions)}
-              variant="outline" 
-              className="w-full justify-start "
-            >
-              <Edit className="w-4 h-4 mr-2 " />
-              Gérer le vendeur
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start "
-            >
-              <Eye className="w-4 h-4 mr-2 " />
-              Voir l'historique
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start "
-            >
-              <Shield className="w-4 h-4 mr-2 " />
-              Changer le rôle
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Colonne de droite : Contenu détaillé */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Onglets (simulés) */}
+          <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-1 overflow-x-auto">
+            <button className="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 whitespace-nowrap">
+              Historique Transactions
+            </button>
+            <button className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 whitespace-nowrap">
+              Produits ({seller.products?.length || 0})
+            </button>
+            <button className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 whitespace-nowrap">
+              Commandes ({seller.orders?.length || 0})
+            </button>
+          </div>
+
+          {/* Liste des transactions */}
+          <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-800">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Clock className="w-5 h-5 text-gray-500" />
+                Dernières transactions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {seller.creditTransactions && seller.creditTransactions.length > 0 ? (
+                <div className="space-y-0 divide-y divide-gray-100 dark:divide-gray-700">
+                  {seller.creditTransactions.map((transaction) => (
+                    <div key={transaction.id} className="py-3 md:py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors px-2 rounded-lg -mx-2 gap-2 sm:gap-0">
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-full shrink-0 ${transaction.amount >= 0 ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                          {transaction.amount >= 0 ? <Plus className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white text-sm truncate pr-2">{transaction.description}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 capitalize">{transaction.type}</p>
+                        </div>
+                      </div>
+                      <div className="text-right pl-11 sm:pl-0">
+                        <p className={`font-bold text-sm ${transaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {transaction.amount >= 0 ? '+' : ''}{transaction.amount}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(transaction.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <CreditCard className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Aucune transaction enregistrée</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Aperçu Produits (Limité) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Package className="w-4 h-4 text-gray-500" />
+                  Derniers Produits
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {seller.products && seller.products.length > 0 ? (
+                  <div className="space-y-3">
+                    {seller.products.slice(0, 3).map((product) => (
+                      <div key={product.id} className="flex items-center gap-3 p-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center shrink-0">
+                          <Package className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{product.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{product.price?.toLocaleString()} FCFA • Stock: {product.stock_quantity}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {seller.products.length > 3 && (
+                      <Button variant="link" className="w-full text-xs h-auto p-0 text-blue-600">
+                        Voir tous les produits
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">Aucun produit</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-100 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-gray-500" />
+                  Dernières Commandes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {seller.orders && seller.orders.length > 0 ? (
+                  <div className="space-y-3">
+                    {seller.orders.slice(0, 3).map((order) => (
+                      <div key={order.id} className="flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">#{order.id}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{order.total_price?.toLocaleString()} FCFA</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">{order.status}</Badge>
+                      </div>
+                    ))}
+                     {seller.orders.length > 3 && (
+                      <Button variant="link" className="w-full text-xs h-auto p-0 text-blue-600">
+                        Voir toutes les commandes
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">Aucune commande</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-
-      {/* Produits du vendeur */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 ">
-            <Package className="w-5 h-5 " />
-            <span>Produits ({seller.products?.length || 0})</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {seller.products && seller.products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
-              {seller.products.map((product) => (
-                <div key={product.id} className="border rounded-lg p-4 ">
-                  <h4 className="font-semibold ">{product.name}</h4>
-                  <p className="text-sm text-gray-600 ">{product.price?.toLocaleString()} FCFA</p>
-                  <p className="text-sm text-gray-500 ">Stock: {product.stock_quantity || 0}</p>
-                  <p className="text-xs text-gray-400 ">
-                    {new Date(product.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8 ">Aucun produit</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Commandes du vendeur */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 ">
-            <ShoppingBag className="w-5 h-5 " />
-            <span>Commandes ({seller.orders?.length || 0})</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {seller.orders && seller.orders.length > 0 ? (
-            <div className="space-y-3 ">
-              {seller.orders.map((order) => (
-                <div key={order.id} className="border rounded-lg p-4 ">
-                  <div className="flex items-center justify-between ">
-                    <div>
-                      <h4 className="font-semibold ">#{order.id} - {order.customer_name}</h4>
-                      <p className="text-sm text-gray-600 ">{order.total_price?.toLocaleString()} FCFA</p>
-                      <Badge variant="outline">{order.status}</Badge>
-                    </div>
-                    <p className="text-xs text-gray-400 ">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8 ">Aucune commande</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Historique des transactions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 ">
-            <Coins className="w-5 h-5 " />
-            <span>Historique des transactions</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {seller.creditTransactions && seller.creditTransactions.length > 0 ? (
-            <div className="space-y-3 ">
-              {seller.creditTransactions.map((transaction) => (
-                <div key={transaction.id} className="border rounded-lg p-4 ">
-                  <div className="flex items-center justify-between ">
-                    <div>
-                      <p className="font-semibold ">{transaction.description}</p>
-                      <p className="text-sm text-gray-600 ">{transaction.type}</p>
-                    </div>
-                    <div className="text-right ">
-                      <p className={`font-bold ${transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {transaction.amount >= 0 ? '+' : ''}{transaction.amount}
-                      </p>
-                      <p className="text-xs text-gray-400 ">
-                        {new Date(transaction.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8 ">Aucune transaction</p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };

@@ -47,16 +47,16 @@ const QuickActions = () => {
       route: '/orders',
       action: () => navigate('/orders')
     },
-    {
-      id: 'manage-credits',
-      title: 'Gérer les crédits',
-      description: 'Acheter et gérer vos crédits',
-      icon: CreditCard,
-      color: 'bg-purple-500 hover:bg-purple-600',
-      iconColor: 'text-purple-500',
-      route: '/credits',
-      action: () => navigate('/credits')
-    },
+    // {
+    //   id: 'manage-credits',
+    //   title: 'Gérer les crédits',
+    //   description: 'Acheter et gérer vos crédits',
+    //   icon: CreditCard,
+    //   color: 'bg-purple-500 hover:bg-purple-600',
+    //   iconColor: 'text-purple-500',
+    //   route: '/credits',
+    //   action: () => navigate('/credits')
+    // }, // Désactivé temporairement
     {
       id: 'view-stats',
       title: 'Statistiques',

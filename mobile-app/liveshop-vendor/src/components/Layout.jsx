@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-import { Bell, X, LogOut, Menu, Sun, Moon } from 'lucide-react';
+import useCreditsModuleStatus from '../hooks/useCreditsModuleStatus';
+import { Menu, Sun, Moon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -15,20 +15,35 @@ import {
   Shield,
   Users,
   Lock,
-  CreditCard
+  Wallet,
+  MessageCircle,
+  LogOut
 } from 'lucide-react';
 import NotificationToast from './NotificationToast';
 import ThemeToggle from './ThemeToggle';
 import NotificationIndicator from './NotificationIndicator';
+import NotificationButton from './NotificationButton';
 
 const Layout = ({ children }) => {
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // const [sidebarOpen, setSidebarOpen] = useState(false); // réservé pour futures évolutions
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const { seller, credits, refreshCredits, isAdmin } = useAuth();
+  const { isEnabled: creditsEnabled } = useCreditsModuleStatus();
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🎯 Layout Debug:', {
+      seller: seller?.name,
+      credits: credits?.balance,
+      creditsEnabled,
+      isAdmin
+    });
+  }, [seller, credits, creditsEnabled, isAdmin]);
   
   const navigation = isAdmin ? [
     // Navigation pour SuperAdmin
@@ -44,7 +59,8 @@ const Layout = ({ children }) => {
     { id: 'products', name: 'Produits', icon: Package, path: '/products' },
     { id: 'orders', name: 'Commandes', icon: ShoppingBag, path: '/orders' },
     { id: 'stats', name: 'Stats', icon: BarChart3, path: '/stats' },
-    { id: 'lives', name: 'Lives', icon: Store, path: '/lives' },
+    { id: 'lives', name: 'Sessions', icon: Store, path: '/lives' },
+    { id: 'wallet', name: 'Wallet', icon: Wallet, path: '/wallet' },
     // Paiements retiré de la barre de navigation; accessible via menu
   ];
 
@@ -61,12 +77,11 @@ const Layout = ({ children }) => {
 
   const handleNavigation = (path) => {
     navigate(path);
-    setSidebarOpen(false);
   };
 
-  const handleViewOrder = (orderId) => {
-    navigate(`/orders/${orderId}`);
-  };
+  // const handleViewOrder = (orderId) => {
+  //   navigate(`/orders/${orderId}`);
+  // };
 
   const handleCreditsClick = () => {
     navigate('/credits');
@@ -74,27 +89,57 @@ const Layout = ({ children }) => {
 
   // Fonction pour obtenir le nom d'affichage selon la taille d'écran
   const getDisplayName = (item) => {
-    if (isAdmin) return item.name;
-    
     // Noms courts pour mobile, longs pour desktop
     const shortNames = {
+      // Vendeur
       'dashboard': 'Accueil',
       'products': 'Produits', 
       'orders': 'Commandes',
       'stats': 'Stats',
-      'lives': 'Lives'
+      'lives': 'Sessions',
+      'wallet': 'Wallet',
+      // Admin
+      'admin': 'Accueil',
+      'sellers': 'Vendeurs',
+      'credits': 'Crédits',
+      'security': 'Sécurité'
     };
+    
+    // Cas spéciaux pour Admin qui partagent des IDs ou concepts similaires
+    if (isAdmin) {
+       if (item.id === 'orders') return 'Commandes'; // Supervision Commandes -> Commandes
+       if (item.id === 'products') return 'Produits'; // Modération Produits -> Produits
+    }
     
     return shortNames[item.id] || item.name;
   };
 
   // Détermine la page active à partir de l'URL
   const getActivePage = () => {
-    const path = location.pathname.replace(/^\//, '');
-    const found = navigation.find(item => path.startsWith(item.id));
-    return found ? found.id : 'dashboard';
+    const currentPath = location.pathname;
+    
+    // Trouver tous les items dont le chemin correspond au début de l'URL actuelle
+    // On gère le cas exact OU le cas où c'est un sous-chemin (ex: /admin/sellers/123 match /admin/sellers)
+    const matches = navigation.filter(item => 
+      currentPath === item.path || currentPath.startsWith(`${item.path}/`)
+    );
+    
+    if (matches.length > 0) {
+      // Retourner l'ID de l'item avec le chemin le plus long (le plus spécifique)
+      // Cela permet de distinguer /admin de /admin/sellers
+      return matches.reduce((prev, current) => 
+        prev.path.length > current.path.length ? prev : current
+      ).id;
+    }
+    
+    return 'dashboard';
   };
   const activePage = getActivePage();
+
+  // Logic for responsive navigation
+  const MAX_BOTTOM_NAV_ITEMS = 5;
+  const visibleNavItems = navigation.slice(0, MAX_BOTTOM_NAV_ITEMS);
+  const hiddenNavItems = navigation.slice(MAX_BOTTOM_NAV_ITEMS);
 
   // Fermer le menu mobile quand on clique ailleurs
   useEffect(() => {
@@ -124,12 +169,12 @@ const Layout = ({ children }) => {
           </div>
         </div>
         <div className="flex items-center space-x-2 ml-2">
-          {/* Indicateur de crédits - Optimisé pour mobile */}
-          {credits && !isAdmin && (
+          {/* Indicateur de crédits - Optimisé pour mobile - Visible seulement si module activé */}
+          {credits && !isAdmin && creditsEnabled && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleCreditsClick}
+              onClick={() => navigate('/credits')}
               className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white border-0 shadow-lg font-bold px-2 py-1"
             >
               <Coins className="w-4 h-4 mr-1" />
@@ -137,8 +182,8 @@ const Layout = ({ children }) => {
               <span className="text-xs font-medium sm:hidden">{credits.balance}</span>
             </Button>
           )}
-          {/* Indicateur de notifications */}
-          <NotificationIndicator />
+          {/* Bouton notifications */}
+          <NotificationButton onClick={() => setShowNotifications(!showNotifications)} />
           {/* Bouton thème */}
           <ThemeToggle />
           
@@ -157,26 +202,40 @@ const Layout = ({ children }) => {
             {showMobileMenu && (
               <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                 <div className="py-2">
-                  <button
-                    onClick={() => {
-                      navigate('/credits');
-                      setShowMobileMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    Gérer les crédits
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/payment-settings');
-                      setShowMobileMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                  >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Paramètres de paiement
-                  </button>
+                  {/* Items hidden from bottom nav */}
+                  {hiddenNavItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          handleNavigation(item.path);
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {item.name}
+                      </button>
+                    );
+                  })}
+                  
+                  {/* Separator if needed */}
+                  {hiddenNavItems.length > 0 && <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>}
+
+                  {!isAdmin && (
+                    <button
+                      onClick={() => {
+                        navigate('/credits');
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      <Coins className="w-4 h-4 mr-2" />
+                      Gérer les crédits
+                    </button>
+                  )}
+                  
                   <button
                     onClick={() => {
                       navigate('/logout');
@@ -273,7 +332,7 @@ const Layout = ({ children }) => {
           </div>
           
           {/* Bouton crédits pour vendeurs (sidebar desktop) */}
-          {!isAdmin && (
+          {/* {!isAdmin && (
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
               <Button
                 variant="ghost"
@@ -284,7 +343,7 @@ const Layout = ({ children }) => {
                 <span className="font-medium">Gérer les crédits</span>
               </Button>
             </div>
-          )}
+          )} */}
         </nav>
 
         {/* Logout Button */}
@@ -309,25 +368,25 @@ const Layout = ({ children }) => {
               {activePage === 'products' && 'Produits'}
               {activePage === 'orders' && 'Commandes'}
               {activePage === 'stats' && 'Statistiques'}
-              {activePage === 'lives' && 'Lives'}
+              {activePage === 'lives' && 'Sessions'}
               {activePage === 'credits' && 'Gérer les crédits'}
             </h2>
           </div>
           <div className="flex items-center space-x-4">
-            {/* Indicateur de crédits pour desktop */}
-            {credits && !isAdmin && (
+            {/* Indicateur de crédits pour desktop - Visible seulement si module activé */}
+            {credits && !isAdmin && creditsEnabled && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleCreditsClick}
+                onClick={() => navigate('/credits')}
                 className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white border-0 shadow-lg font-bold px-4 py-2"
               >
                 <Coins className="w-4 h-4 mr-2" />
                 <span className="font-medium">{credits.balance} crédits</span>
               </Button>
             )}
-            {/* Indicateur de notifications pour desktop */}
-            <NotificationIndicator />
+            {/* Bouton notifications pour desktop */}
+            <NotificationButton onClick={() => setShowNotifications(!showNotifications)} />
             {/* Bouton thème pour desktop */}
             <ThemeToggle />
           </div>
@@ -337,40 +396,43 @@ const Layout = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="pt-16 lg:pt-16 lg:ml-72">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 lg:pb-6 pt-[59px]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-6 pb-20 lg:pb-6 pt-2 lg:pt-[59px]">
             {children}
           </div>
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar - Amélioré pour mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
-        <div className="flex items-center justify-around px-1 py-1">
-          {navigation.map((item) => {
+        <div className="flex items-center justify-around px-1 py-2">
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.path)}
-                className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
                   isActive
                     ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
                     : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
                 }`}
               >
-                <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
-                <span className="text-[10px] font-medium truncate leading-tight">{getDisplayName(item)}</span>
+                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
+                <span className="text-xs font-medium truncate w-full text-center leading-tight">{getDisplayName(item)}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Les notifications sont maintenant gérées par NotificationIndicator */}
+      {/* Indicateur de notifications global - UNE SEULE INSTANCE */}
+      <NotificationIndicator 
+        showNotifications={showNotifications}
+        setShowNotifications={setShowNotifications}
+      />
     </div>
   );
 };
 
 export default Layout;
-

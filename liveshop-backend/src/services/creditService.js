@@ -1,23 +1,84 @@
 const { Seller, CreditTransaction } = require('../models');
 const { Op } = require('sequelize');
+const creditsConfig = require('../config/creditsConfig');
+const PaymentIntegrationService = require('./paymentIntegrationService');
 
-// Configuration des coûts en crédits
-const CREDIT_COSTS = {
-  ADD_PRODUCT: 1,
-  PROCESS_ORDER: 2,
-  PIN_PRODUCT: 3,
-  GENERATE_CUSTOMER_CARD: 2
-};
-
-// Configuration des packages de crédits
-const CREDIT_PACKAGES = {
-  BASIC: { credits: 50, price: 5000 }, // 5000 XOF pour 50 crédits
-  STANDARD: { credits: 150, price: 12000 }, // 12000 XOF pour 150 crédits
-  PREMIUM: { credits: 300, price: 20000 }, // 20000 XOF pour 300 crédits
-  UNLIMITED: { credits: 1000, price: 50000 } // 50000 XOF pour 1000 crédits
-};
+// Configuration locale (sera mise à jour dynamiquement depuis la base)
+let cachedConfig = { ...creditsConfig };
 
 class CreditService {
+  /**
+   * Charger la configuration depuis la base de données
+   */
+  static async loadConfigFromDatabase() {
+    try {
+      const AdminSetting = require('../models').AdminSetting;
+      if (!AdminSetting) {
+        return cachedConfig;
+      }
+
+      const setting = await AdminSetting.findOne({
+        where: { key: 'credits_module' }
+      });
+
+      if (setting && setting.value) {
+        // Fusionner les ACTION_COSTS de la DB avec les valeurs par défaut
+        // pour s'assurer que tous les types d'actions sont définis
+        const actionCosts = {
+          ...creditsConfig.ACTION_COSTS,  // Valeurs par défaut
+          ...(setting.value.actionCosts || {})  // Valeurs de la DB (écrasent les défauts)
+        };
+
+        cachedConfig = {
+          ENABLED: setting.value.enabled || false,
+          MODE: setting.value.mode || 'free',
+          INITIAL_CREDITS: setting.value.initialCredits || 0,
+          PACKAGES: setting.value.packages || creditsConfig.PACKAGES,
+          ACTION_COSTS: actionCosts,
+          PAYMENT_METHODS: setting.value.paymentMethods || creditsConfig.PAYMENT_METHODS
+        };
+      }
+      return cachedConfig;
+    } catch (error) {
+      console.error('Erreur lors du chargement de la config:', error);
+      return cachedConfig;
+    }
+  }
+
+  /**
+   * Définir la configuration en mémoire
+   */
+  static setConfig(config) {
+    cachedConfig = {
+      ENABLED: config.enabled || false,
+      MODE: config.mode || 'free',
+      INITIAL_CREDITS: config.initialCredits || 0,
+      PACKAGES: config.packages || creditsConfig.PACKAGES,
+      ACTION_COSTS: config.actionCosts || creditsConfig.ACTION_COSTS,
+      PAYMENT_METHODS: config.paymentMethods || creditsConfig.PAYMENT_METHODS
+    };
+  }
+
+  /**
+   * Récupérer la configuration actuelle
+   */
+  static getConfig() {
+    return cachedConfig;
+  }
+
+  /**
+   * Vérifier si le module est activé
+   */
+  static isModuleEnabled() {
+    return cachedConfig.ENABLED === true;
+  }
+
+  /**
+   * Obtenir le mode actuel
+   */
+  static getMode() {
+    return cachedConfig.MODE || 'free';
+  }
   /**
    * Vérifier si un vendeur a assez de crédits pour une action
    */
@@ -28,10 +89,23 @@ class CreditService {
         throw new Error('Vendeur non trouvé');
       }
 
-      const requiredCredits = CREDIT_COSTS[actionType];
-      if (!requiredCredits) {
+      // Bypass complet si le module est désactivé
+      if (!cachedConfig.ENABLED) {
+        return {
+          hasEnough: true,
+          currentBalance: seller.credit_balance,
+          requiredCredits: 0,
+          remainingCredits: seller.credit_balance
+        };
+      }
+
+      const requiredCredits = cachedConfig.ACTION_COSTS[actionType];
+      if (requiredCredits === undefined || requiredCredits === null) {
+        console.error(`❌ Action type non reconnue: ${actionType}. ACTION_COSTS disponibles:`, cachedConfig.ACTION_COSTS);
         throw new Error(`Type d'action non reconnu: ${actionType}`);
       }
+
+      console.log(`✅ Vérification crédits - Vendeur: ${sellerId}, Action: ${actionType}, Solde: ${seller.credit_balance}, Requis: ${requiredCredits}`);
 
       return {
         hasEnough: seller.credit_balance >= requiredCredits,
@@ -40,6 +114,7 @@ class CreditService {
         remainingCredits: seller.credit_balance - requiredCredits
       };
     } catch (error) {
+      console.error(`❌ Erreur lors de la vérification des crédits pour ${sellerId}/${actionType}:`, error);
       throw new Error(`Erreur lors de la vérification des crédits: ${error.message}`);
     }
   }
@@ -56,14 +131,30 @@ class CreditService {
         throw new Error('Vendeur non trouvé');
       }
 
-      const requiredCredits = CREDIT_COSTS[actionType];
-      if (!requiredCredits) {
+      // Bypass consommation si module désactivé (aucune écriture DB, aucune transaction)
+      if (!cachedConfig.ENABLED) {
+        await transaction.rollback(); // Annuler la transaction ouverte inutilement
+        return {
+          success: true,
+          transaction: null,
+          newBalance: seller.credit_balance,
+          consumedCredits: 0,
+          bypassed: true
+        };
+      }
+
+      const requiredCredits = cachedConfig.ACTION_COSTS[actionType];
+      if (requiredCredits === undefined || requiredCredits === null) {
+        console.error(`❌ Action type non reconnue: ${actionType}. ACTION_COSTS disponibles:`, cachedConfig.ACTION_COSTS);
         throw new Error(`Type d'action non reconnu: ${actionType}`);
       }
 
       if (seller.credit_balance < requiredCredits) {
+        console.warn(`⚠️ Crédits insuffisants - Vendeur: ${sellerId}, Solde: ${seller.credit_balance}, Requis: ${requiredCredits}`);
         throw new Error(`Crédits insuffisants. Solde actuel: ${seller.credit_balance}, requis: ${requiredCredits}`);
       }
+
+      console.log(`💳 Consommation de crédits - Vendeur: ${sellerId}, Action: ${actionType}, Montant: ${requiredCredits}, Solde avant: ${seller.credit_balance}`);
 
       const balanceBefore = seller.credit_balance;
       const balanceAfter = seller.credit_balance - requiredCredits;
@@ -101,7 +192,7 @@ class CreditService {
   /**
    * Acheter des crédits
    */
-  static async purchaseCredits(sellerId, packageType, paymentMethod, paymentReference = null) {
+  static async purchaseCredits(sellerId, packageType, paymentMethod, phoneNumber = null) {
     const transaction = await CreditTransaction.sequelize.transaction();
     
     try {
@@ -110,16 +201,33 @@ class CreditService {
         throw new Error('Vendeur non trouvé');
       }
 
-      const creditPackage = CREDIT_PACKAGES[packageType];
+      // Vérifier que le module de crédits est activé
+      if (!cachedConfig.ENABLED && !creditsConfig.ENABLED) {
+        throw new Error('Module de crédits désactivé. Veuillez contacter l\'administrateur.');
+      }
+
+      const packages = cachedConfig.PACKAGES || creditsConfig.PACKAGES;
+      const creditPackage = packages[packageType];
       if (!creditPackage) {
         throw new Error(`Package de crédits non reconnu: ${packageType}`);
       }
 
-      // Simuler l'appel au prestataire de paiement
-      const paymentResult = await this.simulatePayment(paymentMethod, creditPackage.price, paymentReference);
+      // Vérifier les paramètres de paiement
+      const paymentPhoneNumber = phoneNumber || seller.phone_number;
+      if (!paymentPhoneNumber) {
+        throw new Error('Numéro de téléphone requis pour le paiement');
+      }
+
+      // Appeler le vrai service de paiement (pas de simulation)
+      const paymentResult = await PaymentIntegrationService.processPayment(
+        paymentMethod,
+        creditPackage.price,
+        paymentPhoneNumber,
+        { packageType, sellerId: sellerId, sellerName: seller.name }
+      );
       
       if (!paymentResult.success) {
-        throw new Error(`Échec du paiement: ${paymentResult.error}`);
+        throw new Error(`Erreur de paiement: ${paymentResult.error}`);
       }
 
       const balanceBefore = seller.credit_balance;
@@ -142,7 +250,8 @@ class CreditService {
         metadata: {
           packageType,
           price: creditPackage.price,
-          paymentResult
+          paymentMethod,
+          phoneNumber: paymentPhoneNumber
         },
         status: 'completed'
       }, { transaction });
@@ -304,14 +413,28 @@ class CreditService {
    * Obtenir les packages de crédits disponibles
    */
   static getAvailablePackages() {
-    return CREDIT_PACKAGES;
+    return cachedConfig.PACKAGES || creditsConfig.PACKAGES;
   }
 
   /**
    * Obtenir les coûts des actions
    */
   static getActionCosts() {
-    return CREDIT_COSTS;
+    return cachedConfig.ACTION_COSTS || creditsConfig.ACTION_COSTS;
+  }
+
+  /**
+   * Vérifier si le module de crédits est activé
+   */
+  static isCreditsModuleEnabled() {
+    return cachedConfig.ENABLED === true;
+  }
+
+  /**
+   * Obtenir le mode de fonctionnement actuel
+   */
+  static getCreditsMode() {
+    return creditsConfig.MODE;
   }
 
   /**

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import webSocketService from '../services/websocket';
 
 const NotificationContext = createContext();
 
@@ -27,6 +28,28 @@ export const NotificationProvider = ({ children }) => {
   // Récupérer le token une seule fois
   const token = localStorage.getItem('liveshop_token');
 
+  // Base URL API dynamique (env ou détection hôte)
+  const getApiBaseUrl = () => {
+    const envUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) ? import.meta.env.VITE_BACKEND_URL : null;
+    if (envUrl) {
+      return envUrl.replace(/\/$/, '');
+    }
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
+    const isPrivateIp = (h) => (
+      h === 'localhost' ||
+      h === '127.0.0.1' ||
+      /^10\./.test(h) ||
+      /^192\.168\./.test(h) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)
+    );
+    if (isPrivateIp(hostname)) {
+      return `${protocol}//${hostname}:3001`;
+    }
+    return 'https://api.livelink.store';
+  };
+  const apiBaseUrl = getApiBaseUrl();
+
   // Initialisation unique
   useEffect(() => {
     if (isInitialized || authLoading || !token || !seller) return;
@@ -41,7 +64,99 @@ export const NotificationProvider = ({ children }) => {
     
     // Démarrer le polling
     startPolling();
-  }, [authLoading, token, seller, isInitialized]);
+  }, [authLoading, token, seller, isInitialized, loadInitialNotifications, startPolling]);
+
+  // Connexion Socket.IO et écoute des événements (temps réel)
+  useEffect(() => {
+    if (!isInitialized || !tokenRef.current || !sellerIdRef.current) return;
+
+    let mounted = true;
+
+    const setupSocket = async () => {
+      try {
+        await webSocketService.connect(tokenRef.current);
+
+        // Nettoyer anciens listeners si existants
+        webSocketService.off('new_order');
+        webSocketService.off('notification');
+
+        // Écouter les notifications manquées récupérées
+        const handleMissedNotifications = (event) => {
+          if (!mounted) return;
+          const { notifications } = event.detail;
+          console.log(`📥 Traitement de ${notifications.length} notifications manquées`);
+          
+          setNotifications((prev) => [...notifications, ...prev]);
+          setUnreadCount((prev) => prev + notifications.filter(n => !n.read).length);
+          
+          // Mettre à jour le dernier ID
+          if (notifications.length > 0) {
+            const maxId = Math.max(...notifications.map(n => n.id));
+            setLastNotificationId((prev) => Math.max(prev, maxId));
+            localStorage.setItem('lastNotificationId', maxId.toString());
+          }
+        };
+        
+        window.addEventListener('missedNotifications', handleMissedNotifications);
+
+        // Nouvelle commande (temps réel)
+        webSocketService.onNewOrder((data) => {
+          if (!mounted) return;
+          const notif = {
+            id: Date.now(),
+            type: 'new_order',
+            read: false,
+            created_at: new Date().toISOString(),
+            data,
+            title: `Nouvelle commande #${data?.order?.id || ''}`,
+            message: data?.message || 'Nouvelle commande reçue'
+          };
+          setNotifications((prev) => [notif, ...prev]);
+          setUnreadCount((prev) => prev + 1);
+          setLastNotificationId((prev) => Math.max(prev, notif.id));
+          playNotificationSound();
+          window.dispatchEvent(new CustomEvent('newNotifications', {
+            detail: { notifications: [notif], count: 1 }
+          }));
+        });
+
+        // Notifications génériques
+        webSocketService.onNotification((data) => {
+          if (!mounted) return;
+          const notif = {
+            id: Date.now(),
+            type: 'notification',
+            read: false,
+            created_at: new Date().toISOString(),
+            data,
+            title: data?.title || 'Notification',
+            message: data?.message || ''
+          };
+          setNotifications((prev) => [notif, ...prev]);
+          setUnreadCount((prev) => prev + 1);
+          setLastNotificationId((prev) => Math.max(prev, notif.id));
+          window.dispatchEvent(new CustomEvent('newNotifications', {
+            detail: { notifications: [notif], count: 1 }
+          }));
+        });
+      } catch {
+        console.warn('NotificationContext: échec connexion Socket.IO, fallback sur polling');
+      }
+    };
+
+    setupSocket();
+
+    return () => {
+      mounted = false;
+      try {
+        webSocketService.off('new_order');
+        webSocketService.off('notification');
+        window.removeEventListener('missedNotifications', handleMissedNotifications);
+      } catch {
+        console.warn('NotificationContext: erreur nettoyage listeners socket');
+      }
+    };
+  }, [isInitialized, playNotificationSound]);
 
   // Nettoyage à la déconnexion
   useEffect(() => {
@@ -61,7 +176,7 @@ export const NotificationProvider = ({ children }) => {
     
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/notifications', {
+      const response = await fetch(`${apiBaseUrl}/api/notifications`, {
         headers: {
           'Authorization': `Bearer ${tokenRef.current}`
         }
@@ -86,14 +201,14 @@ export const NotificationProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [apiBaseUrl]);
 
   // Vérifier les nouvelles notifications
   const checkNewNotifications = useCallback(async () => {
     if (!tokenRef.current || !sellerIdRef.current) return;
     
     try {
-      const response = await fetch('http://localhost:3001/api/notifications', {
+      const response = await fetch(`${apiBaseUrl}/api/notifications`, {
         headers: {
           'Authorization': `Bearer ${tokenRef.current}`
         }
@@ -133,7 +248,7 @@ export const NotificationProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Erreur vérification notifications:', error);
     }
-  }, [lastNotificationId]);
+  }, [lastNotificationId, apiBaseUrl, playNotificationSound]);
 
   // Démarrer le polling
   const startPolling = useCallback(() => {
@@ -150,14 +265,14 @@ export const NotificationProvider = ({ children }) => {
       pollingRef.current = null;
       console.log('🛑 Polling arrêté');
     }
-  }, []);
+  }, [apiBaseUrl]);
 
   // Marquer comme lu
   const markAsRead = useCallback(async (notificationIds = null) => {
     if (!tokenRef.current) return;
     
     try {
-      const response = await fetch('http://localhost:3001/api/notifications/mark-read', {
+      const response = await fetch(`${apiBaseUrl}/api/notifications/mark-read`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${tokenRef.current}`,
@@ -188,7 +303,7 @@ export const NotificationProvider = ({ children }) => {
       audio.play().catch(() => {
         // Ignorer les erreurs de son
       });
-    } catch (error) {
+    } catch {
       // Ignorer les erreurs de son
     }
   }, []);

@@ -3,11 +3,13 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-// Configuration Cloudinary
+// Configuration Cloudinary avec gestion d'erreur améliorée
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+  cdn_subdomain: true
 });
 
 console.log('🔧 Configuration Cloudinary:', {
@@ -77,7 +79,7 @@ const liveBannerStorage = new CloudinaryStorage({
 const uploadProductImage = multer({ 
   storage: productStorage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB max
+    fileSize: 10 * 1024 * 1024 // 10MB max
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {

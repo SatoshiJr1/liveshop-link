@@ -15,21 +15,84 @@ const ImageCapture = ({
 }) => {
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Détecter si on est sur mobile
+  React.useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+    };
+    checkMobile();
+  }, []);
+
+  // Fonction pour compresser l'image
+  const compressImage = useCallback(async (file) => {
+    // Si l'image fait moins de 1MB, on ne la touche pas
+    if (file.size < 1024 * 1024) return file;
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Redimensionner si plus grand que 1920px
+        const maxSize = 1920;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const newFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            console.log(`Image compressée: ${file.size} -> ${newFile.size} bytes`);
+            resolve(newFile);
+          } else {
+            reject(new Error('Erreur lors de la compression'));
+          }
+        }, 'image/jpeg', 0.8); // Qualité 0.8
+      };
+      img.onerror = (err) => reject(err);
+    });
+  }, []);
 
   // Fonction pour uploader une image vers Cloudinary
   const uploadImage = useCallback(async (file) => {
     setUploading(true);
     setError(null);
+    setUploadSuccess(false);
 
     try {
+      // Compresser l'image avant upload
+      const compressedFile = await compressImage(file);
+      
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', compressedFile);
 
       const response = await fetch(`${getBackendDomain()}/api/upload/${uploadType}`, {
         method: 'POST',
@@ -40,66 +103,38 @@ const ImageCapture = ({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors de l\'upload');
+        // Lire la réponse brute pour un meilleur debug (peut ne pas être du JSON)
+        const text = await response.text();
+        console.error('Upload response not ok:', response.status, text);
+        let errorMsg = 'Erreur lors de l\'upload';
+        try {
+          const errorData = JSON.parse(text);
+          errorMsg = errorData.error || errorData.message || errorMsg;
+        } catch (e) {
+          // response wasn't JSON
+          errorMsg = text || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();
+      setUploadSuccess(true);
+      
+      // Masquer le succès après 3 secondes
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 3000);
+      
       return result.image;
     } catch (err) {
       console.error('Erreur upload image:', err);
       setError(err.message);
+      setUploadSuccess(false);
       throw err;
     } finally {
       setUploading(false);
     }
   }, [uploadType]);
-
-  // Fonction pour capturer une image depuis la caméra
-  const captureImage = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    // Définir les dimensions du canvas
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Dessiner l'image de la vidéo sur le canvas
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convertir le canvas en blob
-    canvas.toBlob(async (blob) => {
-      if (blob) {
-        const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        await handleImageUpload(file);
-      }
-    }, 'image/jpeg', 0.8);
-  }, []);
-
-  // Fonction pour démarrer la caméra
-  const startCamera = useCallback(async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        } 
-      });
-      
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setShowCamera(true);
-    } catch (err) {
-      console.error('Erreur accès caméra:', err);
-      setError('Impossible d\'accéder à la caméra');
-    }
-  }, []);
 
   // Fonction pour arrêter la caméra
   const stopCamera = useCallback(() => {
@@ -114,20 +149,66 @@ const ImageCapture = ({
   const handleImageUpload = useCallback(async (file) => {
     if (disabled || uploading) return;
 
-    // Vérifier la taille du fichier (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('L\'image est trop volumineuse (max 5MB)');
+    // Debug: log file meta pour diagnostiquer les échecs depuis la galerie
+    console.debug('Selected file for upload:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+
+    // Vérifier la taille du fichier (20MB max avant compression)
+    if (file.size > 20 * 1024 * 1024) {
+      setError('L\'image est trop volumineuse (max 20MB)');
       return;
     }
 
-    // Vérifier le type de fichier
-    if (!file.type.startsWith('image/')) {
+    // Vérifier le type de fichier. Sur certains appareils (ex: iOS Photos depuis la galerie)
+    // le `file.type` peut être vide ou non-standard (HEIC). On autorise alors par extension.
+    const isImageType = file.type && file.type.startsWith('image/');
+    const imageExtensionMatch = /\.(jpe?g|png|gif|webp|heic|heif|tiff)$/i.test(file.name || '');
+    if (!isImageType && !imageExtensionMatch) {
       setError('Veuillez sélectionner une image valide');
       return;
     }
 
+    // Si le type n'est pas reconnu (souvent galerie iOS HEIC) ou si l'extension est HEIC/HEIF,
+    // essayer de convertir côté client en JPEG via canvas (createImageBitmap).
+    const ext = (file.name || '').split('.').pop()?.toLowerCase() || '';
+    const needsConversion = !isImageType || ['heic', 'heif', 'tiff'].includes(ext);
+    let fileToUpload = file;
+
+    if (needsConversion) {
+      try {
+        console.debug('Tentative de conversion client-side en JPEG pour:', file.name);
+        // createImageBitmap gère plusieurs formats si le navigateur les supporte
+        const imageBitmap = await createImageBitmap(file);
+        const canvas = document.createElement('canvas');
+        canvas.width = imageBitmap.width;
+        canvas.height = imageBitmap.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imageBitmap, 0, 0);
+
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+        if (blob) {
+          fileToUpload = new File([blob], (file.name || 'image').replace(/\.[^/.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+          console.debug('Conversion OK — nouveau fichier:', fileToUpload);
+        } else {
+          console.debug('Conversion canvas a retourné null blob pour', file.name);
+        }
+      } catch (convErr) {
+        console.debug('Conversion client-side impossible pour', file.name, convErr);
+        // On continue avec le fichier d'origine si la conversion échoue
+      }
+    }
+
+    // Vérifier la taille après conversion (10MB max côté client) — si trop grand, refuser avant upload
+    if (fileToUpload.size > 10 * 1024 * 1024) {
+      setError('L\'image est trop volumineuse (max 10MB)');
+      return;
+    }
+
     try {
-      const uploadedImage = await uploadImage(file);
+      const uploadedImage = await uploadImage(fileToUpload);
       
       if (multiple) {
         if (images.length >= maxImages) {
@@ -148,6 +229,76 @@ const ImageCapture = ({
     }
   }, [disabled, uploading, multiple, maxImages, images, onImageUpload, uploadImage]);
 
+  // Fonction pour capturer une image depuis la caméra
+  const captureImage = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // Définir les dimensions du canvas
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Dessiner l'image de la vidéo sur le canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convertir le canvas en blob
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        await handleImageUpload(file);
+        // Fermer la caméra après capture
+        stopCamera();
+      }
+    }, 'image/jpeg', 0.8);
+  }, [handleImageUpload, stopCamera]);
+
+  // Fonction pour démarrer la caméra
+  const startCamera = useCallback(async () => {
+    // Sur mobile, utiliser directement l'input file avec capture (camera)
+    if (isMobile) {
+      // Ouvrir l'input spécifique caméra (avec capture)
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    // Sur desktop, utiliser getUserMedia
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Caméra non supportée sur ce navigateur. Utilisez le bouton Galerie.');
+        return;
+      }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } 
+      });
+      
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setShowCamera(true);
+    } catch (err) {
+      console.error('Erreur accès caméra:', err);
+      
+      if (err.name === 'NotAllowedError') {
+        setError('Permission caméra refusée. Autorisez l\'accès dans les paramètres.');
+      } else if (err.name === 'NotFoundError') {
+        setError('Aucune caméra trouvée. Utilisez le bouton Galerie.');
+      } else if (err.name === 'NotReadableError') {
+        setError('Caméra déjà utilisée par une autre application.');
+      } else {
+        setError('Impossible d\'accéder à la caméra. Utilisez le bouton Galerie.');
+      }
+    }
+  }, [isMobile]);
+
   // Fonction pour supprimer une image
   const removeImage = useCallback((index) => {
     const newImages = images.filter((_, i) => i !== index);
@@ -156,11 +307,50 @@ const ImageCapture = ({
   }, [images, onImageRemove]);
 
   // Fonction pour gérer la sélection de fichier
-  const handleFileSelect = useCallback((event) => {
+  const handleGallerySelect = useCallback((event) => {
     const files = Array.from(event.target.files || []);
+    console.debug('Gallery select files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
     if (files.length > 0) {
-      handleImageUpload(files[0]);
+      try {
+        handleImageUpload(files[0]).catch(err => {
+          console.error('handleImageUpload error (gallery):', err);
+          setError(err.message || 'Erreur lors de l\'upload depuis la galerie');
+        });
+      } catch (err) {
+        console.error('Unexpected error handling gallery file:', err);
+        setError('Erreur inattendue lors de la sélection de la galerie');
+      }
     }
+    // Reset value so selecting same file again triggers change
+    event.target.value = '';
+  }, [handleImageUpload]);
+
+  const handleCameraSelect = useCallback((event) => {
+    const files = Array.from(event.target.files || []);
+    console.debug('Camera select files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+
+    if (files.length === 0) {
+      console.warn('Aucun fichier reçu depuis l\'input camera (files length 0)');
+      setError('Aucune image capturée — réessayez ou utilisez la Galerie');
+      // Reset value and exit
+      event.target.value = '';
+      return;
+    }
+
+    const file = files[0];
+
+    try {
+      handleImageUpload(file).catch(err => {
+        console.error('handleImageUpload error (camera):', err);
+        setError(err.message || 'Erreur lors de l\'upload depuis la caméra');
+      });
+    } catch (err) {
+      console.error('Unexpected error handling camera file:', err);
+      setError('Erreur inattendue lors de la capture');
+    }
+
+    // Reset input to allow selecting the same resource again later
+    event.target.value = '';
   }, [handleImageUpload]);
 
   // Fonction pour gérer le drag & drop
@@ -180,8 +370,13 @@ const ImageCapture = ({
     <div className={`space-y-4 ${className}`}>
       {/* Interface caméra */}
       {showCamera && (
-        <Card className="relative">
-          <CardContent className="p-4">
+        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-4 max-w-md w-full">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold">Capture de l'image du produit</h3>
+              <p className="text-sm text-gray-600">Positionnez votre téléphone pour capturer l'image</p>
+            </div>
+            
             <div className="relative">
               <video
                 ref={videoRef}
@@ -196,25 +391,26 @@ const ImageCapture = ({
               />
               
               {/* Contrôles caméra */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                <Button
-                  onClick={captureImage}
-                  size="sm"
-                  className="bg-white/20 hover:bg-white/30 text-white"
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
+              <div className="flex gap-3 mt-4">
                 <Button
                   onClick={stopCamera}
-                  size="sm"
-                  variant="destructive"
+                  variant="outline"
+                  className="flex-1"
                 >
-                  <X className="h-4 w-4" />
+                  Annuler
+                </Button>
+                <Button
+                  onClick={captureImage}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={uploading}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  {uploading ? 'Capture...' : 'Capturer'}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Zone d'upload */}
@@ -251,7 +447,12 @@ const ImageCapture = ({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    startCamera();
+                    // Sur mobile, ouvrir l'input caméra (capture), sinon démarrer getUserMedia
+                    if (isMobile) {
+                      cameraInputRef.current?.click();
+                    } else {
+                      startCamera();
+                    }
                   }}
                   disabled={disabled}
                 >
@@ -265,6 +466,7 @@ const ImageCapture = ({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
+                    // Ouvrir la galerie (input sans capture)
                     fileInputRef.current?.click();
                   }}
                   disabled={disabled}
@@ -284,13 +486,25 @@ const ImageCapture = ({
         </Card>
       )}
 
-      {/* Input file caché */}
+      {/* Input file caché - avec capture mobile */}
+      {/* Input galerie (sans capture) */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         multiple={multiple}
-        onChange={handleFileSelect}
+        onChange={handleGallerySelect}
+        className="hidden"
+      />
+
+      {/* Input caméra (avec capture) - mobile only: opens camera */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        multiple={false}
+        onChange={handleCameraSelect}
         className="hidden"
       />
 
@@ -303,9 +517,20 @@ const ImageCapture = ({
 
       {/* Indicateur de chargement */}
       {uploading && (
-        <div className="text-blue-600 text-sm bg-blue-50 p-3 rounded-lg flex items-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          Upload en cours...
+        <div className="text-blue-600 text-sm bg-blue-50 p-4 rounded-lg flex items-center gap-3 border border-blue-200">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+          <div>
+            <div className="font-medium">Upload en cours...</div>
+            <div className="text-xs text-blue-500">Sauvegarde de votre image</div>
+          </div>
+        </div>
+      )}
+
+      {/* Message de succès temporaire */}
+      {uploadSuccess && (
+        <div className="text-green-600 text-sm bg-green-50 p-3 rounded-lg flex items-center gap-2 animate-pulse border border-green-200">
+          <Check className="w-4 h-4" />
+          <span className="font-medium">Image sauvegardée avec succès !</span>
         </div>
       )}
 
@@ -322,7 +547,9 @@ const ImageCapture = ({
                 <img
                   src={image.thumbnailUrl || image.url}
                   alt={`Image ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-lg"
+                  className={`w-full h-24 object-cover rounded-lg border-2 transition-all duration-300 ${
+                    uploadSuccess ? 'border-green-400 shadow-lg shadow-green-200' : 'border-gray-200'
+                  }`}
                 />
                 
                 <Button
@@ -334,11 +561,15 @@ const ImageCapture = ({
                   <X className="h-3 w-3" />
                 </Button>
                 
-                {image.publicId && (
-                  <div className="absolute bottom-1 left-1">
-                    <Check className="h-3 w-3 text-green-600 bg-white rounded-full" />
-                  </div>
-                )}
+                {/* Indicateur de succès */}
+                <div className={`absolute bottom-1 left-1 px-2 py-1 rounded-full text-xs flex items-center transition-all duration-300 ${
+                  uploadSuccess 
+                    ? 'bg-green-500 text-white shadow-lg animate-pulse' 
+                    : 'bg-green-500 text-white'
+                }`}>
+                  <Check className="h-3 w-3 mr-1" />
+                  {uploadSuccess ? '✅' : '✓'}
+                </div>
               </div>
             ))}
           </div>
