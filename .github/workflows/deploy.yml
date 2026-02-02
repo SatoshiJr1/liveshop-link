@@ -13,6 +13,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Create deployment directory
+        run: |
+          mkdir -p /srv/projects/livelink
+      
       - name: Copy files to server
         run: |
           rsync -av --exclude='.git' $GITHUB_WORKSPACE/ /srv/projects/livelink/
