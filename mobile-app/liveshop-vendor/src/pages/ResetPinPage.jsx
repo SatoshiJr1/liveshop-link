@@ -17,6 +17,14 @@ const ResetPinPage = () => {
 
   const apiService = api;
 
+  // Fonction pour obtenir le numéro complet avec le préfixe +221
+  const getFullPhone = () => {
+    if (phone.startsWith('+221')) {
+      return phone;
+    }
+    return '+221' + phone.replace(/^\+?221/, '');
+  };
+
   // Étape 1 : Envoi OTP
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -27,10 +35,11 @@ const ResetPinPage = () => {
     }
     setLoading(true);
     try {
+      const fullPhone = getFullPhone();
       const res = await fetch(`${apiService.baseURL}/auth/forgot-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number: phone.trim() })
+        body: JSON.stringify({ phone_number: fullPhone })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur lors de l’envoi du code');
